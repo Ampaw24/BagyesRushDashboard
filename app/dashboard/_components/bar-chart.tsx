@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { formatCompactNumber, formatCurrency } from "../_lib/format";
 import type { DayPoint } from "../_services/mock-data";
 
 type BarChartProps = {
   data: DayPoint[];
-  formatValue: (value: number) => string;
+  unit: "count" | "currency";
+  unitLabel?: string;
   color?: string;
 };
 
@@ -17,8 +19,10 @@ const PAD_X = 8;
 const MAX_BAR_WIDTH = 24;
 const GAP = 2;
 
-export function BarChart({ data, formatValue, color = "var(--color-brand)" }: BarChartProps) {
+export function BarChart({ data, unit, unitLabel, color = "var(--color-brand)" }: BarChartProps) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const formatValue = (value: number) =>
+    unit === "currency" ? formatCurrency(value) : `${formatCompactNumber(value)}${unitLabel ? ` ${unitLabel}` : ""}`;
 
   const values = data.map((d) => d.value);
   const max = Math.max(...values);

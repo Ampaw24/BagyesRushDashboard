@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Tie Tailwind's `dark:` variant to our explicit data-theme toggle instead
+   of prefers-color-scheme, so it stays in sync with the CSS custom
+   properties below when the user overrides the system theme. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -41,7 +46,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --background: #0a0a0a;
     --foreground: #ededed;
     --surface: #18181b;
@@ -53,6 +58,19 @@
     --status-info: #3987e5;
     --delta-good: #0ca30c;
   }
+}
+
+:root[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --surface: #18181b;
+  --surface-muted: #0d0d0d;
+  --border-subtle: #27272a;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+  --chart-grid: #2c2c2a;
+  --status-info: #3987e5;
+  --delta-good: #0ca30c;
 }
 
 body {

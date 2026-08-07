@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 
 export type LoginStatus = "idle" | "loading" | "success" | "error";
 
 export function useLoginForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<LoginStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -25,6 +27,7 @@ export function useLoginForm() {
     await new Promise((resolve) => setTimeout(resolve, 900));
 
     setStatus("success");
+    router.push("/dashboard");
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {

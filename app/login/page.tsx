@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import LoginForm from "./login-form";
 import logo from "@/public/icon.jpeg";
 
@@ -68,8 +67,6 @@ export default function LoginPage() {
           </div>
 
           <LoginForm />
-
-        
         </div>
       </section>
     </div>

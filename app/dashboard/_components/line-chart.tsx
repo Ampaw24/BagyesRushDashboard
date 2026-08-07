@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { formatCompactNumber, formatCurrency } from "../_lib/format";
 import type { DayPoint } from "../_services/mock-data";
 
 type LineChartProps = {
   data: DayPoint[];
-  formatValue: (value: number) => string;
+  unit: "count" | "currency";
+  unitLabel?: string;
   color?: string;
 };
 
@@ -15,8 +17,10 @@ const PAD_TOP = 12;
 const PAD_BOTTOM = 24;
 const PAD_X = 8;
 
-export function LineChart({ data, formatValue, color = "var(--color-brand)" }: LineChartProps) {
+export function LineChart({ data, unit, unitLabel, color = "var(--color-brand)" }: LineChartProps) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const formatValue = (value: number) =>
+    unit === "currency" ? formatCurrency(value) : `${formatCompactNumber(value)}${unitLabel ? ` ${unitLabel}` : ""}`;
 
   const values = data.map((d) => d.value);
   const min = Math.min(...values, 0);
