@@ -2,7 +2,7 @@ import type { OrderStatus, RiderStatus } from "../_lib/status";
 
 // Deterministic PRNG (mulberry32) so mock numbers are stable across server
 // render and client hydration — no Math.random() drift.
-function mulberry32(seed: number) {
+export function mulberry32(seed: number) {
   let a = seed;
   return function random() {
     a |= 0;
@@ -114,7 +114,7 @@ export type SupportTicket = {
 };
 
 export type AdminRole = "super_admin" | "admin" | "support_staff";
-export type AdminStatus = "active" | "invited";
+export type AdminStatus = "active" | "invited" | "suspended" | "removed";
 export type AdminUser = {
   id: string;
   name: string;
@@ -366,6 +366,8 @@ export const BLOCKED_RIDER_COUNT = BLOCKED_RIDERS.length;
 export const DELETE_REQUEST_COUNT = DELETE_REQUESTS.length;
 export const WITHDRAWAL_REQUEST_COUNT = TRANSACTIONS.filter((t) => t.type === "withdrawal" && t.status === "pending").length;
 export const OPEN_SUPPORT_COUNT = SUPPORT_TICKETS.filter((t) => t.status === "open").length;
+export const RIDER_COUNT = RIDERS.length;
+export const CUSTOMER_COUNT = CUSTOMERS.length;
 
 export async function getOrders(): Promise<Order[]> {
   return ORDERS;
@@ -405,6 +407,14 @@ export async function getCoupons(): Promise<Coupon[]> {
 
 export async function getCustomers(): Promise<Customer[]> {
   return CUSTOMERS;
+}
+
+export async function getCustomerById(id: string): Promise<Customer | undefined> {
+  return CUSTOMERS.find((c) => c.id === id);
+}
+
+export async function getAdminUserById(id: string): Promise<AdminUser | undefined> {
+  return ADMIN_USERS.find((a) => a.id === id);
 }
 
 export async function getSupportTickets(): Promise<SupportTicket[]> {

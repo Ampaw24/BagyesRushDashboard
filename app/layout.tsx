@@ -20,6 +20,10 @@ const THEME_INIT_SCRIPT = `
     var stored = localStorage.getItem("theme");
     document.documentElement.setAttribute("data-theme", stored === "dark" ? "dark" : "light");
   } catch (e) {}
+  try {
+    var collapsed = localStorage.getItem("sidebar-collapsed") === "true";
+    document.documentElement.setAttribute("data-sidebar", collapsed ? "collapsed" : "expanded");
+  } catch (e) {}
 })();
 `;
 

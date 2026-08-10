@@ -11,7 +11,7 @@ import type {
 export type OrderStatus = "pending" | "in_transit" | "delivered" | "cancelled";
 export type RiderStatus = "available" | "on_delivery" | "offline";
 
-type BadgeMeta = { label: string; dotClassName: string; badgeClassName: string };
+export type BadgeMeta = { label: string; dotClassName: string; badgeClassName: string };
 
 export const orderStatusMeta: Record<OrderStatus, BadgeMeta> = {
   pending: {
@@ -155,5 +155,15 @@ export const adminStatusMeta: Record<AdminStatus, BadgeMeta> = {
     label: "Invited",
     dotClassName: "bg-status-info",
     badgeClassName: "bg-status-info/10 text-status-info",
+  },
+  suspended: {
+    label: "Suspended",
+    dotClassName: "bg-status-critical",
+    badgeClassName: "bg-status-critical/10 text-status-critical",
+  },
+  removed: {
+    label: "Removed",
+    dotClassName: "bg-zinc-400",
+    badgeClassName: "bg-zinc-500/10 text-zinc-500 dark:text-zinc-400",
   },
 };

@@ -1,10 +1,11 @@
 import {
-  AnalyticsIcon,
+  MegaphoneIcon,
   OrdersIcon,
   OverviewIcon,
   RidersIcon,
-  ShieldIcon,
+  SecuritySafeIcon,
   SettingsIcon,
+  ShopIcon,
   SupportIcon,
   TicketIcon,
   UsersIcon,
@@ -19,6 +20,8 @@ import {
   RIDER_REQUEST_COUNT,
   WITHDRAWAL_REQUEST_COUNT,
 } from "../_services/mock-data";
+import { SCHEDULED_COMMUNICATIONS_COUNT } from "../_services/communications-mock-data";
+import { PENDING_VENDOR_APPLICATIONS_COUNT } from "../_services/vendors-mock-data";
 
 export type NavLeaf = { href: string; label: string; badge?: number };
 
@@ -65,9 +68,47 @@ export const NAV_TREE: NavEntry[] = [
       { href: "/dashboard/transactions/withdrawal-requests", label: "Withdrawal Requests", badge: WITHDRAWAL_REQUEST_COUNT },
     ],
   },
-  { kind: "link", href: "/dashboard/analytics", label: "Analytics", icon: AnalyticsIcon },
   { kind: "link", href: "/dashboard/users", label: "Users", icon: UsersIcon },
   { kind: "link", href: "/dashboard/support", label: "Support", icon: SupportIcon, badge: OPEN_SUPPORT_COUNT },
-  { kind: "link", href: "/dashboard/admin-users", label: "Admin Users", icon: ShieldIcon },
+  {
+    kind: "section",
+    label: "Communications",
+    icon: MegaphoneIcon,
+    children: [
+      { href: "/dashboard/communications", label: "Overview" },
+      { href: "/dashboard/communications/new", label: "Create Communication" },
+      { href: "/dashboard/communications/announcements", label: "Announcements" },
+      { href: "/dashboard/communications/templates", label: "Templates" },
+      { href: "/dashboard/communications/scheduled", label: "Scheduled", badge: SCHEDULED_COMMUNICATIONS_COUNT },
+      { href: "/dashboard/communications/history", label: "History" },
+    ],
+  },
+  {
+    kind: "section",
+    label: "Vendors",
+    icon: ShopIcon,
+    children: [
+      { href: "/dashboard/vendors", label: "Overview" },
+      { href: "/dashboard/vendors/all", label: "All Vendors" },
+      { href: "/dashboard/vendors/pending", label: "Pending Vendors" },
+      { href: "/dashboard/vendors/active", label: "Active Vendors" },
+      { href: "/dashboard/vendors/suspended", label: "Suspended Vendors" },
+      { href: "/dashboard/vendors/inactive", label: "Inactive Vendors" },
+      { href: "/dashboard/vendors/applications", label: "Vendor Applications", badge: PENDING_VENDOR_APPLICATIONS_COUNT },
+    ],
+  },
+  {
+    kind: "section",
+    label: "Administration",
+    icon: SecuritySafeIcon,
+    children: [
+      { href: "/dashboard/admin-users", label: "Admin Users" },
+      { href: "/dashboard/users", label: "Customers" },
+      { href: "/dashboard/administration/roles", label: "Roles" },
+      { href: "/dashboard/administration/permissions", label: "Permissions" },
+      { href: "/dashboard/administration/role-changes", label: "Role Changes" },
+      { href: "/dashboard/administration/audit-logs", label: "Audit Logs" },
+    ],
+  },
   { kind: "link", href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ];

@@ -23,6 +23,12 @@
   --status-critical: #d03b3b;
   --status-info: #2a78d6;
   --delta-good: #006300;
+
+  --sidebar-w: 16rem;
+}
+
+:root[data-sidebar="collapsed"] {
+  --sidebar-w: 5rem;
 }
 
 @theme inline {
@@ -98,9 +104,25 @@ body {
   animation: intro-fade 300ms ease-out 80ms both;
 }
 
+@keyframes nav-item-fade {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-nav-item {
+  animation: nav-item-fade 220ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-intro,
-  .animate-intro-delay {
+  .animate-intro-delay,
+  .animate-nav-item {
     animation: none;
   }
 }

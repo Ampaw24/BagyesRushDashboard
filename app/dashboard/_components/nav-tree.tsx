@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_TREE } from "../_lib/nav-items";
 import { ChevronDownIcon } from "../_lib/icons";
+import { useSidebarCollapsed } from "../_hooks/use-sidebar-collapsed";
 
 function NavBadge({ count }: { count: number }) {
   if (count <= 0) return null;
@@ -15,8 +16,14 @@ function NavBadge({ count }: { count: number }) {
   );
 }
 
-export function NavTree({ onNavigate }: { onNavigate?: () => void }) {
+function NavBadgeDot({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-status-critical" />;
+}
+
+export function NavTree({ onNavigate, collapsed = false }: { onNavigate?: () => void; collapsed?: boolean }) {
   const pathname = usePathname();
+  const { toggleCollapsed } = useSidebarCollapsed();
   const [openSections, setOpenSections] = useState<Set<string>>(
     () =>
       new Set(
@@ -35,9 +42,20 @@ export function NavTree({ onNavigate }: { onNavigate?: () => void }) {
     });
   }
 
+  function handleSectionClick(label: string) {
+    if (collapsed) {
+      toggleCollapsed();
+      setOpenSections((prev) => new Set(prev).add(label));
+      return;
+    }
+    toggleSection(label);
+  }
+
   return (
     <nav className="flex flex-1 flex-col gap-1 px-3">
-      {NAV_TREE.map((entry) => {
+      {NAV_TREE.map((entry, index) => {
+        const animationDelay = { animationDelay: `${Math.min(index, 8) * 30}ms` };
+
         if (entry.kind === "link") {
           const isActive = pathname === entry.href;
           const Icon = entry.icon;
@@ -46,38 +64,53 @@ export function NavTree({ onNavigate }: { onNavigate?: () => void }) {
               key={entry.href}
               href={entry.href}
               onClick={onNavigate}
-              className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition duration-150 ${
-                isActive ? "bg-brand/10 text-brand" : "text-text-secondary hover:bg-surface-muted"
-              }`}
+              title={collapsed ? entry.label : undefined}
+              style={animationDelay}
+              className={`animate-nav-item relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition duration-150 ${
+                collapsed ? "justify-center px-0" : ""
+              } ${isActive ? "bg-brand/10 text-brand" : "text-text-secondary hover:bg-surface-muted"}`}
             >
               <Icon className="h-5 w-5 shrink-0" />
-              <span className="flex-1 break-words">{entry.label}</span>
-              {typeof entry.badge === "number" && <NavBadge count={entry.badge} />}
+              {collapsed ? (
+                typeof entry.badge === "number" && <NavBadgeDot count={entry.badge} />
+              ) : (
+                <>
+                  <span className="flex-1 break-words">{entry.label}</span>
+                  {typeof entry.badge === "number" && <NavBadge count={entry.badge} />}
+                </>
+              )}
             </Link>
           );
         }
 
-        const isOpen = openSections.has(entry.label);
+        const isOpen = openSections.has(entry.label) && !collapsed;
         const hasActiveChild = entry.children.some((child) => child.href === pathname);
         const Icon = entry.icon;
 
         return (
-          <div key={entry.label} className="flex flex-col gap-1">
+          <div key={entry.label} style={animationDelay} className="animate-nav-item flex flex-col gap-1">
             <button
               type="button"
-              onClick={() => toggleSection(entry.label)}
+              onClick={() => handleSectionClick(entry.label)}
               aria-expanded={isOpen}
-              className={`flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium transition duration-150 ${
-                hasActiveChild ? "text-brand" : "text-text-secondary hover:bg-surface-muted"
-              }`}
+              title={collapsed ? entry.label : undefined}
+              className={`relative flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium transition duration-150 ${
+                collapsed ? "justify-center px-0" : ""
+              } ${hasActiveChild ? "text-brand" : "text-text-secondary hover:bg-surface-muted"}`}
             >
               <Icon className="h-5 w-5 shrink-0" />
-              <span className="flex-1 break-words text-left">{entry.label}</span>
-              <ChevronDownIcon className={`h-4 w-4 shrink-0 transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`} />
+              {collapsed ? (
+                hasActiveChild && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-brand" />
+              ) : (
+                <>
+                  <span className="flex-1 break-words text-left">{entry.label}</span>
+                  <ChevronDownIcon className={`h-4 w-4 shrink-0 transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`} />
+                </>
+              )}
             </button>
 
             {isOpen && (
-              <div className="flex flex-col gap-0.5 rounded-lg bg-surface-muted py-1">
+              <div className="animate-nav-item flex flex-col gap-0.5 rounded-lg bg-surface-muted py-1">
                 {entry.children.map((child) => {
                   const isActive = pathname === child.href;
                   return (

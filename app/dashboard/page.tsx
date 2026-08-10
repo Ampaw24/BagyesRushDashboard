@@ -3,18 +3,44 @@ import Link from "next/link";
 import { PageHeader } from "./_components/page-header";
 import { StatTile } from "./_components/stat-tile";
 import { Meter } from "./_components/meter";
+import { ChartCard } from "./_components/chart-card";
+import { LineChart } from "./_components/line-chart";
+import { BarChart } from "./_components/bar-chart";
+import { StackedBarChart } from "./_components/stacked-bar-chart";
 import { OrderStatusBadge } from "./_components/status-badge";
 import { TableCell, TableHeadCell, TableShell } from "./_components/table-shell";
-import { CheckCircleIcon, ChevronRightIcon, OrdersIcon, RidersIcon, WalletIcon } from "./_lib/icons";
+import { orderStatusMeta } from "./_lib/status";
+import {
+  AnalyticsIcon,
+  CheckCircleIcon,
+  ChevronRightIcon,
+  OrdersIcon,
+  RidersIcon,
+  WalletIcon,
+} from "./_lib/icons";
 import { formatCompactNumber, formatCurrency, formatDateTime } from "./_lib/format";
-import { getOverviewStats, getRecentOrders } from "./_services/mock-data";
+import {
+  getDeliveryTrend,
+  getOrderStatusBreakdown,
+  getOverviewStats,
+  getRecentOrders,
+  getRevenueTrend,
+} from "./_services/mock-data";
 
 export const metadata: Metadata = {
   title: "Overview — Bagyes Rush Delivery",
 };
 
 export default async function OverviewPage() {
-  const [stats, recentOrders] = await Promise.all([getOverviewStats(), getRecentOrders(5)]);
+  const [stats, recentOrders, deliveryTrend, revenueTrend, statusBreakdown] = await Promise.all([
+    getOverviewStats(),
+    getRecentOrders(5),
+    getDeliveryTrend(),
+    getRevenueTrend(),
+    getOrderStatusBreakdown(),
+  ]);
+
+  const totalOrders = statusBreakdown.reduce((sum, d) => sum + d.count, 0);
 
   return (
     <div className="flex flex-col gap-8">
@@ -43,6 +69,90 @@ export default async function OverviewPage() {
           trend={stats.revenueToday.trend}
         />
         <Meter label="Completion rate" value={stats.completionRate.value} icon={<CheckCircleIcon className="h-4.5 w-4.5" />} />
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <AnalyticsIcon className="h-4.5 w-4.5 text-text-muted" />
+          <h2 className="break-words text-lg font-semibold tracking-tight text-foreground">Analytics</h2>
+          <span className="text-sm text-text-muted">Last 14 days</span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <ChartCard
+            title="Deliveries per day"
+            subtitle="Last 14 days"
+            chart={<LineChart data={deliveryTrend} unit="count" unitLabel="deliveries" />}
+            table={
+              <TableShell>
+                <thead>
+                  <tr>
+                    <TableHeadCell>Date</TableHeadCell>
+                    <TableHeadCell>Deliveries</TableHeadCell>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deliveryTrend.map((d) => (
+                    <tr key={d.date}>
+                      <TableCell>{d.date}</TableCell>
+                      <TableCell>{d.value}</TableCell>
+                    </tr>
+                  ))}
+                </tbody>
+              </TableShell>
+            }
+          />
+
+          <ChartCard
+            title="Revenue per day"
+            subtitle="Last 14 days"
+            chart={<BarChart data={revenueTrend} unit="currency" />}
+            table={
+              <TableShell>
+                <thead>
+                  <tr>
+                    <TableHeadCell>Date</TableHeadCell>
+                    <TableHeadCell>Revenue</TableHeadCell>
+                  </tr>
+                </thead>
+                <tbody>
+                  {revenueTrend.map((d) => (
+                    <tr key={d.date}>
+                      <TableCell>{d.date}</TableCell>
+                      <TableCell>{formatCurrency(d.value)}</TableCell>
+                    </tr>
+                  ))}
+                </tbody>
+              </TableShell>
+            }
+          />
+        </div>
+
+        <ChartCard
+          title="Orders by status"
+          subtitle={`${totalOrders} orders total`}
+          chart={<StackedBarChart data={statusBreakdown} />}
+          table={
+            <TableShell>
+              <thead>
+                <tr>
+                  <TableHeadCell>Status</TableHeadCell>
+                  <TableHeadCell>Orders</TableHeadCell>
+                  <TableHeadCell>Share</TableHeadCell>
+                </tr>
+              </thead>
+              <tbody>
+                {statusBreakdown.map((d) => (
+                  <tr key={d.status}>
+                    <TableCell>{orderStatusMeta[d.status].label}</TableCell>
+                    <TableCell>{d.count}</TableCell>
+                    <TableCell>{((d.count / totalOrders) * 100).toFixed(1)}%</TableCell>
+                  </tr>
+                ))}
+              </tbody>
+            </TableShell>
+          }
+        />
       </div>
 
       <div className="flex flex-col gap-4">
