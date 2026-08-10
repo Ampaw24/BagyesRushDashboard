@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ConfirmDialog } from "../_components/confirm-dialog";
 import type { ActionMenuItem } from "../_components/action-menu";
+import { ArchiveIcon, DangerIcon, RefreshIcon, VerifyIcon, XCircleIcon } from "../_lib/icons";
 import type { Vendor } from "../_services/vendors-mock-data";
 
 type PendingAction = "verify" | "reject" | "suspend" | "activate" | "archive" | null;
@@ -16,16 +17,17 @@ export function useVendorStatusActions(vendor: Vendor, onUpdate: (updates: Parti
   }
 
   const actions: ActionMenuItem[] = [
-    { label: "Verify vendor", onClick: () => setPending("verify"), disabled: vendor.verificationStatus === "verified" },
-    { label: "Reject application", onClick: () => setPending("reject"), disabled: vendor.verificationStatus === "rejected" },
+    { label: "Verify vendor", icon: VerifyIcon, onClick: () => setPending("verify"), disabled: vendor.verificationStatus === "verified" },
+    { label: "Reject application", icon: XCircleIcon, onClick: () => setPending("reject"), disabled: vendor.verificationStatus === "rejected" },
     {
       label: "Suspend vendor",
+      icon: DangerIcon,
       onClick: () => setPending("suspend"),
       disabled: vendor.status === "suspended" || vendor.status === "archived",
       danger: true,
     },
-    { label: "Activate vendor", onClick: () => setPending("activate"), disabled: vendor.status === "active" },
-    { label: "Archive vendor", onClick: () => setPending("archive"), disabled: vendor.status === "archived", danger: true },
+    { label: "Activate vendor", icon: RefreshIcon, onClick: () => setPending("activate"), disabled: vendor.status === "active" },
+    { label: "Archive vendor", icon: ArchiveIcon, onClick: () => setPending("archive"), disabled: vendor.status === "archived", danger: true },
   ];
 
   let dialog: React.ReactNode = null;

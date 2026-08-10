@@ -4,10 +4,11 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TableCell, TableHeadCell, TableShell } from "../_components/table-shell";
+import { Avatar } from "../_components/avatar";
 import { Badge } from "../_components/status-badge";
 import { ActionMenu } from "../_components/action-menu";
 import { useAdminActions } from "../_hooks/use-admin-actions";
-import { SearchIcon } from "../_lib/icons";
+import { EditIcon, SearchIcon } from "../_lib/icons";
 import { adminRoleMeta, adminStatusMeta } from "../_lib/status";
 import { formatDateTime } from "../_lib/format";
 import type { AdminUser } from "../_services/mock-data";
@@ -19,8 +20,9 @@ function AdminRow({ admin, activeSuperAdminCount, onUpdate }: { admin: AdminUser
   return (
     <tr>
       <TableCell className="font-medium">
-        <Link href={`/dashboard/administration/admins/${admin.id}`} className="hover:text-brand">
-          {admin.name}
+        <Link href={`/dashboard/administration/admins/${admin.id}`} className="flex items-center gap-3 hover:text-brand">
+          <Avatar name={admin.name} />
+          <span className="break-words">{admin.name}</span>
         </Link>
       </TableCell>
       <TableCell className="text-text-secondary">{admin.email}</TableCell>
@@ -30,7 +32,9 @@ function AdminRow({ admin, activeSuperAdminCount, onUpdate }: { admin: AdminUser
       </TableCell>
       <TableCell className="text-text-secondary">{formatDateTime(admin.lastActive)}</TableCell>
       <TableCell>
-        <ActionMenu items={[{ label: "View / change role", onClick: () => router.push(`/dashboard/administration/admins/${admin.id}`) }, ...actions]} />
+        <ActionMenu
+          items={[{ label: "View / change role", icon: EditIcon, onClick: () => router.push(`/dashboard/administration/admins/${admin.id}`) }, ...actions]}
+        />
         {dialog}
       </TableCell>
     </tr>

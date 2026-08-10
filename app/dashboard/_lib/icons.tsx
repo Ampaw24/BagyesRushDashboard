@@ -29,6 +29,7 @@ import {
   Moon,
   Package,
   PanelLeft,
+  Pencil,
   Phone,
   Plus,
   RefreshCw,
@@ -42,6 +43,7 @@ import {
   Sun,
   Table,
   Ticket,
+  Trash2,
   TriangleAlert,
   Truck,
   UserCheck,
@@ -114,3 +116,5 @@ export const BagIcon = createIcon(ShoppingBag);
 export const ProfileTickIcon = createIcon(UserCheck);
 export const ProfileDeleteIcon = createIcon(UserX);
 export const MoreIcon = createIcon(EllipsisVertical);
+export const EditIcon = createIcon(Pencil);
+export const TrashIcon = createIcon(Trash2);

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ConfirmDialog } from "../_components/confirm-dialog";
 import type { ActionMenuItem } from "../_components/action-menu";
 import { canRemoveAdmin, isLastActiveSuperAdmin } from "../_lib/administration";
+import { DangerIcon, ProfileDeleteIcon, RefreshIcon } from "../_lib/icons";
 import type { AdminUser } from "../_services/mock-data";
 
 type PendingAction = "suspend" | "activate" | "remove" | null;
@@ -21,13 +22,15 @@ export function useAdminActions(admin: AdminUser, activeSuperAdminCount: number,
   const actions: ActionMenuItem[] = [
     {
       label: "Suspend",
+      icon: DangerIcon,
       onClick: () => setPending("suspend"),
       disabled: admin.status !== "active" || isLastSuperAdmin,
       disabledReason: isLastSuperAdmin ? "At least one active Super Admin must remain." : undefined,
     },
-    { label: "Activate", onClick: () => setPending("activate"), disabled: admin.status === "active" },
+    { label: "Activate", icon: RefreshIcon, onClick: () => setPending("activate"), disabled: admin.status === "active" },
     {
       label: "Remove admin access",
+      icon: ProfileDeleteIcon,
       onClick: () => setPending("remove"),
       disabled: !canRemoveAdmin(admin, activeSuperAdminCount),
       disabledReason: isLastSuperAdmin ? "At least one active Super Admin must remain." : undefined,

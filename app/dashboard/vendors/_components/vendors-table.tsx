@@ -8,7 +8,7 @@ import { useVendorStatusActions } from "../../_hooks/use-vendor-status-actions";
 import { TableCell, TableHeadCell, TableShell } from "../../_components/table-shell";
 import { Badge } from "../../_components/status-badge";
 import { ActionMenu } from "../../_components/action-menu";
-import { SearchIcon } from "../../_lib/icons";
+import { EditIcon, SearchIcon } from "../../_lib/icons";
 import { vendorStatusMeta, verificationStatusMeta, VENDOR_CATEGORIES } from "../../_lib/vendors";
 import { formatDate } from "../../_lib/format";
 import type { Vendor } from "../../_services/vendors-mock-data";
@@ -42,7 +42,7 @@ function VendorRow({ vendor, onUpdate }: { vendor: Vendor; onUpdate: (updates: P
       </TableCell>
       <TableCell className="text-text-secondary">{formatDate(vendor.joinedAt)}</TableCell>
       <TableCell>
-        <ActionMenu items={[{ label: "View / edit", onClick: () => router.push(`/dashboard/vendors/${vendor.id}`) }, ...actions]} />
+        <ActionMenu items={[{ label: "View / edit", icon: EditIcon, onClick: () => router.push(`/dashboard/vendors/${vendor.id}`) }, ...actions]} />
         {dialog}
       </TableCell>
     </tr>

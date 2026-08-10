@@ -90,7 +90,7 @@ export type Coupon = {
   status: CouponStatus;
 };
 
-export type CustomerStatus = "active" | "suspended";
+export type CustomerStatus = "active" | "disabled" | "banned";
 export type Customer = {
   id: string;
   name: string;
@@ -312,7 +312,12 @@ function buildCustomers(): Customer[] {
       ordersCount,
       totalSpent: ordersCount * (2500 + Math.floor(rand() * 6000)),
       joinedAt: new Date(NOW.getTime() - Math.floor(rand() * 300) * 24 * 60 * 60 * 1000),
-      status: rand() < 0.92 ? "active" : "suspended",
+      status: (() => {
+        const roll = rand();
+        if (roll < 0.88) return "active";
+        if (roll < 0.96) return "disabled";
+        return "banned";
+      })(),
     };
   });
 }
@@ -411,6 +416,17 @@ export async function getCustomers(): Promise<Customer[]> {
 
 export async function getCustomerById(id: string): Promise<Customer | undefined> {
   return CUSTOMERS.find((c) => c.id === id);
+}
+
+export type CustomersOverviewStats = { total: number; active: number; disabled: number; banned: number };
+
+export async function getCustomersOverviewStats(): Promise<CustomersOverviewStats> {
+  return {
+    total: CUSTOMERS.length,
+    active: CUSTOMERS.filter((c) => c.status === "active").length,
+    disabled: CUSTOMERS.filter((c) => c.status === "disabled").length,
+    banned: CUSTOMERS.filter((c) => c.status === "banned").length,
+  };
 }
 
 export async function getAdminUserById(id: string): Promise<AdminUser | undefined> {

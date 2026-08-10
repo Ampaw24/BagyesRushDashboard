@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PageHeader } from "../../../../_components/page-header";
+import { Avatar } from "../../../../_components/avatar";
 import { Badge } from "../../../../_components/status-badge";
 import { ActionMenu } from "../../../../_components/action-menu";
 import { ConfirmDialog } from "../../../../_components/confirm-dialog";
@@ -40,7 +41,12 @@ export function AdminDetail({ admin: initialAdmin, actorRole, isSelf, roles, per
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title={admin.name}
+        title={
+          <span className="flex items-center gap-3">
+            <Avatar name={admin.name} className="h-10 w-10 text-sm" />
+            {admin.name}
+          </span>
+        }
         description={admin.email}
         action={
           <div className="flex items-center gap-2">

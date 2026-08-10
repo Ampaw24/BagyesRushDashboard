@@ -96,8 +96,13 @@ export const customerStatusMeta: Record<CustomerStatus, BadgeMeta> = {
     dotClassName: "bg-status-good",
     badgeClassName: "bg-status-good/10 text-status-good",
   },
-  suspended: {
-    label: "Suspended",
+  disabled: {
+    label: "Disabled",
+    dotClassName: "bg-zinc-400",
+    badgeClassName: "bg-zinc-500/10 text-zinc-500 dark:text-zinc-400",
+  },
+  banned: {
+    label: "Banned",
     dotClassName: "bg-status-critical",
     badgeClassName: "bg-status-critical/10 text-status-critical",
   },

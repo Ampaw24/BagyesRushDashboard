@@ -600,7 +600,8 @@ export async function getAudienceSegments(): Promise<AudienceSegment[]> {
   const [riders, customers] = await Promise.all([getRiders(), getCustomers()]);
   return [
     { id: "customer-active", label: "Active customers", role: "customer", count: customers.filter((c) => c.status === "active").length },
-    { id: "customer-suspended", label: "Suspended customers", role: "customer", count: customers.filter((c) => c.status === "suspended").length },
+    { id: "customer-disabled", label: "Disabled customers", role: "customer", count: customers.filter((c) => c.status === "disabled").length },
+    { id: "customer-banned", label: "Banned customers", role: "customer", count: customers.filter((c) => c.status === "banned").length },
     { id: "rider-available", label: "Available riders", role: "rider", count: riders.filter((r) => r.status === "available").length },
     { id: "rider-on-delivery", label: "Riders on delivery", role: "rider", count: riders.filter((r) => r.status === "on_delivery").length },
     { id: "rider-offline", label: "Offline riders", role: "rider", count: riders.filter((r) => r.status === "offline").length },
