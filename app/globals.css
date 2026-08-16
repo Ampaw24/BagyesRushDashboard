@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+/* Tie Tailwind's `dark:` variant to our explicit data-theme toggle instead
+   of prefers-color-scheme, so it stays in sync with the CSS custom
+   properties below when the user overrides the system theme. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --brand: #e91d26;
+  --brand-dark: #c4171f;
+  --brand-foreground: #ffffff;
+
+  --surface: #ffffff;
+  --surface-muted: #f9f9f7;
+  --border-subtle: #e4e4e7;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --chart-grid: #e1e0d9;
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-critical: #d03b3b;
+  --status-info: #2a78d6;
+  --delta-good: #006300;
+
+  --sidebar-w: 16rem;
+}
+
+:root[data-sidebar="collapsed"] {
+  --sidebar-w: 5rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border-subtle: var(--border-subtle);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-chart-grid: var(--chart-grid);
+  --color-status-good: var(--status-good);
+  --color-status-warning: var(--status-warning);
+  --color-status-critical: var(--status-critical);
+  --color-status-info: var(--status-info);
+  --color-delta-good: var(--delta-good);
+  --font-sans: var(--font-poppins);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --surface: #18181b;
+    --surface-muted: #0d0d0d;
+    --border-subtle: #27272a;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --chart-grid: #2c2c2a;
+    --status-info: #3987e5;
+    --delta-good: #0ca30c;
+  }
+}
+
+:root[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --surface: #18181b;
+  --surface-muted: #0d0d0d;
+  --border-subtle: #27272a;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+  --chart-grid: #2c2c2a;
+  --status-info: #3987e5;
+  --delta-good: #0ca30c;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), sans-serif;
+}
+
+@keyframes intro-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-intro {
+  animation: intro-fade 300ms ease-out both;
+}
+
+.animate-intro-delay {
+  animation: intro-fade 300ms ease-out 80ms both;
+}
+
+@keyframes nav-item-fade {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-nav-item {
+  animation: nav-item-fade 220ms ease-out both;
+}
+
+/* Toasts enter from below on mobile and from the right on wider screens. */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-toast {
+  animation: toast-in 160ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-intro,
+  .animate-intro-delay,
+  .animate-nav-item,
+  .animate-toast {
+    animation: none;
+  }
+}
