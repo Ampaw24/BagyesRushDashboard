@@ -1,0 +1,307 @@
+{
+  "app": {
+    "[project]/app/_not-found/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/admin-users/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/administration/admins/[id]/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/administration/audit-logs/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/administration/permissions/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/administration/role-changes/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/administration/roles/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/catalogue/banners/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/catalogue/business-types/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/catalogue/categories/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/communications/announcements/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/communications/history/[id]/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/communications/history/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/communications/new/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/communications/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/communications/scheduled/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/communications/templates/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/coupons/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/orders/[id]/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/orders/cancelled/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/orders/delivered/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/orders/in-transit/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/orders/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/orders/pending/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/reviews/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/riders/blocked/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/riders/delete-requests/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/riders/incomplete/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/riders/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/riders/requests/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/settings/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/support/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/transactions/deposits/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/transactions/earnings/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/transactions/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/transactions/withdrawal-requests/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/transactions/withdrawals/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/users/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/vendors/[id]/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/vendors/active/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/vendors/all/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/vendors/applications/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/vendors/inactive/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/vendors/new/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/vendors/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/vendors/pending/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/dashboard/vendors/suspended/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/login/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ],
+    "[project]/app/page": [
+      "static/media/a218039a3287bcfd-s.p.43zbiuwnnoiok.woff2",
+      "static/media/8e6fa89aa22d24ec-s.p.2o7m9ogm38dql.woff2",
+      "static/media/e2334d715941921e-s.p.3o_v2fun1jzxk.woff2",
+      "static/media/47fe1b7cd6e6ed85-s.p.3bh2vc0w-r-ll.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

@@ -1,0 +1,38 @@
+{
+  "node": {
+    "0047387b1aa017e81c4f2ad0d3b6217b9acbfbac53": {
+      "workers": {
+        "app/dashboard/reviews/page": {
+          "moduleId": 87603,
+          "async": false,
+          "codeHash": null
+        }
+      },
+      "exportedName": "logout",
+      "filename": "lib/auth/actions.ts"
+    },
+    "40a0e5502733f79d1ee3c0fe88ee74f0c2dc0b6977": {
+      "workers": {
+        "app/dashboard/reviews/page": {
+          "moduleId": 87603,
+          "async": false,
+          "codeHash": null
+        }
+      },
+      "exportedName": "deleteReviewAction",
+      "filename": "app/dashboard/reviews/_actions.ts"
+    },
+    "409bf433005e966e0a4a93d6babf7e1098d9f13aba": {
+      "workers": {
+        "app/dashboard/reviews/page": {
+          "moduleId": 87603,
+          "async": false,
+          "codeHash": null
+        }
+      },
+      "exportedName": "toggleReviewVisibilityAction",
+      "filename": "app/dashboard/reviews/_actions.ts"
+    }
+  },
+  "edge": {}
+}

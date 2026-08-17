@@ -1,0 +1,27 @@
+{
+  "node": {
+    "0047387b1aa017e81c4f2ad0d3b6217b9acbfbac53": {
+      "workers": {
+        "app/dashboard/vendors/new/page": {
+          "moduleId": 10610,
+          "async": false,
+          "codeHash": null
+        }
+      },
+      "exportedName": "logout",
+      "filename": "lib/auth/actions.ts"
+    },
+    "404b386c2584698fea7641d93b9c6caf0ef9af3d24": {
+      "workers": {
+        "app/dashboard/vendors/new/page": {
+          "moduleId": 10610,
+          "async": false,
+          "codeHash": null
+        }
+      },
+      "exportedName": "createVendorAction",
+      "filename": "app/dashboard/vendors/_actions.ts"
+    }
+  },
+  "edge": {}
+}
