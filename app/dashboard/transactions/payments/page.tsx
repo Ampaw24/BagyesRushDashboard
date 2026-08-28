@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
-import { PageHeader } from "../_components/page-header";
-import { StatTile } from "../_components/stat-tile";
-import { Meter } from "../_components/meter";
-import { NoPermissionState } from "../_components/empty-state";
-import { CheckCircleIcon, WalletIcon } from "../_lib/icons";
-import { formatCompactCurrency, formatCompactNumber } from "../_lib/format";
+import { PageHeader } from "../../_components/page-header";
+import { StatTile } from "../../_components/stat-tile";
+import { Meter } from "../../_components/meter";
+import { NoPermissionState } from "../../_components/empty-state";
+import { CheckCircleIcon, WalletIcon } from "../../_lib/icons";
+import { formatCompactCurrency, formatCompactNumber } from "../../_lib/format";
 import { PaymentsTable } from "./payments-table";
 import { getPaymentStats, listPayments } from "@/lib/services/payments.service";
 import { toPaymentRow } from "@/lib/mappers/payment.mapper";
@@ -14,7 +14,7 @@ import { parseListParams, readEnumParam, readParam } from "@/lib/api/query";
 import { PAYMENT_METHODS, PAYMENT_STATUSES } from "@/lib/types/enums";
 
 export const metadata: Metadata = {
-  title: "Transactions — Bagyes Rush Delivery",
+  title: "Customer Payments — BagyesRUSH",
 };
 
 /**
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
  * ledger; the four sub-pages under Transactions have no endpoint and still
  * run on mock data.
  */
-export default async function TransactionsPage(props: PageProps<"/dashboard/transactions">) {
+export default async function TransactionsPage(props: PageProps<"/dashboard/transactions/payments">) {
   const permissions = await getPermissions();
 
   if (!can(permissions, "payments.view")) {

@@ -13,7 +13,7 @@ import { can, getPermissions } from "@/lib/auth/guard";
 import { parseListParams, readBooleanParam, readNumberParam } from "@/lib/api/query";
 
 export const metadata: Metadata = {
-  title: "Reviews — Bagyes Rush Delivery",
+  title: "Reviews — BagyesRUSH",
 };
 
 export default async function ReviewsPage(props: PageProps<"/dashboard/reviews">) {

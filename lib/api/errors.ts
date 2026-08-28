@@ -28,7 +28,7 @@ export class ApiRequestError extends Error {
 /** Thrown when the network call itself failed — the backend was never reached. */
 export class ApiUnreachableError extends Error {
   constructor(cause: unknown) {
-    super("Could not reach the Bagyes Rush API. Check that the backend is running.");
+    super("Could not reach the BagyesRUSH API. Check that the backend is running.");
     this.name = "ApiUnreachableError";
     this.cause = cause;
   }
@@ -87,4 +87,19 @@ export function actionFailure(error: unknown): ActionResult<never> {
     return { ok: false, message: error.message, errors: error.errors };
   }
   return { ok: false, message: toErrorMessage(error), errors: {} };
+}
+
+/**
+ * 404 on a collection endpoint — the route itself is not there.
+ *
+ * The dashboard and the API deploy separately, so for a window during any
+ * release (and for as long as an environment runs an older backend) a screen
+ * can call an endpoint that does not exist yet. A missing *route* is not a
+ * missing *record*, and rendering "Something went wrong" for it tells nobody
+ * anything useful.
+ *
+ * Only meaningful on index-style calls, where a 404 cannot mean "no such row".
+ */
+export function isMissingEndpoint(error: unknown): error is ApiRequestError {
+  return isApiError(error) && error.status === 404;
 }

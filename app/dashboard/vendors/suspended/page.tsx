@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { VendorsListPage } from "../_components/vendors-list-page";
 
 export const metadata: Metadata = {
-  title: "Suspended Vendors — Bagyes Rush Delivery",
+  title: "Suspended Vendors — BagyesRUSH",
 };
 
 export default async function SuspendedVendorsPage(props: PageProps<"/dashboard/vendors/suspended">) {

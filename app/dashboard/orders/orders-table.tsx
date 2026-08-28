@@ -9,13 +9,32 @@ import { paymentStatusMeta } from "../_lib/status";
 import { formatCurrency, formatDateTime } from "../_lib/format";
 import type { OrderRow } from "@/lib/mappers/order.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
-import { ORDER_STATUSES, PAYMENT_STATUSES, orderStatusLabels, paymentStatusLabels } from "@/lib/types/enums";
+import {
+  ORDER_STATUSES,
+  ORDER_TYPES,
+  ORDER_TYPE_LABELS,
+  PAYMENT_STATUSES,
+  orderStatusLabels,
+  paymentStatusLabels,
+} from "@/lib/types/enums";
 
 const STATUS_FILTER: SelectFilter = {
   key: "status",
   label: "Status",
   allLabel: "All statuses",
   options: ORDER_STATUSES.map((status) => ({ value: status, label: orderStatusLabels[status] })),
+};
+
+/**
+ * Food and parcels share this board — a parcel is an order with no vendor — so
+ * the type is a filter rather than a separate screen. A customer's history is
+ * one list, and so is an admin's.
+ */
+const TYPE_FILTER: SelectFilter = {
+  key: "type",
+  label: "Type",
+  allLabel: "Food and parcels",
+  options: ORDER_TYPES.map((type) => ({ value: type, label: ORDER_TYPE_LABELS[type] })),
 };
 
 const PAYMENT_FILTER: SelectFilter = {
@@ -44,7 +63,11 @@ export function OrdersTable({
     <div className="flex flex-col gap-4">
       <FilterBar
         searchPlaceholder="Search order number, recipient or phone"
-        filters={showStatusFilter ? [STATUS_FILTER, PAYMENT_FILTER] : [PAYMENT_FILTER]}
+        filters={
+          showStatusFilter
+            ? [STATUS_FILTER, TYPE_FILTER, PAYMENT_FILTER]
+            : [TYPE_FILTER, PAYMENT_FILTER]
+        }
       />
 
       {orders.length === 0 ? (
@@ -72,18 +95,32 @@ export function OrdersTable({
               {orders.map((order) => (
                 <tr key={order.id}>
                   <TableCell className="font-medium">
-                    <Link
-                      href={`/dashboard/orders/${order.id}`}
-                      className="text-brand transition duration-150 hover:opacity-80"
-                    >
-                      {order.orderNumber}
-                    </Link>
+                    <span className="flex flex-col gap-0.5">
+                      <Link
+                        href={`/dashboard/orders/${order.id}`}
+                        className="text-brand transition duration-150 hover:opacity-80"
+                      >
+                        {order.orderNumber}
+                      </Link>
+                      {/* Only parcels are labelled: food is the default and
+                          tagging every row would be noise. */}
+                      {order.isParcel && (
+                        <span className="text-xs font-normal text-text-muted">
+                          {order.typeLabel}
+                        </span>
+                      )}
+                    </span>
                   </TableCell>
                   <TableCell>{order.customerName}</TableCell>
-                  <TableCell className="text-text-secondary">{order.vendorName ?? "—"}</TableCell>
+                  <TableCell className="text-text-secondary">
+                    {/* A parcel has no kitchen, which is why vendor_id is
+                        nullable — say so rather than showing a bare dash. */}
+                    {order.vendorName ?? (order.isParcel ? "No vendor" : "—")}
+                  </TableCell>
                   <TableCell className="text-text-secondary">{order.address}</TableCell>
-                  {/* The API exposes a rider phone but no rider name. */}
-                  <TableCell className="text-text-secondary">{order.riderPhone ?? "Unassigned"}</TableCell>
+                  <TableCell className="text-text-secondary">
+                    {order.riderName ?? order.riderPhone ?? "Unassigned"}
+                  </TableCell>
                   <TableCell>
                     <OrderStatusBadge status={order.status} />
                   </TableCell>

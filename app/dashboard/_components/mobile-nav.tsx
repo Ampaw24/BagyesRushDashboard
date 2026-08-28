@@ -48,9 +48,9 @@ export function MobileNav({ navTree }: { navTree: NavEntry[] }) {
           <div className="flex items-center justify-between gap-3 px-4 py-4">
             <span className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg">
-                <Image src={logo} alt="Bagyes Rush Delivery" width={36} height={36} className="h-full w-full object-contain" />
+                <Image src={logo} alt="BagyesRUSH" width={36} height={36} className="h-full w-full object-contain" />
               </span>
-              <span className="text-sm font-semibold tracking-wide text-foreground">Bagyes Rush</span>
+              <span className="text-sm font-semibold tracking-wide text-foreground">BagyesRUSH</span>
             </span>
             <button
               type="button"

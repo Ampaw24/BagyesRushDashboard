@@ -13,7 +13,7 @@ import { parseListParams, readEnumParam } from "@/lib/api/query";
 import { USER_STATUSES } from "@/lib/types/enums";
 
 export const metadata: Metadata = {
-  title: "Customers — Bagyes Rush Delivery",
+  title: "Customers — BagyesRUSH",
 };
 
 export default async function CustomersPage(props: PageProps<"/dashboard/users">) {

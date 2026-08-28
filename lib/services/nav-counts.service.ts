@@ -8,6 +8,16 @@ import type { Permission } from "../types/enums";
 export type NavCounts = {
   pendingOrders: number;
   pendingVendors: number;
+  /** Completed rider applications waiting on a decision. */
+  riderRequests: number;
+  /** Live orders no rider accepted, waiting on a human. */
+  ordersNeedingDispatch: number;
+  /** Riders waiting to be paid. */
+  withdrawalRequests: number;
+  /** Complaints nobody has looked at yet. */
+  openReports: number;
+  /** Broadcasts waiting for their send time. */
+  scheduledCommunications: number;
 };
 
 /**
@@ -19,12 +29,92 @@ export type NavCounts = {
  * role cannot read that resource.
  */
 export async function getNavCounts(permissions: readonly Permission[]): Promise<NavCounts> {
-  const [pendingOrders, pendingVendors] = await Promise.all([
+  const [
+    pendingOrders,
+    pendingVendors,
+    riderRequests,
+    ordersNeedingDispatch,
+    withdrawalRequests,
+    openReports,
+    scheduledCommunications,
+  ] = await Promise.all([
     permissions.includes("orders.view") ? countPendingOrders() : Promise.resolve(0),
     permissions.includes("vendors.view") ? countPendingVendors() : Promise.resolve(0),
+    permissions.includes("riders.view") ? countRiderRequests() : Promise.resolve(0),
+    permissions.includes("dispatch.manage") ? countNeedingDispatch() : Promise.resolve(0),
+    permissions.includes("withdrawals.view") ? countWithdrawalRequests() : Promise.resolve(0),
+    permissions.includes("reports.view") ? countOpenReports() : Promise.resolve(0),
+    permissions.includes("communications.view") ? countScheduled() : Promise.resolve(0),
   ]);
 
-  return { pendingOrders, pendingVendors };
+  return {
+    pendingOrders,
+    pendingVendors,
+    riderRequests,
+    ordersNeedingDispatch,
+    withdrawalRequests,
+    openReports,
+    scheduledCommunications,
+  };
+}
+
+/** Pending and in-review together: both are still somebody's work. */
+async function countOpenReports(): Promise<number> {
+  try {
+    const stats = await apiFetch<{ open: number }>("/admin/reports/stats");
+    return stats.open;
+  } catch (error) {
+    return rethrowUnexpected(error, 0);
+  }
+}
+
+async function countScheduled(): Promise<number> {
+  try {
+    const page = await apiFetch<Paginated<unknown>>("/admin/communications", {
+      query: { status: "scheduled", per_page: 1 },
+    });
+    return page.pagination.total;
+  } catch (error) {
+    return rethrowUnexpected(error, 0);
+  }
+}
+
+async function countWithdrawalRequests(): Promise<number> {
+  try {
+    const stats = await apiFetch<{ awaiting_review: number }>("/admin/withdrawals/stats");
+    return stats.awaiting_review;
+  } catch (error) {
+    return rethrowUnexpected(error, 0);
+  }
+}
+
+async function countNeedingDispatch(): Promise<number> {
+  try {
+    const page = await apiFetch<Paginated<unknown>>("/admin/orders/needs-dispatch", {
+      query: { per_page: 1 },
+    });
+    return page.pagination.total;
+  } catch (error) {
+    return rethrowUnexpected(error, 0);
+  }
+}
+
+/**
+ * Applications that are *complete* and waiting on a decision.
+ *
+ * `stats.awaiting_review` counts every pending_review rider, including the ones
+ * who registered and never finished onboarding - which is a different screen
+ * and a different job, so the badge asks the list endpoint instead.
+ */
+async function countRiderRequests(): Promise<number> {
+  try {
+    const page = await apiFetch<Paginated<unknown>>("/admin/riders", {
+      query: { status: "pending_review", is_profile_complete: 1, per_page: 1 },
+    });
+    return page.pagination.total;
+  } catch (error) {
+    return rethrowUnexpected(error, 0);
+  }
 }
 
 async function countPendingOrders(): Promise<number> {

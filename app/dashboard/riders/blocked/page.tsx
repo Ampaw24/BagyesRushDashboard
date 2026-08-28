@@ -1,19 +1,17 @@
 import type { Metadata } from "next";
-import { PageHeader } from "../../_components/page-header";
-import { getBlockedRiders } from "../../_services/mock-data";
-import { BlockedTable } from "./blocked-table";
+import { RidersListPage } from "../_components/riders-list-page";
 
 export const metadata: Metadata = {
-  title: "Blocked Riders — Bagyes Rush Delivery",
+  title: "Blocked Riders — BagyesRUSH",
 };
 
-export default async function BlockedRidersPage() {
-  const riders = await getBlockedRiders();
-
+export default async function BlockedRidersPage(props: PageProps<"/dashboard/riders/blocked">) {
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader title="Blocked riders" description="Riders suspended from taking new deliveries." />
-      <BlockedTable riders={riders} />
-    </div>
+    <RidersListPage
+      title="Blocked riders"
+      description="Suspended accounts. They are offline, signed out, and receive no jobs until reinstated."
+      fixedStatus="suspended"
+      searchParams={props.searchParams}
+    />
   );
 }

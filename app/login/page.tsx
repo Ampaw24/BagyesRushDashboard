@@ -5,8 +5,8 @@ import LoginForm from "./login-form";
 import logo from "@/public/icon.jpeg";
 
 export const metadata: Metadata = {
-  title: "Sign in — Bagyes Rush Delivery",
-  description: "Sign in to your Bagyes Rush Delivery dashboard.",
+  title: "Sign in — BagyesRUSH",
+  description: "Sign in to your BagyesRUSH dashboard.",
 };
 
 const highlights = [
@@ -23,7 +23,7 @@ export default function LoginPage() {
         style={{ backgroundImage: "url('/delivery-pattern.svg')", backgroundSize: "120px 120px" }}
       >
         <span className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl">
-          <Image src={logo} alt="Bagyes Rush Delivery" width={96} height={96} className="h-full w-full object-contain" priority />
+          <Image src={logo} alt="BagyesRUSH" width={96} height={96} className="h-full w-full object-contain" priority />
         </span>
 
         <div className="flex flex-col gap-6 rounded-2xl border border-white/15 bg-white/10 p-8">
@@ -48,8 +48,8 @@ export default function LoginPage() {
         </div>
 
         <blockquote className="break-words border-t border-white/20 pt-6 text-sm text-white/80">
-          &ldquo;Bagyes Rush cut our average delivery time by 30%.&rdquo;
-          <footer className="mt-2 text-white/60">— Operations Lead, Bagyes Rush</footer>
+          &ldquo;BagyesRUSH cut our average delivery time by 30%.&rdquo;
+          <footer className="mt-2 text-white/60">— Operations Lead, BagyesRUSH</footer>
         </blockquote>
       </section>
 
@@ -57,7 +57,7 @@ export default function LoginPage() {
         <div className="animate-intro-delay flex w-full max-w-sm flex-col gap-8 rounded-xl border border-zinc-200 bg-white p-8 shadow-sm">
           <div className="flex flex-col gap-2">
             <span className="mb-2 flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl lg:hidden">
-              <Image src={logo} alt="Bagyes Rush Delivery" width={80} height={80} className="h-full w-full object-contain" priority />
+              <Image src={logo} alt="BagyesRUSH" width={80} height={80} className="h-full w-full object-contain" priority />
             </span>
             <h2 className="break-words text-2xl font-semibold tracking-tight text-zinc-900">
               Welcome back

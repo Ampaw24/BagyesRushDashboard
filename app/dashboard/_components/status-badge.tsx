@@ -1,9 +1,12 @@
 import {
   orderStatusMeta,
+  riderPresenceMeta,
+  riderStateMeta,
   riderStatusMeta,
   type OrderStatus,
   type RiderStatus,
 } from "../_lib/status";
+import type { RiderDerivedState } from "@/lib/mappers/rider.mapper";
 
 type BadgeMeta = { label: string; dotClassName: string; badgeClassName: string };
 
@@ -22,4 +25,14 @@ export function OrderStatusBadge({ status }: { status: OrderStatus }) {
 
 export function RiderStatusBadge({ status }: { status: RiderStatus }) {
   return <Badge meta={riderStatusMeta[status]} />;
+}
+
+/** The sub-page badge: status, onboarding progress and the soft-delete in one. */
+export function RiderStateBadge({ state }: { state: RiderDerivedState }) {
+  return <Badge meta={riderStateMeta[state]} />;
+}
+
+/** Whether the rider is switched on right now — orthogonal to their status. */
+export function RiderPresenceBadge({ online }: { online: boolean }) {
+  return <Badge meta={riderPresenceMeta[online ? "online" : "offline"]} />;
 }

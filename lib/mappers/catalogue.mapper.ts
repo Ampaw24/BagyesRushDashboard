@@ -1,5 +1,11 @@
-import type { BannerDto, BusinessTypeDto, CategoryDto, ReviewDto } from "../types/api";
-import type { BannerLinkType, BannerPlacement } from "../types/enums";
+import type {
+  BannerDto,
+  BusinessTypeDto,
+  CategoryDto,
+  PayoutProviderDto,
+  ReviewDto,
+} from "../types/api";
+import type { BannerLinkType, BannerPlacement, PayoutProviderType } from "../types/enums";
 import { toDate, toDateOrEpoch } from "./dates";
 
 export type CategoryRow = {
@@ -132,6 +138,40 @@ export function toReviewRow(dto: ReviewDto): ReviewRow {
     replyBody: dto.reply?.body ?? null,
     replyAt: toDate(dto.reply?.replied_at),
     isVisible: dto.is_visible,
+    createdAt: toDateOrEpoch(dto.created_at),
+  };
+}
+
+/** A bank or mobile-money network money can be sent to. */
+export type PayoutProviderRow = {
+  id: number;
+  type: PayoutProviderType;
+  name: string;
+  shortName: string | null;
+  slug: string;
+  code: string | null;
+  logoUrl: string | null;
+  isActive: boolean;
+  displayOrder: number;
+  /** What a delete would affect. Zero on the public read, which omits both. */
+  vendorCount: number;
+  riderCount: number;
+  createdAt: Date;
+};
+
+export function toPayoutProviderRow(dto: PayoutProviderDto): PayoutProviderRow {
+  return {
+    id: dto.id,
+    type: dto.type,
+    name: dto.name,
+    shortName: dto.short_name,
+    slug: dto.slug,
+    code: dto.code,
+    logoUrl: dto.logo_url,
+    isActive: dto.is_active,
+    displayOrder: dto.display_order,
+    vendorCount: dto.vendor_count ?? 0,
+    riderCount: dto.rider_count ?? 0,
     createdAt: toDateOrEpoch(dto.created_at),
   };
 }

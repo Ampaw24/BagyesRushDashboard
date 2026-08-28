@@ -31,3 +31,19 @@ export function NoPermissionState({ what }: { what: string }) {
     />
   );
 }
+
+/**
+ * The API this screen needs is not on the connected backend.
+ *
+ * The dashboard and the API deploy separately, so a screen can be ahead of the
+ * server it is talking to. Saying that plainly beats "Something went wrong",
+ * which sends somebody looking for a bug that is really a pending deploy.
+ */
+export function NotDeployedState({ what }: { what: string }) {
+  return (
+    <EmptyState
+      title="Not available on this backend yet"
+      description={`${what} needs a newer version of the API than the one this dashboard is connected to. Deploy the backend and run its migrations, then reload.`}
+    />
+  );
+}

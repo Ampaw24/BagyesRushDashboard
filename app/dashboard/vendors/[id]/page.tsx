@@ -12,7 +12,7 @@ import { can, getPermissions } from "@/lib/auth/guard";
 import { isNotFound } from "@/lib/api/errors";
 
 export const metadata: Metadata = {
-  title: "Vendor — Bagyes Rush Delivery",
+  title: "Vendor — BagyesRUSH",
 };
 
 export default async function VendorDetailPage(props: PageProps<"/dashboard/vendors/[id]">) {

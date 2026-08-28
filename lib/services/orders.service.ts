@@ -1,12 +1,14 @@
 import { apiFetch, apiFetchPage } from "../api/client";
 import type { Paginated } from "../api/types";
 import type { AdminOrderDto, OrderStatsDto } from "../types/api";
-import type { OrderStatus, PaymentStatus } from "../types/enums";
+import type { OrderStatus, OrderType, PaymentStatus } from "../types/enums";
 
 export type OrderListQuery = {
   page?: number;
   per_page?: number;
   status?: OrderStatus;
+  /** Food or parcel. Omitted returns both — the board is one list. */
+  type?: OrderType;
   payment_status?: PaymentStatus;
   search?: string;
   vendor_id?: number;
@@ -25,6 +27,16 @@ export async function listOrders(query: OrderListQuery): Promise<Paginated<Admin
 
 export async function getOrderStats(): Promise<OrderStatsDto> {
   return apiFetch<OrderStatsDto>("/admin/orders/stats");
+}
+
+/**
+ * GET /admin/orders/needs-dispatch — requires `dispatch.manage`.
+ *
+ * Orders every ring of the broadcast failed to place with a rider. Oldest
+ * first: the customer who has been waiting longest is the one to sort out.
+ */
+export async function listOrdersNeedingDispatch(query: { per_page?: number } = {}): Promise<Paginated<AdminOrderDto>> {
+  return apiFetchPage<AdminOrderDto>("/admin/orders/needs-dispatch", { query });
 }
 
 export async function getOrder(id: number): Promise<AdminOrderDto> {
@@ -47,7 +59,13 @@ export async function updateOrderStatus(
   });
 }
 
-/** Requires `orders.assign_rider`. The rider must be an active `delivery` user. */
+/**
+ * Requires `orders.assign_rider`.
+ *
+ * The rider must be active *and* approved — assigning by hand is not a way
+ * around the document check. Any outstanding offers on the order are withdrawn
+ * and the riders holding them are told.
+ */
 export async function assignRider(id: number, riderId: number): Promise<AdminOrderDto> {
   return apiFetch<AdminOrderDto>(`/admin/orders/${id}/assign-rider`, {
     method: "PATCH",

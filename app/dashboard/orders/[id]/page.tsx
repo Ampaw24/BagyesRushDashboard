@@ -3,20 +3,25 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "../../_components/page-header";
+import { MoneyBreakdown } from "./_components/money-breakdown";
 import { Badge, OrderStatusBadge } from "../../_components/status-badge";
 import { TableCell, TableHeadCell, TableShell } from "../../_components/table-shell";
 import { NoPermissionState } from "../../_components/empty-state";
-import { paymentStatusMeta } from "../../_lib/status";
+import { parcelStopStatusMeta, paymentStatusMeta } from "../../_lib/status";
 import { formatCurrency, formatDateTime, formatDateTimeOrDash } from "../../_lib/format";
 import { OrderActions } from "./_components/order-actions";
+import { TrackingPanel } from "./_components/tracking-panel";
+import { DispatchPanel } from "./_components/dispatch-panel";
 import { getOrder } from "@/lib/services/orders.service";
+import { listRiders } from "@/lib/services/riders.service";
 import { toOrderDetail } from "@/lib/mappers/order.mapper";
+import { toRiderRow } from "@/lib/mappers/rider.mapper";
 import { can, getPermissions } from "@/lib/auth/guard";
 import { isNotFound } from "@/lib/api/errors";
 import { unstable_rethrow } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Order — Bagyes Rush Delivery",
+  title: "Order — BagyesRUSH",
 };
 
 export default async function OrderDetailPage(props: PageProps<"/dashboard/orders/[id]">) {
@@ -33,6 +38,17 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
   }
 
   const order = await loadOrder(Number(id));
+
+  // Only fetched when the admin can actually act on it: the picker is the only
+  // thing that uses it, and it is behind orders.assign_rider.
+  const canAssignRider = can(permissions, "orders.assign_rider");
+
+  const availableRiders =
+    canAssignRider && can(permissions, "riders.view")
+      ? await listRiders({ status: "approved", is_online: true, per_page: 50 }).then((page) =>
+          page.items.map(toRiderRow),
+        )
+      : [];
 
   return (
     <div className="flex flex-col gap-8">
@@ -83,10 +99,126 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
           <InfoRow label="Recipient" value={order.recipientName} />
           <InfoRow label="Phone" value={order.recipientPhone} />
           <InfoRow label="Address" value={order.address} />
-          {/* AdminOrderResource exposes a rider id and phone, never a name. */}
-          <InfoRow label="Rider" value={order.riderPhone ?? "Unassigned"} />
+          <InfoRow
+            label="Rider"
+            value={order.rider ? (order.rider.name ?? order.rider.phone) : "Unassigned"}
+          />
+          {order.parcel?.deliveryInstructions && (
+            <InfoRow label="Instructions" value={order.parcel.deliveryInstructions} />
+          )}
         </InfoCard>
+
+        {/* A parcel has no kitchen and no line items — what it is, and where it
+            is being collected from, is the equivalent information. */}
+        {order.parcel && (
+          <InfoCard title="Parcel">
+            <InfoRow label="Contents" value={order.parcel.itemDescription} />
+            <InfoRow
+              label="Size"
+              value={
+                order.parcel.isFragile
+                  ? `${order.parcel.sizeLabel} · fragile`
+                  : order.parcel.sizeLabel
+              }
+            />
+            <InfoRow label="Quantity" value={String(order.parcel.quantity)} />
+            {order.parcel.declaredValue !== null && (
+              <InfoRow
+                label="Declared value"
+                value={formatCurrency(order.parcel.declaredValue)}
+              />
+            )}
+            {order.parcel.stopCount > 1 && (
+              <InfoRow label="Stops" value={`${order.parcel.stopCount} drops on this run`} />
+            )}
+            {order.parcel.totalWeightKg !== null && (
+              <InfoRow
+                label="Weight"
+                value={`${order.parcel.totalWeightKg} kg (customer's figure)`}
+              />
+            )}
+            <InfoRow label="Pick up from" value={order.parcel.pickupAddress} />
+            <InfoRow
+              label="Pickup contact"
+              value={
+                order.parcel.pickupContactName
+                  ? `${order.parcel.pickupContactName}${order.parcel.pickupContactPhone ? ` · ${order.parcel.pickupContactPhone}` : ""}`
+                  : (order.parcel.pickupContactPhone ?? "—")
+              }
+            />
+            {order.parcel.pickupInstructions && (
+              <InfoRow label="Pickup notes" value={order.parcel.pickupInstructions} />
+            )}
+          </InfoCard>
+        )}
       </div>
+
+      <DispatchPanel order={order} availableRiders={availableRiders} canAssign={canAssignRider} />
+
+      {order.stops.length > 1 && (
+        <section className="flex flex-col gap-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="break-words text-lg font-semibold tracking-tight text-foreground">
+              Itinerary
+            </h2>
+            <span className="text-sm text-text-muted">
+              {order.stops.filter((stop) => !stop.isOpen).length} of {order.stops.length} answered
+            </span>
+          </div>
+
+          <ol className="flex flex-col gap-3">
+            {order.stops.map((stop) => (
+              <li
+                key={stop.id}
+                className="flex flex-col gap-2 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <span className="flex items-baseline gap-2">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-semibold text-text-secondary">
+                      {stop.sequence}
+                    </span>
+                    <span className="flex flex-col gap-0.5">
+                      <span className="font-medium text-foreground">{stop.address}</span>
+                      <span className="text-xs text-text-muted">
+                        {stop.recipientName ?? "No named recipient"}
+                        {stop.recipientPhone ? ` · ${stop.recipientPhone}` : ""}
+                      </span>
+                    </span>
+                  </span>
+                  <Badge meta={parcelStopStatusMeta[stop.status]} />
+                </div>
+
+                <p className="text-sm text-text-secondary">{stop.summary}</p>
+
+                {stop.instructions && (
+                  <p className="text-xs text-text-muted">&ldquo;{stop.instructions}&rdquo;</p>
+                )}
+
+                {/* The one package that did not arrive is the one somebody
+                    will ring about, so the reason is not buried. */}
+                {stop.failureReason && (
+                  <p className="rounded-lg bg-status-critical/10 p-2 text-xs text-status-critical">
+                    {stop.failureReason}
+                  </p>
+                )}
+
+                {stop.deliveredAt && (
+                  <p className="text-xs text-text-muted">
+                    Delivered {formatDateTime(stop.deliveredAt)}
+                    {stop.deliveredToName ? ` to ${stop.deliveredToName}` : ""}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {/* Only while it is actually moving: a map of a delivered order shows
+          where somebody used to be. */}
+      {(order.status === "out_for_delivery" || order.status === "ready" || order.status === "accepted") && (
+        <TrackingPanel order={order} />
+      )}
 
       {(order.rejectionReason || order.cancellationReason || order.notes) && (
         <div className="flex flex-col gap-3">
@@ -99,7 +231,13 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
       )}
 
       <section className="flex flex-col gap-4">
-        <h2 className="break-words text-lg font-semibold tracking-tight text-foreground">Items</h2>
+        <h2 className="break-words text-lg font-semibold tracking-tight text-foreground">
+          {order.isParcel ? "Charges" : "Items"}
+        </h2>
+
+        {/* A parcel has nothing to itemise — the whole bill is delivery plus
+            the service fee, and the breakdown below still reconciles. */}
+        {!order.isParcel && (
         <TableShell>
           <thead>
             <tr>
@@ -132,16 +270,11 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
             ))}
           </tbody>
         </TableShell>
+        )}
 
-        <dl className="ml-auto flex w-full max-w-xs flex-col gap-2 rounded-xl border border-border-subtle bg-surface p-5 text-sm shadow-sm">
-          <TotalRow label="Subtotal" value={formatCurrency(order.subtotal)} />
-          <TotalRow label="Delivery fee" value={formatCurrency(order.deliveryFee)} />
-          {order.discount > 0 && <TotalRow label="Discount" value={`−${formatCurrency(order.discount)}`} />}
-          <div className="mt-1 border-t border-border-subtle pt-2">
-            <TotalRow label="Total" value={formatCurrency(order.total)} strong />
-          </div>
-        </dl>
       </section>
+
+      <MoneyBreakdown order={order} />
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <section className="flex flex-col gap-4">
@@ -241,14 +374,6 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function TotalRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <dt className={strong ? "font-semibold text-foreground" : "text-text-muted"}>{label}</dt>
-      <dd className={strong ? "font-semibold text-foreground" : "font-medium text-foreground"}>{value}</dd>
-    </div>
-  );
-}
 
 function NoteBox({ label, body, critical }: { label: string; body: string; critical?: boolean }) {
   return (

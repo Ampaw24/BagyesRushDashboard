@@ -9,7 +9,7 @@ import { can, getPermissions } from "@/lib/auth/guard";
 import { parseListParams, readNumberParam, readParam } from "@/lib/api/query";
 
 export const metadata: Metadata = {
-  title: "Audit Logs — Bagyes Rush Delivery",
+  title: "Audit Logs — BagyesRUSH",
 };
 
 export default async function AuditLogsPage(props: PageProps<"/dashboard/administration/audit-logs">) {

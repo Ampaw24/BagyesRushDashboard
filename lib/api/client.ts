@@ -2,7 +2,12 @@ import { redirect } from "next/navigation";
 
 import { getSessionToken } from "../auth/session";
 import { apiUrl } from "./config";
-import { ApiRequestError, ApiUnreachableError, type FieldErrors } from "./errors";
+import {
+  ApiRequestError,
+  ApiUnreachableError,
+  isMissingEndpoint,
+  type FieldErrors,
+} from "./errors";
 import { rememberApiMessage } from "./message-store";
 import { toQueryString, type QueryValue } from "./query";
 import type { ApiEnvelope, Paginated } from "./types";
@@ -120,4 +125,25 @@ function fallbackMessage(status: number): string {
   if (status === 429) return "Too many requests. Please slow down and try again shortly.";
   if (status >= 500) return "The API is temporarily unavailable. Please try again.";
   return "The request could not be completed.";
+}
+
+/**
+ * Like `apiFetch`, but returns null when the endpoint does not exist.
+ *
+ * For screens that call an endpoint a older backend may not have yet: they can
+ * render a "needs a newer API" state instead of an error page. Every other
+ * failure still throws, so a real outage is not disguised as a missing feature.
+ *
+ * Use only for collection endpoints, where a 404 cannot mean "no such record".
+ */
+export async function apiFetchOptional<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<T | null> {
+  try {
+    return await apiFetch<T>(path, options);
+  } catch (error) {
+    if (isMissingEndpoint(error)) return null;
+    throw error;
+  }
 }

@@ -12,6 +12,6 @@ import { verifyPayment } from "@/lib/services/payments.service";
 export async function verifyPaymentAction(id: number) {
   return apiAction("Payment re-checked with the gateway", async () => {
     await verifyPayment(id);
-    revalidatePath("/dashboard/transactions");
+    revalidatePath("/dashboard/transactions/payments");
   });
 }

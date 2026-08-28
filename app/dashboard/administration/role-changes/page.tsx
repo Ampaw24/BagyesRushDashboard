@@ -9,7 +9,7 @@ import { can, getPermissions } from "@/lib/auth/guard";
 import { parseListParams } from "@/lib/api/query";
 
 export const metadata: Metadata = {
-  title: "Role Changes — Bagyes Rush Delivery",
+  title: "Role Changes — BagyesRUSH",
 };
 
 /**

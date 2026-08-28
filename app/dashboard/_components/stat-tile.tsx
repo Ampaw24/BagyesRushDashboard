@@ -9,9 +9,14 @@ type StatTileProps = {
   icon: ReactNode;
   deltaPercent?: number;
   trend?: number[];
+  /**
+   * A second, smaller figure under the headline — for a number that only makes
+   * sense next to it ("128 riders, 6 online now") rather than on its own tile.
+   */
+  hint?: string;
 };
 
-export function StatTile({ label, value, icon, deltaPercent, trend }: StatTileProps) {
+export function StatTile({ label, value, icon, deltaPercent, trend, hint }: StatTileProps) {
   const isUp = typeof deltaPercent === "number" && deltaPercent >= 0;
 
   return (
@@ -38,6 +43,7 @@ export function StatTile({ label, value, icon, deltaPercent, trend }: StatTilePr
             </span>
           )}
         </div>
+        {hint && <p className="break-words text-xs text-text-muted">{hint}</p>}
       </div>
     </div>
   );

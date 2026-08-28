@@ -1,4 +1,9 @@
-import type { RiderStatus } from "../_lib/status";
+/**
+ * Presence, not the rider lifecycle. `RiderStatus` in _lib/status now mirrors
+ * the backend enum (pending_review / approved / rejected / suspended), which is
+ * a different question from whether someone is out on a delivery right now.
+ */
+export type MockRiderPresence = "available" | "on_delivery" | "offline";
 
 /**
  * Mock data for the modules the backend does not serve yet: Riders, Support,
@@ -28,7 +33,7 @@ export type Rider = {
   id: string;
   name: string;
   phone: string;
-  status: RiderStatus;
+  status: MockRiderPresence;
   rating: number;
   activeOrders: number;
   completedToday: number;
@@ -91,17 +96,6 @@ export type Customer = {
   status: CustomerStatus;
 };
 
-export type TicketStatus = "open" | "pending" | "resolved";
-export type TicketPriority = "low" | "medium" | "high";
-export type SupportTicket = {
-  id: string;
-  customer: string;
-  subject: string;
-  status: TicketStatus;
-  priority: TicketPriority;
-  updatedAt: Date;
-};
-
 export type DayPoint = { date: string; value: number };
 
 const NOW = new Date("2026-08-07T17:30:00");
@@ -133,7 +127,7 @@ const rand = mulberry32(42);
 function buildRiders(): Rider[] {
   return RIDER_NAMES.map((name, i) => {
     const statusRoll = rand();
-    const status: RiderStatus = statusRoll < 0.4 ? "available" : statusRoll < 0.8 ? "on_delivery" : "offline";
+    const status: MockRiderPresence = statusRoll < 0.4 ? "available" : statusRoll < 0.8 ? "on_delivery" : "offline";
     return {
       id: `RD-${(100 + i).toString()}`,
       name,
@@ -239,23 +233,6 @@ function buildCustomers(): Customer[] {
   });
 }
 
-function buildSupportTickets(): SupportTicket[] {
-  const subjects = [
-    "Order arrived late", "Wrong items delivered", "Refund not received", "Rider was rude",
-    "App keeps crashing", "Coupon not applying", "Can't update payment method", "Missing item in order",
-  ];
-  const statuses: TicketStatus[] = ["open", "open", "pending", "pending", "resolved", "resolved", "resolved", "resolved"];
-  const priorities: TicketPriority[] = ["high", "medium", "low"];
-  return subjects.map((subject, i) => ({
-    id: `TK-${(900 + i).toString()}`,
-    customer: CUSTOMER_NAMES[i % CUSTOMER_NAMES.length],
-    subject,
-    status: statuses[i % statuses.length],
-    priority: priorities[Math.floor(rand() * priorities.length)],
-    updatedAt: new Date(NOW.getTime() - Math.floor(rand() * 5 * 24 * 60) * 60 * 1000),
-  }));
-}
-
 const RIDERS = buildRiders();
 const RIDER_APPLICATIONS = buildRiderApplications();
 const INCOMPLETE_RIDERS = buildIncompleteRiders();
@@ -263,7 +240,6 @@ const BLOCKED_RIDERS = buildBlockedRiders();
 const DELETE_REQUESTS = buildDeleteRequests();
 const TRANSACTIONS = buildTransactions();
 const CUSTOMERS = buildCustomers();
-const SUPPORT_TICKETS = buildSupportTickets();
 
 // Badge counts for the nav sections that have no API. The Orders and Vendors
 // badges are real totals, fetched in the dashboard layout.
@@ -272,7 +248,6 @@ export const INCOMPLETE_RIDER_COUNT = INCOMPLETE_RIDERS.length;
 export const BLOCKED_RIDER_COUNT = BLOCKED_RIDERS.length;
 export const DELETE_REQUEST_COUNT = DELETE_REQUESTS.length;
 export const WITHDRAWAL_REQUEST_COUNT = TRANSACTIONS.filter((t) => t.type === "withdrawal" && t.status === "pending").length;
-export const OPEN_SUPPORT_COUNT = SUPPORT_TICKETS.filter((t) => t.status === "open").length;
 export const RIDER_COUNT = RIDERS.length;
 export const CUSTOMER_COUNT = CUSTOMERS.length;
 
@@ -307,8 +282,4 @@ export async function getTransactions(): Promise<Transaction[]> {
  */
 export async function getCustomers(): Promise<Customer[]> {
   return CUSTOMERS;
-}
-
-export async function getSupportTickets(): Promise<SupportTicket[]> {
-  return SUPPORT_TICKETS;
 }

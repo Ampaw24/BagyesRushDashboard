@@ -12,6 +12,7 @@ import {
   CheckCircleIcon,
   ChevronRightIcon,
   OrdersIcon,
+  RidersIcon,
   ShopIcon,
   UsersIcon,
   WalletIcon,
@@ -28,7 +29,7 @@ import { toOrderRow } from "@/lib/mappers/order.mapper";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/types/enums";
 
 export const metadata: Metadata = {
-  title: "Overview — Bagyes Rush Delivery",
+  title: "Overview — BagyesRUSH",
 };
 
 /**
@@ -90,9 +91,12 @@ export default async function OverviewPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Overview" description="Live marketplace activity across orders, vendors and customers." />
+      <PageHeader
+        title="Overview"
+        description="Live marketplace activity across orders, vendors, riders and customers."
+      />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatTile
           label="Orders in progress"
           value={formatCompactNumber(liveOrders)}
@@ -106,6 +110,21 @@ export default async function OverviewPage() {
         <StatTile
           label="Customers"
           value={formatCompactNumber(dashboard.customers.total)}
+          icon={<UsersIcon className="h-4.5 w-4.5" />}
+        />
+        <StatTile
+          label="Total riders"
+          // The online count is the one that decides whether an order can
+          // actually be dispatched, so it rides along rather than needing
+          // its own screen.
+          value={formatCompactNumber(dashboard.riders?.total ?? 0)}
+          hint={`${formatCompactNumber(dashboard.riders?.online ?? 0)} online now`}
+          icon={<RidersIcon className="h-4.5 w-4.5" />}
+        />
+        <StatTile
+          label="Total users"
+          value={formatCompactNumber(dashboard.users?.total ?? 0)}
+          hint={`${formatCompactNumber(dashboard.users?.new_this_week ?? 0)} new this week`}
           icon={<UsersIcon className="h-4.5 w-4.5" />}
         />
         {money ? (

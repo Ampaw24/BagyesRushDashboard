@@ -3,7 +3,7 @@ import { PageHeader } from "../_components/page-header";
 import { SettingsForm } from "./settings-form";
 
 export const metadata: Metadata = {
-  title: "Settings — Bagyes Rush Delivery",
+  title: "Settings — BagyesRUSH",
 };
 
 export default function SettingsPage() {

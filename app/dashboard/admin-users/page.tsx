@@ -11,7 +11,7 @@ import { parseListParams, readEnumParam } from "@/lib/api/query";
 import { ADMIN_ROLES, USER_STATUSES } from "@/lib/types/enums";
 
 export const metadata: Metadata = {
-  title: "Admin Users — Bagyes Rush Delivery",
+  title: "Admin Users — BagyesRUSH",
 };
 
 export default async function AdminUsersPage(props: PageProps<"/dashboard/admin-users">) {

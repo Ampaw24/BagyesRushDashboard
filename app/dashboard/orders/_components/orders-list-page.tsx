@@ -5,7 +5,7 @@ import { listOrders } from "@/lib/services/orders.service";
 import { toOrderRow } from "@/lib/mappers/order.mapper";
 import { getPermissions, can } from "@/lib/auth/guard";
 import { parseListParams, readEnumParam, readParam, type SearchParams } from "@/lib/api/query";
-import { ORDER_STATUSES, PAYMENT_STATUSES, type OrderStatus } from "@/lib/types/enums";
+import { ORDER_STATUSES, ORDER_TYPES, PAYMENT_STATUSES, type OrderStatus } from "@/lib/types/enums";
 
 /**
  * Shared body for the five order list routes.
@@ -44,6 +44,7 @@ export async function OrdersListPage({
     search: list.search,
     status: fixedStatus ?? readEnumParam(params, "status", ORDER_STATUSES),
     payment_status: readEnumParam(params, "payment_status", PAYMENT_STATUSES),
+    type: readEnumParam(params, "type", ORDER_TYPES),
     from: readParam(params, "from"),
     to: readParam(params, "to"),
   });

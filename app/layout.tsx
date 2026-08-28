@@ -10,8 +10,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Bagyes Dashboard",
-  description: "Bagyes dashboard.",
+  title: "BagyesRUSH Dashboard",
+  description: "BagyesRUSH admin dashboard.",
 };
 
 const THEME_INIT_SCRIPT = `

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { VendorsListPage } from "../_components/vendors-list-page";
 
 export const metadata: Metadata = {
-  title: "Vendor Applications — Bagyes Rush Delivery",
+  title: "Vendor Applications — BagyesRUSH",
 };
 
 /**

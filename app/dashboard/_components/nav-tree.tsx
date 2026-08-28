@@ -30,17 +30,17 @@ import { useSidebarCollapsed } from "../_hooks/use-sidebar-collapsed";
 const NAV_ICONS: Record<NavIconKey, IconComponent> = {
   overview: OverviewIcon,
   orders: OrdersIcon,
-  // riders: RidersIcon,
+  riders: RidersIcon,
   coupons: TicketIcon,
   transactions: WalletIcon,
   users: UsersIcon,
-  // support: SupportIcon,
-  // communications: MegaphoneIcon,
+  support: SupportIcon,
+  communications: MegaphoneIcon,
   vendors: ShopIcon,
   catalogue: BagIcon,
   reviews: StarIcon,
   administration: SecuritySafeIcon,
-  // settings: SettingsIcon,
+  settings: SettingsIcon,
 };
 
 function NavBadge({ count }: { count: number }) {

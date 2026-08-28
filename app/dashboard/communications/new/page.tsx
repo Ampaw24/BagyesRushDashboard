@@ -1,40 +1,37 @@
 import type { Metadata } from "next";
+
 import { PageHeader } from "../../_components/page-header";
-import { CommunicationComposer } from "../_components/communication-composer";
-import {
-  getAudienceDirectory,
-  getAudienceSegments,
-  getCommunicationTemplates,
-  type CommunicationType,
-} from "../../_services/communications-mock-data";
+import { NoPermissionState } from "../../_components/empty-state";
+import { Composer } from "../_components/composer";
+import { listCommunicationTemplates } from "@/lib/services/communications.service";
+import { toCommunicationTemplateRow } from "@/lib/mappers/communication.mapper";
+import { can, getPermissions } from "@/lib/auth/guard";
 
 export const metadata: Metadata = {
-  title: "Create Communication — Bagyes Rush Delivery",
+  title: "New Communication — BagyesRUSH",
 };
 
-const VALID_TYPES: CommunicationType[] = ["notification", "announcement", "promotional", "system_update", "maintenance", "general"];
+export default async function NewCommunicationPage() {
+  const permissions = await getPermissions();
 
-export default async function NewCommunicationPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ type?: string; template?: string }>;
-}) {
-  const params = await searchParams;
-  const [directory, segments, templates] = await Promise.all([
-    getAudienceDirectory(),
-    getAudienceSegments(),
-    getCommunicationTemplates(),
-  ]);
+  if (!can(permissions, "communications.send")) {
+    return (
+      <div className="flex flex-col gap-6">
+        <PageHeader title="New communication" description="Compose a message to send." />
+        <NoPermissionState what="sending communications" />
+      </div>
+    );
+  }
 
-  const initialType: CommunicationType = VALID_TYPES.includes(params.type as CommunicationType)
-    ? (params.type as CommunicationType)
-    : "notification";
-  const template = params.template ? templates.find((t) => t.id === params.template) : undefined;
+  const templates = await listCommunicationTemplates({ per_page: 100, is_active: true });
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Create communication" description="Reach riders and customers across push, email, SMS, and in-app channels." />
-      <CommunicationComposer directory={directory} segments={segments} initialType={initialType} template={template} />
+      <PageHeader
+        title="New communication"
+        description="Pick who it goes to, then see how many people that is before you send it."
+      />
+      <Composer templates={templates.items.map(toCommunicationTemplateRow)} />
     </div>
   );
 }

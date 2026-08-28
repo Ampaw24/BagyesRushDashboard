@@ -10,7 +10,7 @@ import { parseListParams, readBooleanParam, readEnumParam } from "@/lib/api/quer
 import { PROMO_CODE_SCOPES } from "@/lib/types/enums";
 
 export const metadata: Metadata = {
-  title: "Coupons — Bagyes Rush Delivery",
+  title: "Coupons — BagyesRUSH",
 };
 
 export default async function CouponsPage(props: PageProps<"/dashboard/coupons">) {

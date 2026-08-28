@@ -1,16 +1,20 @@
-import {
-  BLOCKED_RIDER_COUNT,
-  DELETE_REQUEST_COUNT,
-  INCOMPLETE_RIDER_COUNT,
-  OPEN_SUPPORT_COUNT,
-  RIDER_REQUEST_COUNT,
-  WITHDRAWAL_REQUEST_COUNT,
-} from "../_services/mock-data";
-import { SCHEDULED_COMMUNICATIONS_COUNT } from "../_services/communications-mock-data";
 import type { Permission } from "@/lib/types/enums";
 import type { NavCounts } from "@/lib/services/nav-counts.service";
 
-export type NavLeaf = { href: string; label: string; badge?: number };
+/**
+ * `permission` narrows a single child below whatever the section requires.
+ *
+ * A section can only be gated on one permission, but its children are not
+ * always reachable with it: a manager holds `payments.view` and so sees
+ * Transactions, while the payout screens need `withdrawals.view`. Without this
+ * they saw links that answered with a permission block.
+ */
+export type NavLeaf = {
+  href: string;
+  label: string;
+  badge?: number;
+  permission?: Permission;
+};
 
 /**
  * Icons travel as keys, not components.
@@ -22,17 +26,17 @@ export type NavLeaf = { href: string; label: string; badge?: number };
 export type NavIconKey =
   | "overview"
   | "orders"
-  // | "riders"
+  | "riders"
   | "coupons"
   | "transactions"
   | "users"
-  // | "support"
-  // | "communications"
+  | "support"
+  | "communications"
   | "vendors"
   | "catalogue"
   | "reviews"
   | "administration"
-  // | "settings";
+  | "settings";
 
 export type NavEntry =
   | { kind: "link"; href: string; label: string; icon: NavIconKey; badge?: number }
@@ -42,9 +46,7 @@ export type NavEntry =
  * A nav entry plus the permission needed to reach it. Entries the signed-in
  * admin cannot use are dropped rather than rendered and left to 403 on click.
  *
- * `permission: null` marks the modules that have no backend yet (Riders,
- * Support, Communications, Settings) — they still run on mock data, so there is
- * no permission to check.
+ * `permission: null` marks an entry every admin can reach.
  */
 type GuardedEntry = { entry: NavEntry; permission: Permission | null };
 
@@ -78,29 +80,38 @@ export function buildNavTree({ counts, permissions }: BuildNavTreeInput): NavEnt
         children: [
           { href: "/dashboard/orders", label: "All Orders" },
           { href: "/dashboard/orders/pending", label: "Pending", badge: counts.pendingOrders },
+          // Orders no rider accepted. A work queue, so it carries a badge.
+          {
+            href: "/dashboard/orders/needs-dispatch",
+            label: "Needs Dispatch",
+            badge: counts.ordersNeedingDispatch,
+          },
           { href: "/dashboard/orders/in-transit", label: "In Transit" },
           { href: "/dashboard/orders/delivered", label: "Delivered" },
           { href: "/dashboard/orders/cancelled", label: "Cancelled" },
         ],
       },
     },
-    // {
-    //   // No rider management endpoints exist yet — this module still runs on
-    //   // mock data, so its badges stay mock too.
-    //   permission: null,
-    //   entry: {
-    //     kind: "section",
-    //     label: "Riders",
-    //     icon: "riders",
-    //     children: [
-    //       { href: "/dashboard/riders", label: "All Riders" },
-    //       { href: "/dashboard/riders/requests", label: "Rider Requests", badge: RIDER_REQUEST_COUNT },
-    //       { href: "/dashboard/riders/incomplete", label: "Incomplete Riders", badge: INCOMPLETE_RIDER_COUNT },
-    //       { href: "/dashboard/riders/blocked", label: "Blocked Riders", badge: BLOCKED_RIDER_COUNT },
-    //       { href: "/dashboard/riders/delete-requests", label: "Delete Requests", badge: DELETE_REQUEST_COUNT },
-    //     ],
-    //   },
-    // },
+    {
+      permission: "riders.view",
+      entry: {
+        kind: "section",
+        label: "Riders",
+        icon: "riders",
+        children: [
+          { href: "/dashboard/riders", label: "All Riders" },
+          // Completed applications waiting on a decision — a work queue, so it
+          // carries the badge.
+          { href: "/dashboard/riders/requests", label: "Rider Requests", badge: counts.riderRequests },
+          // Registered and never finished onboarding: nothing to review yet, so
+          // this is a follow-up list rather than a queue.
+          { href: "/dashboard/riders/incomplete", label: "Incomplete Riders" },
+          { href: "/dashboard/riders/blocked", label: "Blocked Riders" },
+          { href: "/dashboard/riders/rejected", label: "Rejected Riders" },
+          { href: "/dashboard/riders/deleted", label: "Deleted Riders" },
+        ],
+      },
+    },
     {
       permission: "promos.manage",
       entry: { kind: "link", href: "/dashboard/coupons", label: "Coupons", icon: "coupons" },
@@ -112,13 +123,31 @@ export function buildNavTree({ counts, permissions }: BuildNavTreeInput): NavEnt
         label: "Transactions",
         icon: "transactions",
         children: [
-          { href: "/dashboard/transactions", label: "All Transactions" },
-          // The four below have no backing endpoint (the API models customer
-          // payments, not a vendor wallet) and remain on mock data.
-          // { href: "/dashboard/transactions/earnings", label: "Earnings" },
-          // { href: "/dashboard/transactions/deposits", label: "Deposits" },
-          // { href: "/dashboard/transactions/withdrawals", label: "Withdrawals" },
-          // { href: "/dashboard/transactions/withdrawal-requests", label: "Withdrawal Requests", badge: WITHDRAWAL_REQUEST_COUNT },
+          // The reconciliation first: collected, paid out, kept, owed.
+          { href: "/dashboard/transactions", label: "Report" },
+          // Both sides in one list, filterable — the view for "what has moved
+          // lately" without having to pick a side first.
+          { href: "/dashboard/transactions/all", label: "All Transactions" },
+          { href: "/dashboard/transactions/payments", label: "Customer Payments" },
+          { href: "/dashboard/transactions/vendors", label: "Vendor Transactions" },
+          { href: "/dashboard/transactions/riders", label: "Rider Transactions" },
+          // Riders and vendors share one payout queue; the screen filters by
+          // side rather than splitting into two near-identical routes.
+          {
+            href: "/dashboard/transactions/payouts",
+            label: "Payouts",
+            permission: "withdrawals.view",
+          },
+          // Somebody is waiting for their money, so it carries the badge.
+          {
+            href: "/dashboard/transactions/payout-requests",
+            label: "Payout Requests",
+            badge: counts.withdrawalRequests,
+            permission: "withdrawals.view",
+          },
+          { href: "/dashboard/transactions/commissions", label: "Commissions Earned" },
+          // Nothing refunds automatically, so this is a work queue.
+          { href: "/dashboard/transactions/refunds", label: "Refunds" },
         ],
       },
     },
@@ -126,26 +155,37 @@ export function buildNavTree({ counts, permissions }: BuildNavTreeInput): NavEnt
       permission: "customers.view",
       entry: { kind: "link", href: "/dashboard/users", label: "Customers", icon: "users" },
     },
-    // {
-    //   permission: null,
-    //   entry: { kind: "link", href: "/dashboard/support", label: "Support", icon: "support", badge: OPEN_SUPPORT_COUNT },
-    // },
-    // {
-    //   permission: null,
-    //   entry: {
-    //     kind: "section",
-    //     label: "Communications",
-    //     icon: "communications",
-    //     children: [
-    //       { href: "/dashboard/communications", label: "Overview" },
-    //       { href: "/dashboard/communications/new", label: "Create Communication" },
-    //       { href: "/dashboard/communications/announcements", label: "Announcements" },
-    //       { href: "/dashboard/communications/templates", label: "Templates" },
-    //       { href: "/dashboard/communications/scheduled", label: "Scheduled", badge: SCHEDULED_COMMUNICATIONS_COUNT },
-    //       { href: "/dashboard/communications/history", label: "History" },
-    //     ],
-    //   },
-    // },
+    {
+      permission: "reports.view",
+      entry: {
+        kind: "link",
+        href: "/dashboard/support",
+        label: "Support",
+        icon: "support",
+        badge: counts.openReports,
+      },
+    },
+    {
+      // Announcements are gone: they were a mock-only concept with no backend
+      // and no channel to reach anyone through.
+      permission: "communications.view",
+      entry: {
+        kind: "section",
+        label: "Communications",
+        icon: "communications",
+        children: [
+          { href: "/dashboard/communications", label: "Overview" },
+          { href: "/dashboard/communications/new", label: "Create Communication" },
+          { href: "/dashboard/communications/templates", label: "Templates" },
+          {
+            href: "/dashboard/communications/scheduled",
+            label: "Scheduled",
+            badge: counts.scheduledCommunications,
+          },
+          { href: "/dashboard/communications/history", label: "History" },
+        ],
+      },
+    },
     {
       permission: "vendors.view",
       entry: {
@@ -174,6 +214,9 @@ export function buildNavTree({ counts, permissions }: BuildNavTreeInput): NavEnt
           { href: "/dashboard/catalogue/categories", label: "Categories" },
           { href: "/dashboard/catalogue/business-types", label: "Business Types" },
           { href: "/dashboard/catalogue/banners", label: "Banners" },
+          // Where money can be sent. Vendors and riders pick from this rather
+          // than typing a bank name, so it has to stay populated.
+          { href: "/dashboard/catalogue/payout-providers", label: "Payout Providers" },
         ],
       },
     },
@@ -198,11 +241,27 @@ export function buildNavTree({ counts, permissions }: BuildNavTreeInput): NavEnt
         ],
       },
     },
-    // {
-    //   permission: null,
-    //   entry: { kind: "link", href: "/dashboard/settings", label: "Settings", icon: "settings" },
-    // },
+    {
+      // Every rate the platform charges and pays, in one versioned place.
+      // Gated on `settings.manage` rather than shown to all admins: it decides
+      // what everyone earns, so it sits with the money permissions.
+      permission: "settings.manage",
+      entry: {
+        kind: "link",
+        href: "/dashboard/settings/money",
+        label: "Money Settings",
+        icon: "settings",
+      },
+    },
   ];
 
-  return guarded.filter(({ permission }) => allowed(permission)).map(({ entry }) => entry);
+  return guarded
+    .filter(({ permission }) => allowed(permission))
+    .map(({ entry }) =>
+      entry.kind === "section"
+        ? { ...entry, children: entry.children.filter((child) => allowed(child.permission ?? null)) }
+        : entry,
+    )
+    // A section whose every child was filtered out is an empty dropdown.
+    .filter((entry) => entry.kind !== "section" || entry.children.length > 0);
 }

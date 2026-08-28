@@ -8,7 +8,7 @@ import { listActiveBusinessTypes } from "@/lib/services/business-types.service";
 import { can, getPermissions } from "@/lib/auth/guard";
 
 export const metadata: Metadata = {
-  title: "Add Vendor — Bagyes Rush Delivery",
+  title: "Add Vendor — BagyesRUSH",
 };
 
 export default async function NewVendorPage() {
@@ -17,7 +17,7 @@ export default async function NewVendorPage() {
   if (!can(permissions, "vendors.create")) {
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader title="Add vendor" description="Onboard a new business onto Bagyes Rush." />
+        <PageHeader title="Add vendor" description="Onboard a new business onto BagyesRUSH." />
         <NoPermissionState what="vendor creation" />
       </div>
     );
@@ -39,7 +39,7 @@ export default async function NewVendorPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Add vendor" description="Onboard a new business onto Bagyes Rush." />
+      <PageHeader title="Add vendor" description="Onboard a new business onto BagyesRUSH." />
       <VendorComposer businessTypes={businessTypes} categories={categories} />
     </div>
   );

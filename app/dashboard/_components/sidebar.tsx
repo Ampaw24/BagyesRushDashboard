@@ -18,14 +18,14 @@ export function Sidebar({ navTree }: { navTree: NavEntry[] }) {
     >
       <div className={`flex items-center gap-3 px-6 py-6 ${collapsed ? "justify-center px-3" : ""}`}>
         <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg">
-          <Image src={logo} alt="Bagyes Rush Delivery" width={40} height={40} className="h-full w-full object-contain" priority />
+          <Image src={logo} alt="BagyesRUSH" width={40} height={40} className="h-full w-full object-contain" priority />
         </span>
         <span
           className={`break-words text-sm font-semibold tracking-wide text-foreground transition-opacity duration-150 ${
             collapsed ? "hidden opacity-0" : "opacity-100"
           }`}
         >
-          Bagyes Rush
+          BagyesRUSH
         </span>
       </div>
 

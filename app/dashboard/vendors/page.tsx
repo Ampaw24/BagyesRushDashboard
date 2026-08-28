@@ -16,7 +16,7 @@ import { toVendorRow } from "@/lib/mappers/vendor.mapper";
 import { can, getPermissions } from "@/lib/auth/guard";
 
 export const metadata: Metadata = {
-  title: "Vendors — Bagyes Rush Delivery",
+  title: "Vendors — BagyesRUSH",
 };
 
 /**
@@ -30,7 +30,7 @@ export default async function VendorsOverviewPage() {
   if (!can(permissions, "vendors.view")) {
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader title="Vendors" description="Manage the businesses operating on Bagyes Rush." />
+        <PageHeader title="Vendors" description="Manage the businesses operating on BagyesRUSH." />
         <NoPermissionState what="vendors" />
       </div>
     );
@@ -55,7 +55,7 @@ export default async function VendorsOverviewPage() {
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Vendors"
-        description="Manage the businesses operating on Bagyes Rush."
+        description="Manage the businesses operating on BagyesRUSH."
         action={
           can(permissions, "vendors.create") ? (
             <Link

@@ -1,19 +1,18 @@
 import type { Metadata } from "next";
-import { PageHeader } from "../../_components/page-header";
-import { getRiderApplications } from "../../_services/mock-data";
-import { RequestsTable } from "./requests-table";
+import { RidersListPage } from "../_components/riders-list-page";
 
 export const metadata: Metadata = {
-  title: "Rider Requests — Bagyes Rush Delivery",
+  title: "Rider Requests — BagyesRUSH",
 };
 
-export default async function RiderRequestsPage() {
-  const applications = await getRiderApplications();
-
+export default async function RiderRequestsPage(props: PageProps<"/dashboard/riders/requests">) {
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader title="Rider requests" description="Review and approve new riders who applied to join." />
-      <RequestsTable applications={applications} />
-    </div>
+    <RidersListPage
+      title="Rider requests"
+      description="Completed applications waiting on a decision. Approving one lets them go online and start taking jobs."
+      fixedStatus="pending_review"
+      fixedProfileComplete
+      searchParams={props.searchParams}
+    />
   );
 }

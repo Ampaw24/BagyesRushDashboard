@@ -2,6 +2,7 @@ import Image from "next/image";
 import logo from "@/public/icon.jpeg";
 import { AdminProfileMenu } from "./admin-profile-menu";
 import { MobileNav } from "./mobile-nav";
+import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import type { NavEntry } from "../_lib/nav-items";
 import type { SessionAdmin } from "@/lib/mappers/admin-profile.mapper";
@@ -13,13 +14,14 @@ export function MobileTopbar({ admin, navTree }: { admin: SessionAdmin; navTree:
         <MobileNav navTree={navTree} />
         <span className="flex items-center gap-2.5">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg">
-            <Image src={logo} alt="Bagyes Rush Delivery" width={32} height={32} className="h-full w-full object-contain" priority />
+            <Image src={logo} alt="BagyesRUSH" width={32} height={32} className="h-full w-full object-contain" priority />
           </span>
-          <span className="text-sm font-semibold tracking-wide text-foreground">Bagyes Rush</span>
+          <span className="text-sm font-semibold tracking-wide text-foreground">BagyesRUSH</span>
         </span>
       </span>
 
       <span className="flex items-center gap-1">
+        <NotificationBell />
         <ThemeToggle />
         <AdminProfileMenu id={admin.id} name={admin.name} roleLabel={admin.roleLabel} showDetails={false} />
       </span>

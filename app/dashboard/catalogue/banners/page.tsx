@@ -10,7 +10,7 @@ import { parseListParams, readBooleanParam, readEnumParam } from "@/lib/api/quer
 import { BANNER_LINK_TYPES, BANNER_PLACEMENTS } from "@/lib/types/enums";
 
 export const metadata: Metadata = {
-  title: "Banners — Bagyes Rush Delivery",
+  title: "Banners — BagyesRUSH",
 };
 
 export default async function BannersPage(props: PageProps<"/dashboard/catalogue/banners">) {

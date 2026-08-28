@@ -9,7 +9,7 @@ import { can, getPermissions } from "@/lib/auth/guard";
 import { parseListParams, readBooleanParam } from "@/lib/api/query";
 
 export const metadata: Metadata = {
-  title: "Categories — Bagyes Rush Delivery",
+  title: "Categories — BagyesRUSH",
 };
 
 export default async function CategoriesPage(props: PageProps<"/dashboard/catalogue/categories">) {

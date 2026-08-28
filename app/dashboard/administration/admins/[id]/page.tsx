@@ -16,7 +16,7 @@ import { emptyPage } from "@/lib/api/types";
 import { parseListParams } from "@/lib/api/query";
 
 export const metadata: Metadata = {
-  title: "Administrator — Bagyes Rush Delivery",
+  title: "Administrator — BagyesRUSH",
 };
 
 export default async function AdminDetailPage(

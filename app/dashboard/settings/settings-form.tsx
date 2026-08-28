@@ -48,7 +48,7 @@ function ToggleRow({ label, description, checked, onChange }: { label: string; d
 }
 
 export function SettingsForm() {
-  const [platformName, setPlatformName] = useState("Bagyes Rush Delivery");
+  const [platformName, setPlatformName] = useState("BagyesRUSH");
   const [supportEmail, setSupportEmail] = useState("support@bagyesrush.com");
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(true);

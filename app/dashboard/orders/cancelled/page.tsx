@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { OrdersListPage } from "../_components/orders-list-page";
 
 export const metadata: Metadata = {
-  title: "Cancelled Orders — Bagyes Rush Delivery",
+  title: "Cancelled Orders — BagyesRUSH",
 };
 
 export default async function CancelledOrdersPage(props: PageProps<"/dashboard/orders/cancelled">) {

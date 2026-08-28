@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { OrdersListPage } from "../_components/orders-list-page";
 
 export const metadata: Metadata = {
-  title: "Delivered Orders — Bagyes Rush Delivery",
+  title: "Delivered Orders — BagyesRUSH",
 };
 
 export default async function DeliveredOrdersPage(props: PageProps<"/dashboard/orders/delivered">) {

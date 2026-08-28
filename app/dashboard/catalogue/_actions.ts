@@ -4,6 +4,13 @@ import { revalidatePath } from "next/cache";
 
 import { apiAction } from "@/lib/api/action";
 import {
+  createPayoutProvider,
+  deletePayoutProvider,
+  togglePayoutProviderStatus,
+  updatePayoutProvider,
+  type PayoutProviderInput,
+} from "@/lib/services/payout-providers.service";
+import {
   createCategory,
   deleteCategory,
   toggleCategoryStatus,
@@ -114,5 +121,44 @@ export async function toggleBannerStatusAction(id: number) {
   return apiAction("Banner status updated", async () => {
     await toggleBannerStatus(id);
     revalidatePath("/dashboard/catalogue/banners");
+  });
+}
+
+/* ---------------------------------------------------------------- Providers */
+
+/**
+ * Banks and mobile-money networks.
+ *
+ * Deleting is refused by the API while any vendor or rider is paid through the
+ * provider - deactivating is the right move there, and the message says so.
+ */
+export async function savePayoutProviderAction(
+  id: number | null,
+  // FormData when a logo is being uploaded, a plain object otherwise. Sending
+  // multipart for a rename would be wasteful, and the API accepts both.
+  input: PayoutProviderInput | FormData,
+) {
+  return apiAction(id ? "Provider updated" : "Provider created", async () => {
+    if (id) {
+      await updatePayoutProvider(id, input);
+    } else {
+      await createPayoutProvider(input);
+    }
+
+    revalidatePath("/dashboard/catalogue/payout-providers");
+  });
+}
+
+export async function togglePayoutProviderStatusAction(id: number) {
+  return apiAction("Provider updated", async () => {
+    await togglePayoutProviderStatus(id);
+    revalidatePath("/dashboard/catalogue/payout-providers");
+  });
+}
+
+export async function deletePayoutProviderAction(id: number) {
+  return apiAction("Provider deleted", async () => {
+    await deletePayoutProvider(id);
+    revalidatePath("/dashboard/catalogue/payout-providers");
   });
 }

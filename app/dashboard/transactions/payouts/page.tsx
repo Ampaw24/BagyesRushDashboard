@@ -1,24 +1,17 @@
 import type { Metadata } from "next";
-import { PageHeader } from "../../_components/page-header";
-import { getTransactions } from "../../_services/mock-data";
-import { TransactionsTable } from "../transactions-table";
+import { WithdrawalsListPage } from "../_components/withdrawals-list-page";
 
 export const metadata: Metadata = {
-  title: "Withdrawals — Bagyes Rush Delivery",
+  title: "Payouts — BagyesRUSH",
 };
 
-/**
- * Still on mock data: the API has no withdrawals ledger. See
- * /dashboard/transactions for the real payments list.
- */
-export default async function WithdrawalsPage() {
-  const transactions = await getTransactions();
-  const withdrawals = transactions.filter((t) => t.type === "withdrawal" && t.status !== "pending");
-
+export default async function PayoutsPage(props: PageProps<"/dashboard/transactions/payouts">) {
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader title="Withdrawals" description="Completed and failed withdrawal history." />
-      <TransactionsTable transactions={withdrawals} showType={false} />
-    </div>
+    <WithdrawalsListPage
+      title="Payouts"
+      description="Every payout to a rider or a vendor, in any state. Filter by side to see one of them."
+      showStats
+      searchParams={props.searchParams}
+    />
   );
 }

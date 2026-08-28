@@ -1,4 +1,8 @@
 @import "tailwindcss";
+/* Leaflet's own stylesheet, for the tracking map on an order. Imported here
+   rather than in the component because Next hoists CSS imports out of client
+   components anyway, and one place to look beats two. */
+@import "leaflet/dist/leaflet.css";
 
 /* Tie Tailwind's `dark:` variant to our explicit data-theme toggle instead
    of prefers-color-scheme, so it stays in sync with the CSS custom

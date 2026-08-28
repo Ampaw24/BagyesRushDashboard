@@ -1,24 +1,20 @@
 import type { Metadata } from "next";
-import { PageHeader } from "../../_components/page-header";
-import { getTransactions } from "../../_services/mock-data";
-import { WithdrawalRequestsTable } from "./withdrawal-requests-table";
+import { WithdrawalsListPage } from "../_components/withdrawals-list-page";
 
 export const metadata: Metadata = {
-  title: "Withdrawal Requests — Bagyes Rush Delivery",
+  title: "Payout Requests — BagyesRUSH",
 };
 
-/**
- * Still on mock data: the API has no payout/withdrawal request workflow. See
- * /dashboard/transactions for the real payments list.
- */
-export default async function WithdrawalRequestsPage() {
-  const transactions = await getTransactions();
-  const requests = transactions.filter((t) => t.type === "withdrawal" && t.status === "pending");
-
+export default async function PayoutRequestsPage(
+  props: PageProps<"/dashboard/transactions/payout-requests">,
+) {
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader title="Withdrawal requests" description="Payout requests waiting for approval." />
-      <WithdrawalRequestsTable requests={requests} />
-    </div>
+    <WithdrawalsListPage
+      title="Payout requests"
+      description="Riders and vendors waiting to be paid. Approving clears a payout for payment; marking it paid records that you actually sent it."
+      fixedStatus="pending"
+      showStats
+      searchParams={props.searchParams}
+    />
   );
 }

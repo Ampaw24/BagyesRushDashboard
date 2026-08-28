@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { VendorsListPage } from "../_components/vendors-list-page";
 
 export const metadata: Metadata = {
-  title: "All Vendors — Bagyes Rush Delivery",
+  title: "All Vendors — BagyesRUSH",
 };
 
 export default async function AllVendorsPage(props: PageProps<"/dashboard/vendors/all">) {

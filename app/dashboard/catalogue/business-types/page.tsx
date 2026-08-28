@@ -9,7 +9,7 @@ import { can, getPermissions } from "@/lib/auth/guard";
 import { parseListParams, readBooleanParam } from "@/lib/api/query";
 
 export const metadata: Metadata = {
-  title: "Business Types — Bagyes Rush Delivery",
+  title: "Business Types — BagyesRUSH",
 };
 
 export default async function BusinessTypesPage(

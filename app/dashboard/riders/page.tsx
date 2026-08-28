@@ -1,67 +1,83 @@
 import type { Metadata } from "next";
+
 import { PageHeader } from "../_components/page-header";
-import { RiderStatusBadge } from "../_components/status-badge";
-import { TableCell, TableHeadCell, TableShell } from "../_components/table-shell";
-import { PhoneIcon, StarIcon } from "../_lib/icons";
-import { getRiders } from "../_services/mock-data";
+import { NoPermissionState } from "../_components/empty-state";
+import { StatTile } from "../_components/stat-tile";
+import { RidersTable } from "./_components/riders-table";
+import { getRiderStats, listRiders } from "@/lib/services/riders.service";
+import { toRiderRow } from "@/lib/mappers/rider.mapper";
+import { can, getPermissions } from "@/lib/auth/guard";
+import { parseListParams, readBooleanParam, readEnumParam, readParam } from "@/lib/api/query";
+import { RIDER_STATUSES, VEHICLE_TYPES, type VehicleType } from "@/lib/types/enums";
+import { ActivityIcon, ProfileTickIcon, RidersIcon, ProfileDeleteIcon } from "../_lib/icons";
 
 export const metadata: Metadata = {
-  title: "Riders — Bagyes Rush Delivery",
+  title: "Riders — BagyesRUSH",
 };
 
-export default async function RidersPage() {
-  const riders = await getRiders();
+export default async function RidersPage(props: PageProps<"/dashboard/riders">) {
+  const permissions = await getPermissions();
+
+  if (!can(permissions, "riders.view")) {
+    return (
+      <div className="flex flex-col gap-6">
+        <PageHeader title="Riders" description="Everyone delivering for BagyesRUSH." />
+        <NoPermissionState what="riders" />
+      </div>
+    );
+  }
+
+  const params = await props.searchParams;
+  const list = parseListParams(params);
+
+  const [page, stats] = await Promise.all([
+    listRiders({
+      page: list.page,
+      per_page: list.per_page,
+      search: list.search,
+      city: readParam(params, "city"),
+      status: readEnumParam(params, "status", RIDER_STATUSES),
+      vehicle_type: readEnumParam(params, "vehicle_type", VEHICLE_TYPES) as VehicleType | undefined,
+      is_online: readBooleanParam(params, "is_online"),
+      with_trashed: readBooleanParam(params, "with_trashed"),
+    }),
+    getRiderStats(),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Riders" description="See who's online, on delivery, or offline right now." />
+      <PageHeader
+        title="Riders"
+        description="Everyone delivering for BagyesRUSH — who is online now, who is waiting on a decision, and who is blocked."
+      />
 
-      <TableShell>
-        <thead>
-          <tr>
-            <TableHeadCell>Rider</TableHeadCell>
-            <TableHeadCell>Phone</TableHeadCell>
-            <TableHeadCell>Rating</TableHeadCell>
-            <TableHeadCell>Status</TableHeadCell>
-            <TableHeadCell>Active orders</TableHeadCell>
-            <TableHeadCell>Completed today</TableHeadCell>
-          </tr>
-        </thead>
-        <tbody>
-          {riders.map((rider) => (
-            <tr key={rider.id}>
-              <TableCell className="font-medium">
-                <span className="flex items-center gap-3">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-xs font-semibold text-brand">
-                    {rider.name
-                      .split(" ")
-                      .map((part) => part[0])
-                      .join("")}
-                  </span>
-                  <span className="break-words">{rider.name}</span>
-                </span>
-              </TableCell>
-              <TableCell className="text-text-secondary">
-                <span className="flex items-center gap-2">
-                  <PhoneIcon className="h-4 w-4 shrink-0 text-text-muted" />
-                  {rider.phone}
-                </span>
-              </TableCell>
-              <TableCell>
-                <span className="flex items-center gap-1">
-                  <StarIcon className="text-status-warning" />
-                  {rider.rating.toFixed(1)}
-                </span>
-              </TableCell>
-              <TableCell>
-                <RiderStatusBadge status={rider.status} />
-              </TableCell>
-              <TableCell>{rider.activeOrders}</TableCell>
-              <TableCell>{rider.completedToday}</TableCell>
-            </tr>
-          ))}
-        </tbody>
-      </TableShell>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile
+          label="Online now"
+          value={stats.online.toLocaleString()}
+          icon={<ActivityIcon />}
+        />
+        <StatTile
+          label="Awaiting review"
+          value={stats.awaiting_review.toLocaleString()}
+          icon={<ProfileTickIcon />}
+        />
+        <StatTile
+          label="Incomplete onboarding"
+          value={stats.incomplete.toLocaleString()}
+          icon={<ProfileDeleteIcon />}
+        />
+        <StatTile label="Total riders" value={stats.total.toLocaleString()} icon={<RidersIcon />} />
+      </div>
+
+      <RidersTable
+        riders={page.items.map(toRiderRow)}
+        pagination={page.pagination}
+        permissions={{
+          canModerate: can(permissions, "riders.moderate"),
+          canDelete: can(permissions, "riders.delete"),
+        }}
+      />
     </div>
   );
 }

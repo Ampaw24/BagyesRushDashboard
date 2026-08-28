@@ -6,7 +6,7 @@ import { getRoles } from "@/lib/services/profile.service";
 import { can, getPermissions } from "@/lib/auth/guard";
 
 export const metadata: Metadata = {
-  title: "Permissions — Bagyes Rush Delivery",
+  title: "Permissions — BagyesRUSH",
 };
 
 /**
