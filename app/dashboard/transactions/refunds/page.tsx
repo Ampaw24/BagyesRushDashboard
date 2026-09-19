@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageHeader } from "../../_components/page-header";
+import { ExportAction } from "../../_components/export-action";
 import { NoPermissionState, EmptyState } from "../../_components/empty-state";
 import { StatTile } from "../../_components/stat-tile";
 import { Pagination } from "../../_components/pagination";
@@ -57,6 +58,7 @@ export default async function RefundsPage(props: PageProps<"/dashboard/transacti
       <PageHeader
         title="Refunds"
         description="Orders that took payment and ended cancelled or rejected."
+        action={<ExportAction resource="refunds" filters={{ search: list.search, from, to }} />}
       />
 
       {/* Named as outstanding rather than "refunded": nothing here has been

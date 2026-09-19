@@ -1,4 +1,5 @@
 import { PageHeader } from "../../_components/page-header";
+import { ExportAction } from "../../_components/export-action";
 import { NoPermissionState } from "../../_components/empty-state";
 import { VendorsTable } from "./vendors-table";
 import { listVendors } from "@/lib/services/vendors.service";
@@ -57,14 +58,19 @@ export async function VendorsListPage({
         title={title}
         description={description}
         action={
-          <span className="text-sm text-text-muted">
-            {page.pagination.total.toLocaleString()} vendor{page.pagination.total === 1 ? "" : "s"}
-          </span>
+          <div className="flex items-center gap-3">
+            <ExportAction resource="vendors" filters={{ search: list.search }} />
+            <span className="text-sm text-text-muted">
+              {page.pagination.total.toLocaleString()} vendor{page.pagination.total === 1 ? "" : "s"}
+            </span>
+          </div>
         }
       />
       <VendorsTable
         vendors={page.items.map(toVendorRow)}
         pagination={page.pagination}
+        canMessage={can(permissions, "communications.send")}
+        canViewDocuments={can(permissions, "vendors.documents")}
         permissions={{
           canModerate: can(permissions, "vendors.moderate"),
           canDelete: can(permissions, "vendors.delete"),

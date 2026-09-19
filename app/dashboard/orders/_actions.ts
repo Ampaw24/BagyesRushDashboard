@@ -29,10 +29,19 @@ export async function assignRiderAction(id: number, riderId: number) {
   });
 }
 
-export async function refundOrderAction(id: number) {
-  return apiAction("Order refunded", async () => {
-    await refundOrder(id);
-    revalidatePath("/dashboard/orders");
-    revalidatePath(`/dashboard/orders/${id}`);
-  });
+export async function refundOrderAction(
+  id: number,
+  input: { amount?: number; destination?: "source" | "wallet"; reason?: string } = {},
+) {
+  return apiAction(
+    input.destination === "wallet"
+      ? "Refunded to the customer's wallet"
+      : "Refund sent to the payment provider",
+    async () => {
+      await refundOrder(id, input);
+      revalidatePath("/dashboard/orders");
+      revalidatePath(`/dashboard/orders/${id}`);
+      revalidatePath("/dashboard/orders/failed-deliveries");
+    },
+  );
 }

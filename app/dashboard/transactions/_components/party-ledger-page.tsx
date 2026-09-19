@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { PageHeader } from "../../_components/page-header";
+import { ExportAction } from "../../_components/export-action";
 import { NoPermissionState, EmptyState } from "../../_components/empty-state";
 import { StatTile } from "../../_components/stat-tile";
 import { TableCell, TableHeadCell, TableShell } from "../../_components/table-shell";
@@ -69,7 +70,20 @@ export async function PartyLedgerPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={title} description={description} />
+      <PageHeader
+        title={title}
+        description={description}
+        action={
+          <ExportAction
+            resource="transactions"
+            filters={{
+              search: list.search,
+              owner_type: ownerType,
+              type: readEnumParam(params, "type", WALLET_TRANSACTION_TYPES),
+            }}
+          />
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatTile

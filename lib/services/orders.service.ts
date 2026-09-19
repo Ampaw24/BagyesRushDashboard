@@ -39,6 +39,37 @@ export async function listOrdersNeedingDispatch(query: { per_page?: number } = {
   return apiFetchPage<AdminOrderDto>("/admin/orders/needs-dispatch", { query });
 }
 
+/**
+ * GET /admin/orders/failed-deliveries — requires `orders.view`.
+ *
+ * A different queue from needs-dispatch, because it is a different
+ * decision. That one lists orders with no rider and asks who can carry
+ * them. These still *have* a rider — they waited out the countdown at the
+ * door, nobody came, and they are holding the food — and the question is
+ * refund, reassign or mark collected.
+ */
+export async function listFailedDeliveries(query: { per_page?: number } = {}): Promise<Paginated<AdminOrderDto>> {
+  return apiFetchPage<AdminOrderDto>("/admin/orders/failed-deliveries", { query });
+}
+
+/**
+ * GET /admin/orders/awaiting-vendor — requires `orders.view`.
+ *
+ * The third queue, and the one that had no screen. Needs-dispatch is "no rider
+ * took it"; failed-deliveries is "the rider reached the door and could not hand
+ * it over". This is neither: the customer has paid and the kitchen has simply
+ * not answered, so the order never reaches dispatch at all — that does not
+ * begin until `ready`.
+ *
+ * Oldest first, server-side, by `needs_vendor_chase_at`: an order only lands
+ * here once the chase command has already reminded the vendor and escalated.
+ */
+export async function listOrdersAwaitingVendor(
+  query: { per_page?: number } = {},
+): Promise<Paginated<AdminOrderDto>> {
+  return apiFetchPage<AdminOrderDto>("/admin/orders/awaiting-vendor", { query });
+}
+
 export async function getOrder(id: number): Promise<AdminOrderDto> {
   return apiFetch<AdminOrderDto>(`/admin/orders/${id}`);
 }
@@ -74,6 +105,22 @@ export async function assignRider(id: number, riderId: number): Promise<AdminOrd
 }
 
 /** Requires `payments.refund` — moving money is a payments permission, not an orders one. */
-export async function refundOrder(id: number): Promise<AdminOrderDto> {
-  return apiFetch<AdminOrderDto>(`/admin/orders/${id}/refund`, { method: "PATCH" });
+/**
+ * PATCH /admin/orders/{id}/refund — requires `payments.refund`.
+ *
+ * Both arguments are optional and both default the safe way: the whole
+ * refundable remainder, back to the card or mobile money it came from. The
+ * amount is capped server-side against what has already gone back, so two
+ * refunds can never exceed the order.
+ *
+ * `destination: "wallet"` credits the customer instead of reversing at the
+ * gateway — instant, and the only option at all when there is no gateway
+ * payment to reverse. The backend silently falls back to it in that case rather
+ * than failing, and says so in the audit line.
+ */
+export async function refundOrder(
+  id: number,
+  input: { amount?: number; destination?: "source" | "wallet"; reason?: string } = {},
+): Promise<AdminOrderDto> {
+  return apiFetch<AdminOrderDto>(`/admin/orders/${id}/refund`, { method: "PATCH", body: input });
 }

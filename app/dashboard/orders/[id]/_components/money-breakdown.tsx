@@ -98,6 +98,11 @@ export function MoneyBreakdown({ order }: { order: OrderDetail }) {
           <Line label="Total" value={formatCurrency(order.total)} strong />
         </Card>
 
+        {/* Each side settles at its own moment: the vendor's share the moment
+            the customer pays, the rider's when somebody actually delivers.
+            Anything not settled yet says so rather than reading GHS 0.00 —
+            "the rider was paid nothing" and "no rider has been paid yet" are
+            not the same statement, and the panel used to make them look it. */}
         <Card title="How it was split">
           {earnings ? (
             <>
@@ -108,12 +113,12 @@ export function MoneyBreakdown({ order }: { order: OrderDetail }) {
                       ? `Vendor (less ${pricing.vendorPercent}% commission)`
                       : "Vendor"
                   }
-                  value={formatCurrency(earnings.vendor)}
+                  value={money(earnings.vendor)}
                 />
               )}
               <Line
                 label={pricing ? `Rider (less ${pricing.riderPercent}% commission)` : "Rider"}
-                value={formatCurrency(earnings.rider)}
+                value={money(earnings.rider, "Paid on delivery")}
               />
 
               <Divider />
@@ -121,13 +126,27 @@ export function MoneyBreakdown({ order }: { order: OrderDetail }) {
               {/* Commission and the service fee are the platform's two takings
                   and they are different things: one is a share of somebody
                   else's earnings, the other is charged to the customer. */}
-              <Line label="Commission (both sides)" value={formatCurrency(earnings.platform)} />
+              <Line
+                label={
+                  earnings.riderSettled
+                    ? "Commission (both sides)"
+                    : "Commission (vendor side)"
+                }
+                value={money(earnings.platform)}
+              />
               <Line label="Service fee" value={formatCurrency(earnings.serviceFee)} />
               <Line
                 label="Platform keeps"
-                value={formatCurrency(earnings.platform + earnings.serviceFee)}
+                value={money(earnings.platformKeeps, "Set when the rider is paid")}
                 strong
               />
+
+              {!earnings.riderSettled && (
+                <p className="pt-1 text-xs text-text-muted">
+                  The platform&rsquo;s share of the {formatCurrency(order.deliveryFee)} delivery
+                  is set when a rider is paid, so the total it keeps is not final yet.
+                </p>
+              )}
             </>
           ) : (
             <p className="text-xs text-text-muted">
@@ -138,6 +157,16 @@ export function MoneyBreakdown({ order }: { order: OrderDetail }) {
       </div>
     </section>
   );
+}
+
+/**
+ * A money figure, or why there isn't one yet.
+ *
+ * null means "not settled", which is a different thing from zero and has to
+ * read differently on the page.
+ */
+function money(value: number | null, whenUnknown = "Not settled yet"): string {
+  return value === null ? whenUnknown : formatCurrency(value);
 }
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {

@@ -29,6 +29,42 @@
   --delta-good: #006300;
 
   --sidebar-w: 16rem;
+
+  /* ---------------------------------------------------------------------
+     Sidebar
+     ---------------------------------------------------------------------
+     The nav is the one place the flat two-colour palette is deliberately set
+     aside. Thirteen sections is past the point where shape alone tells them
+     apart, and colour is what makes the list scannable rather than read - an
+     operator jumping between Orders and Riders forty times an hour is aiming
+     at a colour, not reading a word.
+
+     Tokens rather than per-item classes, for the usual reason: each accent is
+     used four ways (icon, label, active tint, active border) and the tints are
+     derived from it with color-mix, so there is one value to change per
+     section.
+
+     Light values are picked for contrast on white; the dark set is brighter
+     because the sidebar behind it is nearly black.
+  */
+  --sidebar-bg: var(--surface);
+  --sidebar-border: var(--border-subtle);
+  --sidebar-muted: #f4f4f2;
+
+  --nav-overview: #2563eb;
+  --nav-orders: var(--brand);
+  --nav-riders: #be123c;
+  --nav-coupons: #7c3aed;
+  --nav-transactions: #b45309;
+  --nav-users: #3f3f46;
+  --nav-support: #0d9488;
+  --nav-chat: #0369a1;
+  --nav-communications: #ea580c;
+  --nav-vendors: #059669;
+  --nav-catalogue: #db2777;
+  --nav-reviews: #0284c7;
+  --nav-administration: #7e22ce;
+  --nav-settings: #4d7c0f;
 }
 
 :root[data-sidebar="collapsed"] {
@@ -52,6 +88,9 @@
   --color-status-critical: var(--status-critical);
   --color-status-info: var(--status-info);
   --color-delta-good: var(--delta-good);
+  --color-sidebar: var(--sidebar-bg);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-muted: var(--sidebar-muted);
   --font-sans: var(--font-poppins);
 }
 
@@ -67,6 +106,28 @@
     --chart-grid: #2c2c2a;
     --status-info: #3987e5;
     --delta-good: #0ca30c;
+
+    /* Navy rather than the neutral surface, which is what a sidebar is meant
+       to look like: the nav is furniture and the page is the content. */
+    --sidebar-bg: #0f1729;
+    --sidebar-border: #1e293b;
+    --sidebar-muted: rgb(255 255 255 / 0.04);
+
+    --nav-overview: #60a5fa;
+    --nav-orders: #ff6b6b;
+    --nav-riders: #fb7185;
+    --nav-coupons: #a78bfa;
+    --nav-transactions: #fbbf24;
+    --nav-users: #d4d4d8;
+    --nav-support: #2dd4bf;
+  --nav-chat: #7dd3fc;
+    --nav-chat: #7dd3fc;
+    --nav-communications: #fb923c;
+    --nav-vendors: #34d399;
+    --nav-catalogue: #f472b6;
+    --nav-reviews: #38bdf8;
+    --nav-administration: #c084fc;
+    --nav-settings: #a3e635;
   }
 }
 
@@ -81,12 +142,40 @@
   --chart-grid: #2c2c2a;
   --status-info: #3987e5;
   --delta-good: #0ca30c;
+
+  /* Navy rather than the neutral surface, which is what a sidebar is meant
+     to look like: the nav is furniture and the page is the content. */
+  --sidebar-bg: #0f1729;
+  --sidebar-border: #1e293b;
+  --sidebar-muted: rgb(255 255 255 / 0.04);
+
+  --nav-overview: #60a5fa;
+  --nav-orders: #ff6b6b;
+  --nav-riders: #fb7185;
+  --nav-coupons: #a78bfa;
+  --nav-transactions: #fbbf24;
+  --nav-users: #d4d4d8;
+  --nav-support: #2dd4bf;
+  --nav-communications: #fb923c;
+  --nav-vendors: #34d399;
+  --nav-catalogue: #f472b6;
+  --nav-reviews: #38bdf8;
+  --nav-administration: #c084fc;
+  --nav-settings: #a3e635;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
+}
+
+/* Nav hover, in the item's own colour.
+   Written as a rule rather than a Tailwind `hover:` utility because the colour
+   is per item: each nav row sets `--item-accent` inline and this thins it.
+   The fallback keeps rows without an accent (sub-items) on a neutral wash. */
+.nav-item:hover {
+  background: color-mix(in oklab, var(--item-accent, var(--foreground)) 10%, transparent);
 }
 
 @keyframes intro-fade {

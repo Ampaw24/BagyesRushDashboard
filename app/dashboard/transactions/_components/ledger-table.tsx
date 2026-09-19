@@ -9,7 +9,11 @@ import { FilterBar, type SelectFilter } from "../../_components/filter-bar";
 import { formatCurrency, formatDateTime } from "../../_lib/format";
 import type { WalletTransactionRow } from "@/lib/mappers/wallet.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
-import { WALLET_TRANSACTION_TYPES, walletTransactionTypeLabels } from "@/lib/types/enums";
+import {
+  FILTERABLE_WALLET_TRANSACTION_TYPES,
+  walletTransactionTypeLabels,
+} from "@/lib/types/enums";
+import { ownerHref } from "./owner-href";
 
 /**
  * Which side a line belongs to. Offered only where both are listed — on a
@@ -29,7 +33,9 @@ const TYPE_FILTER: SelectFilter = {
   key: "type",
   label: "Type",
   allLabel: "All movements",
-  options: WALLET_TRANSACTION_TYPES.map((type) => ({
+  // Only movements the system can actually produce - see
+  // FILTERABLE_WALLET_TRANSACTION_TYPES.
+  options: FILTERABLE_WALLET_TRANSACTION_TYPES.map((type) => ({
     value: type,
     label: walletTransactionTypeLabels[type],
   })),
@@ -95,7 +101,7 @@ export function LedgerTable({
                   <TableCell className="text-text-secondary">
                     {row.ownerId && row.ownerType ? (
                       <Link
-                        href={`/dashboard/${row.ownerType === "vendor" ? "vendors" : "riders"}/${row.ownerId}`}
+                        href={ownerHref(row.ownerType, row.ownerId)}
                         className="hover:text-brand"
                       >
                         {row.ownerName ?? "—"}
@@ -111,7 +117,24 @@ export function LedgerTable({
                   </TableCell>
                 )}
 
-                <TableCell className="text-text-secondary">{row.typeLabel}</TableCell>
+                <TableCell className="text-text-secondary">
+                  {row.typeLabel}
+                  {/* Reserved when the customer paid, spendable once the order
+                      is delivered. Without saying so, a pending row and a
+                      settled one read identically while only one of them can
+                      actually be withdrawn. */}
+                  {row.status !== "available" && (
+                    <span
+                      className={`ml-2 rounded-full px-2 py-0.5 text-xs ${
+                        row.status === "pending"
+                          ? "bg-status-warning/10 text-status-warning"
+                          : "bg-border-subtle text-text-muted line-through"
+                      }`}
+                    >
+                      {row.statusLabel ?? row.status}
+                    </span>
+                  )}
+                </TableCell>
 
                 <TableCell className="text-text-secondary">
                   {row.orderId && row.orderNumber ? (
@@ -135,7 +158,9 @@ export function LedgerTable({
                 </TableCell>
 
                 <TableCell className="tabular-nums text-text-secondary">
-                  {formatCurrency(row.balanceAfter)}
+                  {/* A pending row has not moved the balance, so printing one
+                      here would suggest it had. */}
+                  {row.isPending ? "—" : formatCurrency(row.balanceAfter)}
                 </TableCell>
 
                 <TableCell className="text-text-secondary">

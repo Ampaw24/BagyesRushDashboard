@@ -2,20 +2,24 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { TableCell, TableHeadCell, TableShell } from "../../_components/table-shell";
+import { Avatar } from "../../_components/avatar";
 import { Badge, RiderPresenceBadge } from "../../_components/status-badge";
 import { ActionMenu } from "../../_components/action-menu";
 import { EmptyState } from "../../_components/empty-state";
 import { Pagination } from "../../_components/pagination";
 import { FilterBar, type SelectFilter } from "../../_components/filter-bar";
-import { EditIcon, StarIcon } from "../../_lib/icons";
+import { EditIcon, EyeIcon, StarIcon } from "../../_lib/icons";
+import { ViewRiderDialog } from "./view-rider-dialog";
 import { documentsStatusMeta, riderStateMeta } from "../../_lib/status";
 import { formatCurrency, formatDate } from "../../_lib/format";
 import {
   useRiderStatusActions,
   type RiderActionPermissions,
 } from "../../_hooks/use-rider-status-actions";
+import { useSendMessage } from "../../_hooks/use-send-message";
 import type { RiderRow } from "@/lib/mappers/rider.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
 import { RIDER_STATUSES, riderStatusLabels } from "@/lib/types/enums";
@@ -37,16 +41,39 @@ const ONLINE_FILTER: SelectFilter = {
   ],
 };
 
+/**
+ * Paperwork that has run out, or is about to.
+ *
+ * Not a status: a rider with lapsed insurance is still "approved", they simply
+ * cannot switch on. Before this the only way to find them was to open profiles
+ * one at a time, so thirty riders renewing in March was thirty clicks.
+ */
+const CREDENTIAL_FILTER: SelectFilter = {
+  key: "credential_state",
+  label: "Paperwork",
+  allLabel: "Any paperwork",
+  options: [
+    { value: "expired", label: "Expired — cannot go online" },
+    { value: "expiring", label: "Expiring soon" },
+  ],
+};
+
 export function RidersTable({
   riders,
   pagination,
   permissions,
+  canMessage,
+  canViewDocuments,
   /** Sub-pages pin the status in the route, so their status filter is hidden. */
   showStatusFilters = true,
 }: {
   riders: RiderRow[];
   pagination: PaginationMeta;
   permissions: RiderActionPermissions;
+  /** `communications.send` — sending SMS spends credits, so it is its own right. */
+  canMessage: boolean;
+  /** `riders.documents` — reading who somebody is, not merely managing them. */
+  canViewDocuments: boolean;
   showStatusFilters?: boolean;
 }) {
   return (
@@ -55,8 +82,8 @@ export function RidersTable({
         searchPlaceholder="Search name, phone, plate or rider code"
         filters={
           showStatusFilters
-            ? [STATUS_FILTER, ONLINE_FILTER]
-            : [ONLINE_FILTER]
+            ? [STATUS_FILTER, ONLINE_FILTER, CREDENTIAL_FILTER]
+            : [ONLINE_FILTER, CREDENTIAL_FILTER]
         }
       />
 
@@ -87,7 +114,13 @@ export function RidersTable({
             </thead>
             <tbody>
               {riders.map((rider) => (
-                <RiderRowView key={rider.id} rider={rider} permissions={permissions} />
+                <RiderRowView
+                  key={rider.id}
+                  rider={rider}
+                  permissions={permissions}
+                  canMessage={canMessage}
+                  canViewDocuments={canViewDocuments}
+                />
               ))}
             </tbody>
           </TableShell>
@@ -102,18 +135,37 @@ export function RidersTable({
 function RiderRowView({
   rider,
   permissions,
+  canMessage,
+  canViewDocuments,
 }: {
   rider: RiderRow;
   permissions: RiderActionPermissions;
+  canMessage: boolean;
+  canViewDocuments: boolean;
 }) {
   const router = useRouter();
   const { actions, dialog } = useRiderStatusActions(rider, permissions);
+  const { actions: messageActions, dialog: messageDialog } = useSendMessage(
+    { userId: rider.userId, name: rider.name, phone: rider.phone },
+    canMessage,
+  );
+  const [viewing, setViewing] = useState(false);
 
   return (
     <tr>
       <TableCell className="font-medium">
         <span className="flex items-center gap-3">
-          <Initials name={rider.name} photoUrl={rider.photoUrl} />
+          {/* Opens the same dialog the menu does. The face is what an admin
+              scanning a list actually aims at, and a photo too small to judge
+              is precisely what they are trying to enlarge. */}
+          <button
+            type="button"
+            onClick={() => setViewing(true)}
+            aria-label={`View ${rider.name}`}
+            className="rounded-full transition duration-150 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+          >
+            <Avatar name={rider.name} src={rider.photoUrl} className="h-8 w-8 text-xs" />
+          </button>
           <span className="min-w-0">
             <Link href={`/dashboard/riders/${rider.id}`} className="break-words hover:text-brand">
               {rider.name}
@@ -173,48 +225,29 @@ function RiderRowView({
       <TableCell>
         <ActionMenu
           items={[
+            // First, and the one an admin wants most of the time: the whole
+            // profile without losing the filters and the scroll position this
+            // list was left in.
+            { label: "Quick view", icon: EyeIcon, onClick: () => setViewing(true) },
             {
-              label: "View rider",
+              label: "Open full profile",
               icon: EditIcon,
               onClick: () => router.push(`/dashboard/riders/${rider.id}`),
             },
+            ...messageActions,
             ...actions,
           ]}
         />
         {dialog}
+        {messageDialog}
+        {viewing && (
+          <ViewRiderDialog
+            rider={rider}
+            canViewDocuments={canViewDocuments}
+            onClose={() => setViewing(false)}
+          />
+        )}
       </TableCell>
     </tr>
-  );
-}
-
-/**
- * A rider's photo is the one image of them that is public, but it is only
- * uploaded partway through onboarding — so initials have to carry the rows that
- * do not have one yet.
- */
-function Initials({ name, photoUrl }: { name: string; photoUrl: string | null }) {
-  if (photoUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={photoUrl}
-        alt=""
-        className="h-8 w-8 shrink-0 rounded-full object-cover"
-      />
-    );
-  }
-
-  const initials = name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-
-  return (
-    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-xs font-semibold text-brand">
-      {initials || "?"}
-    </span>
   );
 }

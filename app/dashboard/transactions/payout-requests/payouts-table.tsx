@@ -11,29 +11,38 @@ import { EmptyState } from "../../_components/empty-state";
 import { Pagination } from "../../_components/pagination";
 import { FilterBar, type SelectFilter } from "../../_components/filter-bar";
 import { useToast } from "../../_components/toast-provider";
-import { CheckCircleIcon, DangerIcon, WalletIcon } from "../../_lib/icons";
+import { CheckCircleIcon, DangerIcon, RefreshIcon, WalletIcon } from "../../_lib/icons";
 import { withdrawalStatusMeta } from "../../_lib/status";
 import { formatCurrency, formatDateTime, formatDateTimeOrDash } from "../../_lib/format";
 import {
   approveWithdrawalAction,
   markWithdrawalPaidAction,
   rejectWithdrawalAction,
+  verifyWithdrawalAction,
 } from "../_wallet-actions";
 import type { WithdrawalRow } from "@/lib/mappers/wallet.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
 import { WITHDRAWAL_STATUSES, withdrawalStatusLabels, withdrawalStatusTransitions } from "@/lib/types/enums";
+import { ownerHref } from "../_components/owner-href";
 
 /**
- * Riders and vendors queue together, so "vendor payouts" is this screen with
- * one filter applied rather than a second near-identical route.
+ * Everybody queues together, so "vendor payouts" is this screen with one filter
+ * applied rather than a second near-identical route.
+ *
+ * Customers only appear here once an admin has turned customer cash-out on, and
+ * even then only for refund credit — goodwill credit can never become a payout
+ * request. A request from a customer is worth a closer look than one from a
+ * rider for exactly that reason, which is why the filter names them separately
+ * rather than folding them in.
  */
 const OWNER_FILTER: SelectFilter = {
   key: "owner_type",
   label: "Paying",
-  allLabel: "Riders and vendors",
+  allLabel: "Everyone",
   options: [
     { value: "rider", label: "Riders" },
     { value: "vendor", label: "Vendors" },
+    { value: "customer", label: "Customers" },
   ],
 };
 
@@ -105,6 +114,7 @@ type Pending = "approve" | "reject" | "mark_paid" | null;
 
 function Row({ withdrawal, canProcess }: { withdrawal: WithdrawalRow; canProcess: boolean }) {
   const [pending, setPending] = useState<Pending>(null);
+  const { notify } = useToast();
 
   // Derived from WithdrawalStatus::allowedTransitions(), so the menu can never
   // offer a move the API would reject.
@@ -136,6 +146,30 @@ function Row({ withdrawal, canProcess }: { withdrawal: WithdrawalRow; canProcess
         onClick: () => setPending("reject"),
       });
     }
+
+    // Only on `approved`, which is the one state where the answer is unknown:
+    // the transfer was handed to the provider and the settlement webhook has
+    // not come back. Before this, a webhook that never landed left the money
+    // reserved with no way to find out but the Paystack dashboard.
+    //
+    // Nothing destructive happens either way - the endpoint reports what the
+    // provider says and settles only if it says the transfer completed - so
+    // there is no confirmation step in front of it.
+    if (withdrawal.status === "approved") {
+      actions.push({
+        label: "Verify with provider",
+        icon: RefreshIcon,
+        // Returning the promise is what makes ActionMenu hold the row and show
+        // a spinner; it locks every other item on the row while this runs.
+        onClick: async () => {
+          // `notify`, not `notifySuccess`: "the provider has never heard of
+          // this reference" is the answer this exists to surface, and it
+          // arrives as a failure. Swallowing it would leave the admin staring
+          // at an unchanged row with no idea why.
+          notify(await verifyWithdrawalAction(withdrawal.id));
+        },
+      });
+    }
   }
 
   return (
@@ -147,7 +181,7 @@ function Row({ withdrawal, canProcess }: { withdrawal: WithdrawalRow; canProcess
             to guess which sort of payout it is looking at. */}
         {withdrawal.ownerId && withdrawal.ownerType ? (
           <Link
-            href={`/dashboard/${withdrawal.ownerType === "vendor" ? "vendors" : "riders"}/${withdrawal.ownerId}`}
+            href={ownerHref(withdrawal.ownerType, withdrawal.ownerId)}
             className="hover:text-brand"
           >
             {withdrawal.ownerName}

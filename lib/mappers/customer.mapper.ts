@@ -4,6 +4,12 @@ import { toDate, toDateLoose, toDateOrEpoch } from "./dates";
 
 export type CustomerRow = {
   id: number;
+  /**
+   * The linked user account, which is what the direct-message endpoint takes —
+   * a customer id is not a user id. Null for a customer row with no account
+   * behind it, in which case messaging is not offered.
+   */
+  userId: number | null;
   fullName: string;
   firstName: string;
   lastName: string;
@@ -36,6 +42,7 @@ export type CustomerDetail = CustomerRow & {
 export function toCustomerRow(dto: AdminCustomerDto): CustomerRow {
   return {
     id: dto.id,
+    userId: dto.account?.id ?? null,
     fullName: dto.full_name,
     firstName: dto.first_name,
     lastName: dto.last_name,

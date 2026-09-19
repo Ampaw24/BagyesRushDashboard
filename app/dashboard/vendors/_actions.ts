@@ -7,6 +7,7 @@ import {
   approveVendor,
   createVendor,
   deleteVendor,
+  getVendor,
   reinstateVendor,
   rejectVendor,
   restoreVendor,
@@ -14,8 +15,13 @@ import {
   toggleMenuItemAvailability,
   toggleVendorFeatured,
   toggleVendorOpen,
+  updateVendor,
+  uploadVendorImage,
   type CreateVendorInput,
+  type VendorImageType,
+  type UpdateVendorInput,
 } from "@/lib/services/vendors.service";
+import { toVendorDetail } from "@/lib/mappers/vendor.mapper";
 
 /**
  * Vendor moderation and lifecycle.
@@ -112,5 +118,52 @@ export async function createVendorAction(input: CreateVendorInput) {
     const created = await createVendor(input);
     revalidateVendorViews();
     return { id: created.vendor.id, password: created.password };
+  });
+}
+
+/**
+ * Correcting a vendor's operational data — `PUT /admin/vendors/{id}`.
+ *
+ * Reuses VendorProfileService throughout on the backend, so one implementation
+ * of what a profile field means whoever is editing. `business_type_id` is the
+ * field that only staff can change, and the reason this exists.
+ */
+export async function updateVendorAction(id: number, input: UpdateVendorInput) {
+  return apiAction("Vendor updated", async () => {
+    await updateVendor(id, input);
+    revalidateVendorViews(id);
+  });
+}
+
+/**
+ * Loads a vendor's full profile for the quick-view dialog.
+ *
+ * The list response carries no address, no opening hours, no document list and
+ * no storefront imagery, so the dialog fetches on open rather than every row
+ * over-fetching for a profile nobody may look at.
+ */
+export async function loadVendorDetailAction(id: number) {
+  return apiAction("Vendor retrieved", async () => toVendorDetail(await getVendor(id)));
+}
+
+/**
+ * Replace one of a vendor's three images.
+ *
+ * The gap this closes: an admin could see the logo and the storefront shot and
+ * do nothing about either. A vendor who uploads something broken, wrong or
+ * unusable left staff with one lever - suspend the whole kitchen - for a
+ * problem that is one file replacement.
+ *
+ * The file is not read here; it goes to the API as multipart and the backend
+ * sniffs the real type from the bytes rather than trusting the name.
+ */
+export async function uploadVendorImageAction(
+  id: number,
+  type: VendorImageType,
+  form: FormData,
+) {
+  return apiAction("Image updated", async () => {
+    await uploadVendorImage(id, type, form);
+    revalidateVendorViews(id);
   });
 }

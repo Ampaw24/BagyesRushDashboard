@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { PageHeader } from "../../_components/page-header";
+import { ExportAction } from "../../_components/export-action";
 import { NoPermissionState, EmptyState } from "../../_components/empty-state";
 import { StatTile } from "../../_components/stat-tile";
 import { LedgerTable } from "../_components/ledger-table";
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 /** Both sides draw from the same ledger. */
-const OWNER_TYPES = ["rider", "vendor"] as const;
+const OWNER_TYPES = ["rider", "vendor", "customer"] as const;
 
 /**
  * Every movement on the platform, riders and vendors together.
@@ -66,10 +67,22 @@ export default async function AllTransactionsPage(
         title="All transactions"
         description="Every credit and debit across riders and vendors, newest first."
         action={
-          <span className="text-sm text-text-muted">
-            {ledger.pagination.total.toLocaleString()} entr
-            {ledger.pagination.total === 1 ? "y" : "ies"}
-          </span>
+          <div className="flex items-center gap-3">
+            <ExportAction
+              resource="transactions"
+              filters={{
+                search: list.search,
+                owner_type: ownerType,
+                type: readEnumParam(params, "type", WALLET_TRANSACTION_TYPES),
+                from,
+                to,
+              }}
+            />
+            <span className="text-sm text-text-muted">
+              {ledger.pagination.total.toLocaleString()} entr
+              {ledger.pagination.total === 1 ? "y" : "ies"}
+            </span>
+          </div>
         }
       />
 

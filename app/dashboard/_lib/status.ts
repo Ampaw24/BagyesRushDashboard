@@ -2,6 +2,7 @@ import type { TransactionStatus } from "../_services/mock-data";
 import type {
   AdminRole,
   CommunicationStatus,
+  ConversationStatus,
   DeliveryOfferStatus,
   OrderStatus,
   WithdrawalStatus,
@@ -15,6 +16,7 @@ import type {
 import {
   adminRoleLabels,
   COMMUNICATION_STATUS_LABELS,
+  conversationStatusLabels,
   PARCEL_STOP_STATUS_LABELS,
   REPORT_STATUS_LABELS,
   deliveryOfferStatusLabels,
@@ -35,19 +37,27 @@ export type { AdminRole, OrderStatus, PaymentStatus, RiderStatus, UserStatus, Ve
 export type BadgeMeta = { label: string; dotClassName: string; badgeClassName: string };
 
 /* Four reusable tones, so a new status never invents a new colour. */
-const GOOD = { dotClassName: "bg-status-good", badgeClassName: "bg-status-good/10 text-status-good" };
-const INFO = { dotClassName: "bg-status-info", badgeClassName: "bg-status-info/10 text-status-info" };
+const GOOD = {
+  dotClassName: "bg-status-good",
+  badgeClassName: "bg-status-good/12 text-status-good ring-1 ring-inset ring-status-good/25",
+};
+const INFO = {
+  dotClassName: "bg-status-info",
+  badgeClassName: "bg-status-info/12 text-status-info ring-1 ring-inset ring-status-info/25",
+};
 const WARN = {
   dotClassName: "bg-status-warning",
-  badgeClassName: "bg-status-warning/10 text-amber-700 dark:text-amber-400",
+  badgeClassName:
+    "bg-status-warning/12 text-amber-700 ring-1 ring-inset ring-status-warning/30 dark:text-amber-400",
 };
 const CRITICAL = {
   dotClassName: "bg-status-critical",
-  badgeClassName: "bg-status-critical/10 text-status-critical",
+  badgeClassName: "bg-status-critical/12 text-status-critical ring-1 ring-inset ring-status-critical/25",
 };
 const NEUTRAL = {
   dotClassName: "bg-zinc-400",
-  badgeClassName: "bg-zinc-500/10 text-zinc-500 dark:text-zinc-400",
+  badgeClassName:
+    "bg-zinc-500/12 text-zinc-600 ring-1 ring-inset ring-zinc-500/20 dark:text-zinc-400",
 };
 
 /**
@@ -99,6 +109,9 @@ export const paymentStatusMeta: Record<PaymentStatus, BadgeMeta> = {
   pending: { label: paymentStatusLabels.pending, ...WARN },
   paid: { label: paymentStatusLabels.paid, ...GOOD },
   failed: { label: paymentStatusLabels.failed, ...CRITICAL },
+  // Warn rather than neutral: money is still owed to somebody, or has only
+  // partly gone back, and it is the state most likely to need a second look.
+  partially_refunded: { label: paymentStatusLabels.partially_refunded, ...WARN },
   refunded: { label: paymentStatusLabels.refunded, ...NEUTRAL },
 };
 
@@ -110,6 +123,17 @@ export const paymentStatusMeta: Record<PaymentStatus, BadgeMeta> = {
 export const userStatusMeta: Record<UserStatus, BadgeMeta> = {
   active: { label: "Active", ...GOOD },
   suspended: { label: "Suspended", ...CRITICAL },
+};
+
+/**
+ * Whether a delivery conversation still accepts messages.
+ *
+ * Closed is read-only rather than gone, so it reads as neutral rather than as a
+ * failure: the transcript is still there, and an admin can reopen it.
+ */
+export const conversationStatusMeta: Record<ConversationStatus, BadgeMeta> = {
+  open: { label: conversationStatusLabels.open, ...GOOD },
+  closed: { label: conversationStatusLabels.closed, ...NEUTRAL },
 };
 
 /** Staff roles, matching app/Enums/AdminRole.php. */

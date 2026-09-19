@@ -10,7 +10,7 @@ import type {
 export type LedgerQuery = {
   page?: number;
   per_page?: number;
-  owner_type?: "rider" | "vendor";
+  owner_type?: "rider" | "vendor" | "customer";
   owner_id?: number;
   type?: string;
   from?: string;

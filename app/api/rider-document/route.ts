@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 
 import { apiUrl } from "@/lib/api/config";
 import { getSessionToken } from "@/lib/auth/session";
+import { redirectTo } from "@/lib/http/redirect";
 import { RIDER_DOCUMENT_TYPES, type RiderDocumentType } from "@/lib/types/enums";
 
 /**
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
   }
 
   const token = await getSessionToken();
-  if (!token) return NextResponse.redirect(new URL("/login?expired=1", request.url));
+  if (!token) return redirectTo("/login?expired=1", 303);
 
   const upstream = await fetch(apiUrl(`/admin/riders/${riderId}/documents/${type}`), {
     headers: { Authorization: `Bearer ${token}` },

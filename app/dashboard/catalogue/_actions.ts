@@ -24,6 +24,29 @@ import {
   type SaveBusinessTypeInput,
 } from "@/lib/services/business-types.service";
 import {
+  createVehicleType,
+  deleteVehicleType,
+  toggleVehicleTypeStatus,
+  updateVehicleType,
+  type SaveVehicleTypeInput,
+} from "@/lib/services/vehicle-types.service";
+import {
+  createVehicleMake,
+  deleteVehicleMake,
+  toggleVehicleMakeStatus,
+  updateVehicleMake,
+  type CreateVehicleMakeInput,
+  type UpdateVehicleMakeInput,
+} from "@/lib/services/vehicle-makes.service";
+import {
+  createVehicleModel,
+  deleteVehicleModel,
+  toggleVehicleModelStatus,
+  updateVehicleModel,
+  type CreateVehicleModelInput,
+  type UpdateVehicleModelInput,
+} from "@/lib/services/vehicle-models.service";
+import {
   createBanner,
   deleteBanner,
   toggleBannerStatus,
@@ -160,5 +183,98 @@ export async function deletePayoutProviderAction(id: number) {
   return apiAction("Provider deleted", async () => {
     await deletePayoutProvider(id);
     revalidatePath("/dashboard/catalogue/payout-providers");
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+/* Vehicles — types, makes, models                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The fleet. Editing this is not cosmetic: `is_active` on a type decides who
+ * can register as a rider, and `max_parcel_size` decides which parcel sizes
+ * customers are offered. Deleting is refused while riders or child rows still
+ * reference the row, and the API's message names what is in the way.
+ */
+
+export async function saveVehicleTypeAction(id: number | null, input: SaveVehicleTypeInput) {
+  return apiAction(id === null ? "Vehicle type created" : "Vehicle type updated", async () => {
+    if (id === null) await createVehicleType(input);
+    else await updateVehicleType(id, input);
+
+    revalidatePath("/dashboard/catalogue/vehicle-types");
+  });
+}
+
+export async function deleteVehicleTypeAction(id: number) {
+  return apiAction("Vehicle type deleted", async () => {
+    await deleteVehicleType(id);
+    revalidatePath("/dashboard/catalogue/vehicle-types");
+  });
+}
+
+export async function toggleVehicleTypeStatusAction(id: number) {
+  return apiAction("Vehicle type status updated", async () => {
+    await toggleVehicleTypeStatus(id);
+    // Makes and models of a deactivated type leave the public API with it, so
+    // both of those listings can change too.
+    revalidatePath("/dashboard/catalogue/vehicle-types");
+    revalidatePath("/dashboard/catalogue/vehicle-makes");
+    revalidatePath("/dashboard/catalogue/vehicle-models");
+  });
+}
+
+export async function saveVehicleMakeAction(
+  id: number | null,
+  input: CreateVehicleMakeInput | UpdateVehicleMakeInput,
+) {
+  return apiAction(id === null ? "Vehicle make created" : "Vehicle make updated", async () => {
+    // A make cannot change type — that would re-file every rider on it — so an
+    // edit sends the name and flags only.
+    if (id === null) await createVehicleMake(input as CreateVehicleMakeInput);
+    else await updateVehicleMake(id, input as UpdateVehicleMakeInput);
+
+    revalidatePath("/dashboard/catalogue/vehicle-makes");
+  });
+}
+
+export async function deleteVehicleMakeAction(id: number) {
+  return apiAction("Vehicle make deleted", async () => {
+    await deleteVehicleMake(id);
+    revalidatePath("/dashboard/catalogue/vehicle-makes");
+  });
+}
+
+export async function toggleVehicleMakeStatusAction(id: number) {
+  return apiAction("Vehicle make status updated", async () => {
+    await toggleVehicleMakeStatus(id);
+    revalidatePath("/dashboard/catalogue/vehicle-makes");
+    revalidatePath("/dashboard/catalogue/vehicle-models");
+  });
+}
+
+export async function saveVehicleModelAction(
+  id: number | null,
+  input: CreateVehicleModelInput | UpdateVehicleModelInput,
+) {
+  return apiAction(id === null ? "Vehicle model created" : "Vehicle model updated", async () => {
+    if (id === null) await createVehicleModel(input as CreateVehicleModelInput);
+    else await updateVehicleModel(id, input as UpdateVehicleModelInput);
+
+    revalidatePath("/dashboard/catalogue/vehicle-models");
+  });
+}
+
+export async function deleteVehicleModelAction(id: number) {
+  return apiAction("Vehicle model deleted", async () => {
+    await deleteVehicleModel(id);
+    revalidatePath("/dashboard/catalogue/vehicle-models");
+  });
+}
+
+export async function toggleVehicleModelStatusAction(id: number) {
+  return apiAction("Vehicle model status updated", async () => {
+    await toggleVehicleModelStatus(id);
+    revalidatePath("/dashboard/catalogue/vehicle-models");
   });
 }

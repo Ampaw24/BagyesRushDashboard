@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { PageHeader } from "../../_components/page-header";
+import { ExportAction } from "../../_components/export-action";
 import { StatTile } from "../../_components/stat-tile";
 import { Meter } from "../../_components/meter";
 import { NoPermissionState } from "../../_components/empty-state";
@@ -57,6 +58,7 @@ export default async function TransactionsPage(props: PageProps<"/dashboard/tran
       <PageHeader
         title="Transactions"
         description="Customer payments collected through the platform."
+        action={<ExportAction resource="payments" filters={{ search: list.search }} />}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -12,7 +12,9 @@ import { formatCurrency, formatDateTime, formatDateTimeOrDash } from "../../_lib
 import { OrderActions } from "./_components/order-actions";
 import { TrackingPanel } from "./_components/tracking-panel";
 import { DispatchPanel } from "./_components/dispatch-panel";
+import { FailedDeliveryBanner } from "./_components/failed-delivery-banner";
 import { getOrder } from "@/lib/services/orders.service";
+import { getConversationForOrder } from "@/lib/services/conversations.service";
 import { listRiders } from "@/lib/services/riders.service";
 import { toOrderDetail } from "@/lib/mappers/order.mapper";
 import { toRiderRow } from "@/lib/mappers/rider.mapper";
@@ -50,6 +52,14 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
         )
       : [];
 
+  // What the customer and the rider actually said to each other, which is the
+  // evidence a disputed delivery turns on. Looked up rather than created - the
+  // admin endpoint deliberately does not open a thread, so reading an order
+  // never makes a chat window appear on somebody's phone.
+  const conversation = can(permissions, "chat.view")
+    ? await getConversationForOrder(order.id).catch(() => null)
+    : null;
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
@@ -68,6 +78,8 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
           />
         }
       />
+
+      <FailedDeliveryBanner order={order} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <InfoCard title="Customer">
@@ -103,6 +115,21 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
             label="Rider"
             value={order.rider ? (order.rider.name ?? order.rider.phone) : "Unassigned"}
           />
+          {conversation && (
+            <InfoRow
+              label="Chat"
+              value={
+                <Link
+                  href={`/dashboard/conversations/${conversation.id}`}
+                  className="text-brand transition duration-150 hover:opacity-80"
+                >
+                  Read the conversation
+                  {typeof conversation.message_count === "number" &&
+                    ` (${conversation.message_count})`}
+                </Link>
+              }
+            />
+          )}
           {order.parcel?.deliveryInstructions && (
             <InfoRow label="Instructions" value={order.parcel.deliveryInstructions} />
           )}

@@ -2,6 +2,7 @@ import { apiFetch, apiFetchOptional } from "../api/client";
 import type {
   PlatformSettingDto,
   PlatformSettingsResponseDto,
+  ExportOptionsDto,
   SettingsPreviewDto,
 } from "../types/api";
 
@@ -37,6 +38,8 @@ export type PlatformSettingInput = {
   rider_minimum?: number | null;
   rider_minimum_withdrawal?: number | null;
   vendor_minimum_withdrawal?: number | null;
+  customer_minimum_withdrawal?: number | null;
+  customer_withdrawals_enabled?: boolean;
 };
 
 /**
@@ -73,4 +76,15 @@ export async function publishPlatformSettings(
     method: "POST",
     body: input,
   });
+}
+
+/**
+ * GET /admin/exports — what this admin may export, and whether email works.
+ *
+ * Fetched per page rather than cached in a context: it is a tiny payload, and
+ * the answer depends on the signed-in admin's permissions, which a shared cache
+ * would get wrong the moment somebody's role changed.
+ */
+export async function getExportOptions(): Promise<ExportOptionsDto | null> {
+  return apiFetchOptional<ExportOptionsDto>("/admin/exports");
 }

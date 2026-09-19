@@ -1,6 +1,7 @@
 import { apiFetch, apiFetchPage } from "../api/client";
 import type { Paginated } from "../api/types";
 import type {
+  CustomerPayoutMethodDto,
   RiderWalletSummaryDto,
   WalletTransactionDto,
   WithdrawalDto,
@@ -13,8 +14,8 @@ export type WithdrawalListQuery = {
   per_page?: number;
   search?: string;
   status?: WithdrawalStatus;
-  /** One queue carries both sides; omit for all of it. */
-  owner_type?: "rider" | "vendor";
+  /** One queue carries every side; omit for all of it. */
+  owner_type?: "rider" | "vendor" | "customer";
   owner_id?: number;
   from?: string;
   to?: string;
@@ -56,6 +57,63 @@ export async function processWithdrawal(
   });
 }
 
+/**
+ * POST /admin/withdrawals/{id}/verify — requires `withdrawals.process`.
+ *
+ * Asks the provider what became of a payout it already accepted. Settlement
+ * normally arrives by webhook; when one never lands, the withdrawal sits in
+ * `approved` with the owner's balance reserved and nobody able to say whether
+ * the money moved. Before this the only recourse was the Paystack dashboard.
+ *
+ * The answer routes through the same settlement path the webhook uses, so a
+ * verified payout and a webhooked one cannot disagree about whether somebody
+ * has been paid. `changed` is false when the provider had nothing new to say.
+ */
+export async function verifyWithdrawal(id: number): Promise<{
+  withdrawal: WithdrawalDto;
+  provider_status: string | null;
+  changed: boolean;
+}> {
+  return apiFetch(`/admin/withdrawals/${id}/verify`, { method: "POST" });
+}
+
+/**
+ * Whose wallet this is.
+ *
+ * All three have the same wallet, the same statement and the same adjustment
+ * rules — the backend routes are identical bar the segment — so the calls below
+ * take the party rather than existing three times.
+ *
+ * What differs is what the balance *means*. A rider's and a vendor's is money
+ * they earned and all of it can be paid out. A customer's is refunds and
+ * goodwill, so part of it may be spendable on the platform and nowhere else,
+ * and cashing out is off unless an admin has turned it on.
+ */
+export type WalletParty = "rider" | "vendor" | "customer";
+
+/** `/admin/riders/...`, `/admin/vendors/...` or `/admin/customers/...` */
+const walletBase = (party: WalletParty, id: number) => `/admin/${party}s/${id}/wallet`;
+
+/**
+ * GET /admin/{party}s/{id}/wallet — requires `riders.wallet` or
+ * `vendors.wallet` respectively.
+ *
+ * The owner block is keyed by party: a rider payload carries `rider`, a vendor
+ * one carries `vendor`.
+ */
+export async function getWallet(
+  party: WalletParty,
+  id: number,
+): Promise<{
+  summary: RiderWalletSummaryDto;
+  rider?: { id: number; name: string; rider_code: string };
+  vendor?: { id: number; name: string; vendor_id: string };
+  customer?: { id: number; name: string; phone: string | null };
+  payout_method?: CustomerPayoutMethodDto;
+}> {
+  return apiFetch(walletBase(party, id));
+}
+
 /** GET /admin/riders/{id}/wallet — requires `riders.wallet`. */
 export async function getRiderWallet(riderId: number): Promise<{
   summary: RiderWalletSummaryDto;
@@ -72,11 +130,19 @@ export type WalletTransactionQuery = {
   to?: string;
 };
 
+export async function listWalletTransactions(
+  party: WalletParty,
+  id: number,
+  query: WalletTransactionQuery = {},
+): Promise<Paginated<WalletTransactionDto>> {
+  return apiFetchPage<WalletTransactionDto>(`${walletBase(party, id)}/transactions`, { query });
+}
+
 export async function listRiderTransactions(
   riderId: number,
   query: WalletTransactionQuery = {},
 ): Promise<Paginated<WalletTransactionDto>> {
-  return apiFetchPage<WalletTransactionDto>(`/admin/riders/${riderId}/wallet/transactions`, { query });
+  return listWalletTransactions("rider", riderId, query);
 }
 
 /**
@@ -87,13 +153,22 @@ export async function listRiderTransactions(
  * `note` is required and must be at least 5 characters: a movement with no
  * explanation is indistinguishable from a mistake six months later.
  */
+export async function adjustWallet(
+  party: WalletParty,
+  id: number,
+  direction: "credit" | "debit",
+  input: { amount: number; note: string; type?: WalletTransactionType },
+): Promise<{ transaction: WalletTransactionDto; summary: RiderWalletSummaryDto }> {
+  return apiFetch(`${walletBase(party, id)}/${direction}`, {
+    method: "POST",
+    body: input,
+  });
+}
+
 export async function adjustRiderWallet(
   riderId: number,
   direction: "credit" | "debit",
   input: { amount: number; note: string; type?: WalletTransactionType },
 ): Promise<{ transaction: WalletTransactionDto; summary: RiderWalletSummaryDto }> {
-  return apiFetch(`/admin/riders/${riderId}/wallet/${direction}`, {
-    method: "POST",
-    body: input,
-  });
+  return adjustWallet("rider", riderId, direction, input);
 }

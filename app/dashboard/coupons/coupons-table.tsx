@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { ActionMenu } from "../_components/action-menu";
+import { RedemptionsDialog } from "./redemptions-dialog";
 import { Badge } from "../_components/status-badge";
 import { ConfirmDialog } from "../_components/confirm-dialog";
 import { TableCell, TableHeadCell, TableShell } from "../_components/table-shell";
@@ -11,7 +12,7 @@ import { Pagination } from "../_components/pagination";
 import { FilterBar, type SelectFilter } from "../_components/filter-bar";
 import { promoCodeStateMeta } from "../_lib/status";
 import { useToast } from "../_components/toast-provider";
-import { PlusIcon, RefreshIcon, TrashIcon } from "../_lib/icons";
+import { EyeIcon, PlusIcon, RefreshIcon, TrashIcon } from "../_lib/icons";
 import { formatCurrency, formatDate } from "../_lib/format";
 import { CouponFormDialog } from "./coupon-form-dialog";
 import { deletePromoCodeAction, togglePromoCodeStatusAction } from "./_actions";
@@ -39,6 +40,7 @@ const ACTIVE_FILTER: SelectFilter = {
 type Dialog =
   | { kind: "form"; coupon: PromoCodeRow | null }
   | { kind: "delete"; coupon: PromoCodeRow }
+  | { kind: "redemptions"; coupon: PromoCodeRow }
   | null;
 
 export function CouponsTable({
@@ -81,6 +83,7 @@ export function CouponsTable({
                 <TableHeadCell>Min. order</TableHeadCell>
                 <TableHeadCell>Redemptions</TableHeadCell>
                 <TableHeadCell>Ends</TableHeadCell>
+                <TableHeadCell>Listing</TableHeadCell>
                 <TableHeadCell>Status</TableHeadCell>
                 <TableHeadCell>
                   <span className="sr-only">Actions</span>
@@ -110,6 +113,10 @@ export function CouponsTable({
                   <TableCell className="text-text-secondary">
                     {coupon.endsAt ? formatDate(coupon.endsAt) : "No end date"}
                   </TableCell>
+                  <TableCell className="text-text-secondary">
+                    {/* Whether the apps advertise it, or you hand it out. */}
+                    {coupon.isPublic ? "Public offer" : "Targeted"}
+                  </TableCell>
                   <TableCell>
                     {/* `is_live` folds in the schedule, so an active-but-future
                         code reads "Scheduled" rather than "Live". */}
@@ -119,6 +126,13 @@ export function CouponsTable({
                     <ActionMenu
                       items={[
                         { label: "Edit", onClick: () => setDialog({ kind: "form", coupon }) },
+                        {
+                          label: "View redemptions",
+                          icon: EyeIcon,
+                          disabled: coupon.redemptionCount === 0,
+                          disabledReason: "Nobody has used this code yet.",
+                          onClick: () => setDialog({ kind: "redemptions", coupon }),
+                        },
                         {
                           label: coupon.isActive ? "Deactivate" : "Activate",
                           icon: RefreshIcon,
@@ -140,6 +154,10 @@ export function CouponsTable({
 
           <Pagination pagination={pagination} />
         </>
+      )}
+
+      {dialog?.kind === "redemptions" && (
+        <RedemptionsDialog coupon={dialog.coupon} onClose={() => setDialog(null)} />
       )}
 
       {dialog?.kind === "form" && (

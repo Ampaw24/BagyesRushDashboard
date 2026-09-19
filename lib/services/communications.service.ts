@@ -8,6 +8,7 @@ import type {
   CommunicationOptionsDto,
   CommunicationRecipientDto,
   CommunicationTemplateDto,
+  TestPushResultDto,
 } from "../types/api";
 import type { CommunicationAudience, CommunicationChannel, CommunicationStatus } from "../types/enums";
 
@@ -162,4 +163,30 @@ export async function searchAudience(
   return apiFetch<{ results: AudienceCandidateDto[] }>("/admin/communications/audience/search", {
     query,
   });
+}
+
+/**
+ * POST /admin/push/test — requires `communications.send`.
+ *
+ * Sends one push and hands back the exact payload and Firebase's raw answer.
+ *
+ * This exists because Firebase's own console cannot answer the question people
+ * actually have. It counts a message as delivered the moment FCM accepts it, so
+ * a handset that rendered nothing looks identical to one that did. `mode`
+ * isolates the two halves: `notification` is what the Firebase console
+ * composes, `data` is what a foregrounded Flutter app receives, and `both` is
+ * what this application really sends — so a push that works from the console
+ * and not from here can be narrowed to which half.
+ *
+ * Send to a raw token, or to `user_id` to reach every device that person has
+ * registered, whichever the person debugging has to hand.
+ */
+export async function sendTestPush(input: {
+  token?: string;
+  user_id?: number;
+  title?: string;
+  body?: string;
+  mode?: "notification" | "data" | "both";
+}): Promise<TestPushResultDto> {
+  return apiFetch<TestPushResultDto>("/admin/push/test", { method: "POST", body: input });
 }

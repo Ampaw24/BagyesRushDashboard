@@ -1,4 +1,5 @@
 import { PageHeader } from "../../_components/page-header";
+import { ExportAction } from "../../_components/export-action";
 import { NoPermissionState } from "../../_components/empty-state";
 import { StatTile } from "../../_components/stat-tile";
 import { WithdrawalsTable } from "../payout-requests/payouts-table";
@@ -9,7 +10,7 @@ import { parseListParams, readEnumParam } from "@/lib/api/query";
 import { WITHDRAWAL_STATUSES, type WithdrawalStatus } from "@/lib/types/enums";
 
 /** Both sides draw from the same queue. */
-const OWNER_TYPES = ["rider", "vendor"] as const;
+const OWNER_TYPES = ["rider", "vendor", "customer"] as const;
 import { formatCurrency } from "../../_lib/format";
 import { ClockIcon, WalletIcon } from "../../_lib/icons";
 
@@ -64,10 +65,20 @@ export async function WithdrawalsListPage({
         title={title}
         description={description}
         action={
-          <span className="text-sm text-text-muted">
-            {page.pagination.total.toLocaleString()} request
-            {page.pagination.total === 1 ? "" : "s"}
-          </span>
+          <div className="flex items-center gap-3">
+            <ExportAction
+              resource="payouts"
+              filters={{
+                search: list.search,
+                status: fixedStatus ?? readEnumParam(params, "status", WITHDRAWAL_STATUSES),
+                owner_type: readEnumParam(params, "owner_type", OWNER_TYPES),
+              }}
+            />
+            <span className="text-sm text-text-muted">
+              {page.pagination.total.toLocaleString()} request
+              {page.pagination.total === 1 ? "" : "s"}
+            </span>
+          </div>
         }
       />
 

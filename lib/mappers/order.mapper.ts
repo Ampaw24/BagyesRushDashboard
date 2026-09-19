@@ -7,7 +7,7 @@ import type {
   ParcelStopStatus,
   PaymentMethod,
   PaymentStatus,
-  VehicleType,
+  VehicleTypeSlug,
 } from "../types/enums";
 import { toDate, toDateOrEpoch } from "./dates";
 
@@ -66,13 +66,27 @@ export type OrderPricing = {
 };
 
 /** vendor + rider + platform = total. The platform's share is the remainder. */
+/**
+ * Where an order's money went.
+ *
+ * null means "not settled yet", which is a different statement from zero. The
+ * vendor's share settles when the customer pays; the rider's when somebody
+ * delivers. Treating the two as interchangeable is what made the split panel
+ * report a confident GHS 0.00 for money that had simply not moved yet.
+ */
 export type OrderEarnings = {
-  vendor: number;
-  rider: number;
-  platform: number;
+  vendor: number | null;
+  vendorCommission: number | null;
+  rider: number | null;
+  riderCommission: number | null;
+  platform: number | null;
+  /** total − vendor − rider. Null until the rider has been paid. */
+  platformKeeps: number | null;
   serviceFee: number;
   /** Which published settings priced it; null on orders that predate them. */
   commissionSettingId: number | null;
+  vendorSettled: boolean;
+  riderSettled: boolean;
 };
 
 export type OrderTimelineStep = { status: OrderStatus; label: string; at: Date | null };
@@ -133,7 +147,33 @@ export type OrderDetail = OrderRow & {
   pickup: OrderPickup | null;
   dropoffLatitude: number | null;
   dropoffLongitude: number | null;
+  /**
+   * What happened at the door. `failedAt` set with the order still live is a
+   * delivery the rider waited out and abandoned, which is the one state on this
+   * screen that is somebody's job rather than a fact.
+   */
+  arrival: OrderArrival;
+  /** What has gone back, and what a refund could still send. */
+  refund: OrderRefundState;
   updatedAt: Date | null;
+};
+
+export type OrderArrival = {
+  arrivedAt: Date | null;
+  waitExpiresAt: Date | null;
+  distanceMetres: number | null;
+  verified: boolean;
+  failedAt: Date | null;
+  failureReason: string | null;
+  needsResolution: boolean;
+};
+
+export type OrderRefundState = {
+  refunded: number;
+  refundableRemaining: number;
+  paidFromWallet: number;
+  isRefundable: boolean;
+  presets: Array<{ key: string; label: string; amount: number }>;
 };
 
 export type ParcelStopRow = {
@@ -180,7 +220,8 @@ export type OrderRider = {
   name: string | null;
   phone: string;
   photoUrl: string | null;
-  vehicleType: VehicleType | null;
+  vehicleType: VehicleTypeSlug | null;
+  vehicleTypeLabel: string | null;
   plateNumber: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -242,10 +283,15 @@ export function toOrderRow(dto: AdminOrderDto): OrderRow {
     earnings: dto.earnings
       ? {
           vendor: dto.earnings.vendor,
+          vendorCommission: dto.earnings.vendor_commission ?? null,
           rider: dto.earnings.rider,
+          riderCommission: dto.earnings.rider_commission ?? null,
           platform: dto.earnings.platform,
+          platformKeeps: dto.earnings.platform_keeps ?? null,
           serviceFee: dto.earnings.service_fee,
           commissionSettingId: dto.earnings.commission_setting_id,
+          vendorSettled: dto.earnings.vendor_settled ?? false,
+          riderSettled: dto.earnings.rider_settled ?? false,
         }
       : null,
     pricing: dto.pricing
@@ -313,6 +359,7 @@ export function toOrderDetail(dto: AdminOrderDto): OrderDetail {
           phone: dto.rider.phone,
           photoUrl: dto.rider.photo_url,
           vehicleType: dto.rider.vehicle_type,
+          vehicleTypeLabel: dto.rider.vehicle_type_label,
           plateNumber: dto.rider.plate_number,
           latitude: dto.rider.latitude ?? null,
           longitude: dto.rider.longitude ?? null,
@@ -322,6 +369,24 @@ export function toOrderDetail(dto: AdminOrderDto): OrderDetail {
     pickup: dto.pickup ?? null,
     dropoffLatitude: dto.delivery.latitude ?? null,
     dropoffLongitude: dto.delivery.longitude ?? null,
+    arrival: {
+      arrivedAt: toDate(dto.arrival?.arrived_at),
+      waitExpiresAt: toDate(dto.arrival?.wait_expires_at),
+      distanceMetres: dto.arrival?.distance_metres ?? null,
+      verified: dto.arrival?.verified ?? false,
+      failedAt: toDate(dto.arrival?.failed_at),
+      failureReason: dto.arrival?.failure_reason ?? null,
+      needsResolution: dto.arrival?.needs_resolution ?? false,
+    },
+    refund: {
+      refunded: dto.refund?.refunded ?? 0,
+      // Falls back to the total against a backend that predates the block, so
+      // a full refund is still offered rather than nothing being offered.
+      refundableRemaining: dto.refund?.refundable_remaining ?? dto.totals.total,
+      paidFromWallet: dto.refund?.paid_from_wallet ?? 0,
+      isRefundable: dto.refund?.is_refundable ?? dto.payment.is_paid,
+      presets: dto.refund?.presets ?? [],
+    },
     dispatch: {
       assignedAt: toDate(dto.dispatch?.assigned_at),
       arrivedAtPickup: toDate(dto.dispatch?.arrived_at_pickup),

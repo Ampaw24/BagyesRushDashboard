@@ -14,11 +14,12 @@ import {
   restoreVendorAction,
   suspendVendorAction,
   toggleVendorFeaturedAction,
+  toggleVendorOpenAction,
 } from "../vendors/_actions";
 import type { VendorRow } from "@/lib/mappers/vendor.mapper";
 import { vendorStatusTransitions } from "@/lib/types/enums";
 
-type PendingAction = "approve" | "reject" | "suspend" | "reinstate" | "feature" | "delete" | "restore" | null;
+type PendingAction = "approve" | "reject" | "suspend" | "reinstate" | "feature" | "open" | "delete" | "restore" | null;
 
 export type VendorActionPermissions = {
   canModerate: boolean;
@@ -75,6 +76,16 @@ export function useVendorStatusActions(
       disabled: vendor.status !== "approved",
       disabledReason: "Only an approved vendor can be featured.",
       onClick: () => setPending("feature"),
+    });
+
+    // Reads the vendor's own switch, not isOpenNow: this control flips their
+    // intent, and whether that makes them visibly open depends on the clock.
+    actions.push({
+      label: vendor.isOpen ? "Close for orders" : "Open for orders",
+      icon: RefreshIcon,
+      disabled: vendor.status !== "approved" || !vendor.isActive,
+      disabledReason: "Only an approved, active vendor can open for orders.",
+      onClick: () => setPending("open"),
     });
   }
 
@@ -134,6 +145,21 @@ function VendorActionDialog({
       confirm: "Reinstate",
       danger: false,
     },
+    open: {
+      title: vendor.isOpen ? "Close for orders" : "Open for orders",
+      // Says what will actually happen rather than what the switch says. A
+      // vendor opened outside their hours stays closed to customers, and an
+      // admin clicking this deserves to know that before they click.
+      description: vendor.isOpen
+        ? `${vendor.businessName} will stop receiving orders.`
+        : vendor.closedReason === "closed_today"
+          ? `${vendor.businessName} is not scheduled to trade today, so they will stay closed to customers until their next operating day.`
+          : vendor.closedReason === "outside_hours"
+            ? `${vendor.businessName} is outside their opening hours, so they will start receiving orders when those hours begin.`
+            : `${vendor.businessName} will start receiving orders.`,
+      confirm: vendor.isOpen ? "Close" : "Open",
+      danger: false,
+    },
     feature: {
       title: vendor.isFeatured ? "Remove from featured" : "Feature vendor",
       description: vendor.isFeatured
@@ -189,6 +215,8 @@ function runVendorAction(action: Exclude<PendingAction, null>, id: number, reaso
       return reinstateVendorAction(id);
     case "feature":
       return toggleVendorFeaturedAction(id);
+    case "open":
+      return toggleVendorOpenAction(id);
     case "delete":
       return deleteVendorAction(id);
     case "restore":

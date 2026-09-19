@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 
 import { apiAction } from "@/lib/api/action";
-import { adjustRiderWallet, processWithdrawal } from "@/lib/services/wallets.service";
+import {
+  adjustWallet,
+  processWithdrawal,
+  verifyWithdrawal,
+  type WalletParty,
+} from "@/lib/services/wallets.service";
 import type { WalletTransactionType } from "@/lib/types/enums";
 
 /**
@@ -14,11 +19,12 @@ import type { WalletTransactionType } from "@/lib/types/enums";
  * queue, `riders.wallet` for adjustments — and these wrappers only carry the
  * session cookie and normalise the result for the dialogs.
  */
-function revalidateWalletViews(riderId?: number) {
+function revalidateWalletViews(party?: WalletParty, id?: number) {
   revalidatePath("/dashboard/transactions/payout-requests");
   revalidatePath("/dashboard/transactions/payouts");
   revalidatePath("/dashboard/transactions/earnings");
-  if (riderId !== undefined) revalidatePath(`/dashboard/riders/${riderId}`);
+  revalidatePath("/dashboard/transactions/all");
+  if (party && id !== undefined) revalidatePath(`/dashboard/${party}s/${id}`);
 }
 
 export async function approveWithdrawalAction(id: number) {
@@ -44,13 +50,43 @@ export async function markWithdrawalPaidAction(id: number, paymentReference?: st
   });
 }
 
+/**
+ * Ask the provider what became of a payout it already accepted.
+ *
+ * For the withdrawal that is stuck in `approved` because its `transfer.success`
+ * webhook never arrived: the owner's balance is reserved, and without this
+ * nobody could say whether the money actually left. The backend routes the
+ * answer through the same settlement path the webhook uses, so this cannot
+ * produce a second opinion about whether somebody has been paid.
+ *
+ * The toast carries the API's own wording, because "the provider has never
+ * heard of this reference" and "the transfer succeeded" are different
+ * situations and only the backend knows which one it got.
+ */
+export async function verifyWithdrawalAction(id: number) {
+  return apiAction("Checked with the provider", async () => {
+    const result = await verifyWithdrawal(id);
+    revalidateWalletViews();
+
+    return result;
+  });
+}
+
+/**
+ * Post a line to a rider's or a vendor's statement.
+ *
+ * The party decides the endpoint and therefore the permission — `riders.wallet`
+ * or `vendors.wallet`. The backend is the real gate; this only carries the
+ * session cookie.
+ */
 export async function adjustWalletAction(
-  riderId: number,
+  party: WalletParty,
+  id: number,
   direction: "credit" | "debit",
   input: { amount: number; note: string; type?: WalletTransactionType },
 ) {
   return apiAction(direction === "credit" ? "Wallet credited" : "Wallet debited", async () => {
-    await adjustRiderWallet(riderId, direction, input);
-    revalidateWalletViews(riderId);
+    await adjustWallet(party, id, direction, input);
+    revalidateWalletViews(party, id);
   });
 }

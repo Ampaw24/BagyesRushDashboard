@@ -41,7 +41,7 @@ export function MobileNav({ navTree }: { navTree: NavEntry[] }) {
           role="dialog"
           aria-modal="true"
           aria-label="Navigation"
-          className={`absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto bg-surface shadow-sm transition-transform duration-200 ${
+          className={`absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto bg-sidebar shadow-sm transition-transform duration-200 ${
             open ? "translate-x-0" : "-translate-x-full"
           }`}
         >

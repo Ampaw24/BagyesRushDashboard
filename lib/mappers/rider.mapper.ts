@@ -5,7 +5,7 @@ import {
   type RiderDocumentType,
   type RiderStatus,
   type VehicleOwnership,
-  type VehicleType,
+  type VehicleTypeSlug,
 } from "../types/enums";
 import { toDate, toDateOrEpoch } from "./dates";
 
@@ -37,7 +37,7 @@ export type RiderRow = {
   email: string | null;
   photoUrl: string | null;
   city: string | null;
-  vehicleType: VehicleType | null;
+  vehicleType: VehicleTypeSlug | null;
   vehicleTypeLabel: string | null;
   plateNumber: string | null;
   status: RiderStatus;
@@ -121,8 +121,13 @@ export type RiderDetail = RiderRow & {
     typeLabel: string | null;
     number: string | null;
   };
+  vehicleTypeId: number | null;
+  /** Off the type, so a form asks for a plate only where one exists. */
+  requiresPlate: boolean;
   vehicle: {
+    makeId: number | null;
     make: string | null;
+    modelId: number | null;
     model: string | null;
     colour: string | null;
     year: number | null;
@@ -173,8 +178,11 @@ export type RiderDetail = RiderRow & {
   currentLatitude: number | null;
   currentLongitude: number | null;
   locationUpdatedAt: Date | null;
-  maxDeliveryRadiusKm: number;
-  maxConcurrentJobs: number;
+  /** Null when the rider has stated no preference; see the DTO. */
+  maxDeliveryRadiusKm: number | null;
+  effectiveMaxDeliveryRadiusKm: number;
+  maxConcurrentJobs: number | null;
+  effectiveMaxConcurrentJobs: number;
   documents: RiderDocument[];
   documentsReviewedAt: Date | null;
   payoutConfigured: boolean;
@@ -215,11 +223,15 @@ export function toRiderDetail(dto: RiderDto): RiderDetail {
       number: dto.identity?.number ?? null,
     },
 
+    vehicleTypeId: dto.vehicle.type_id,
     vehicleType: dto.vehicle.type,
     vehicleTypeLabel: dto.vehicle.type_label,
+    requiresPlate: dto.vehicle.requires_plate ?? true,
     plateNumber: dto.vehicle.plate_number,
     vehicle: {
+      makeId: dto.vehicle.make_id,
       make: dto.vehicle.make,
+      modelId: dto.vehicle.model_id,
       model: dto.vehicle.model,
       colour: dto.vehicle.colour,
       year: dto.vehicle.year,
@@ -287,7 +299,9 @@ export function toRiderDetail(dto: RiderDto): RiderDetail {
     currentLongitude: dto.current_longitude,
     locationUpdatedAt: toDate(dto.location_updated_at),
     maxDeliveryRadiusKm: dto.max_delivery_radius_km,
+    effectiveMaxDeliveryRadiusKm: dto.effective_max_delivery_radius_km,
     maxConcurrentJobs: dto.max_concurrent_jobs,
+    effectiveMaxConcurrentJobs: dto.effective_max_concurrent_jobs,
 
     rating: dto.rating,
     reviewCount: dto.review_count,

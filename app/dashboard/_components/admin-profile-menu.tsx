@@ -64,6 +64,13 @@ export function AdminProfileMenu({ id, name, roleLabel, showDetails = true }: Ad
           >
             View profile
           </Link>
+          <Link
+            href="/dashboard/settings"
+            onClick={() => setOpen(false)}
+            className="flex min-h-9 items-center rounded-md px-3 text-sm text-text-secondary transition duration-150 hover:bg-surface-muted"
+          >
+            Account &amp; password
+          </Link>
           <LogoutButton
             onDone={() => setOpen(false)}
             className="flex min-h-9 w-full items-center gap-2 rounded-md px-3 text-sm text-status-critical transition duration-150 hover:bg-status-critical/10 disabled:opacity-60"

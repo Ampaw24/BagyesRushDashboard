@@ -11,6 +11,7 @@ import {
   previewAudience,
   searchAudience,
   sendCommunication,
+  sendTestPush,
   updateCommunicationTemplate,
   type AudiencePreviewInput,
   type ComposeCommunicationInput,
@@ -100,4 +101,22 @@ export async function deleteTemplateAction(id: number) {
 /** Backs the "selected people" picker — the composer needs names, not ids. */
 export async function searchAudienceAction(query: { q?: string; role?: string; limit?: number }) {
   return apiAction<AudienceCandidateDto[]>("", async () => (await searchAudience(query)).results);
+}
+
+/**
+ * Send one push and hand back exactly what Firebase said.
+ *
+ * A diagnostic, not a feature: Firebase counts a message as delivered the
+ * moment FCM accepts it, so its console cannot distinguish a handset that
+ * rendered a notification from one that did nothing with it. Nothing is
+ * revalidated because nothing is stored.
+ */
+export async function sendTestPushAction(input: {
+  token?: string;
+  user_id?: number;
+  title?: string;
+  body?: string;
+  mode?: "notification" | "data" | "both";
+}) {
+  return apiAction("Test push dispatched", async () => sendTestPush(input));
 }

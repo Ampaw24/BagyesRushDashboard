@@ -21,6 +21,8 @@ export type PromoCodeRow = {
   maxPerCustomer: number | null;
   redemptionCount: number;
   isActive: boolean;
+  /** Listed in the public offers feed the apps show. */
+  isPublic: boolean;
   /** Active *and* inside its window — what the badge should reflect. */
   isLive: boolean;
   createdAt: Date;
@@ -46,6 +48,7 @@ export function toPromoCodeRow(dto: PromoCodeDto): PromoCodeRow {
     maxPerCustomer: dto.max_per_customer,
     redemptionCount: dto.redemption_count,
     isActive: dto.is_active,
+    isPublic: dto.is_public,
     isLive: dto.is_live,
     createdAt: toDateOrEpoch(dto.created_at),
   };

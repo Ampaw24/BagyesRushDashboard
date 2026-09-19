@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { SESSION_COOKIE } from "@/lib/api/config";
+import { redirectToAbsolute } from "@/lib/http/redirect";
 
 /**
  * Route protection. In Next.js 16 this file is `proxy.ts`, not `middleware.ts`.
@@ -16,14 +17,17 @@ export function proxy(request: NextRequest) {
   const hasSession = request.cookies.has(SESSION_COOKIE);
 
   if (pathname.startsWith("/dashboard") && !hasSession) {
-    const target = new URL("/login", request.url);
     // Remember where they were headed so login can return them there.
-    if (pathname !== "/dashboard") target.searchParams.set("next", `${pathname}${search}`);
-    return NextResponse.redirect(target);
+    const next =
+      pathname === "/dashboard"
+        ? ""
+        : `?next=${encodeURIComponent(`${pathname}${search}`)}`;
+
+    return redirectToAbsolute(request, `/login${next}`);
   }
 
   if (pathname === "/login" && hasSession) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return redirectToAbsolute(request, "/dashboard");
   }
 
   return NextResponse.next();

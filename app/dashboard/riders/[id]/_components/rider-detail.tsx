@@ -10,16 +10,24 @@ import { EmptyState } from "../../../_components/empty-state";
 import { PageHeader } from "../../../_components/page-header";
 import { documentsStatusMeta, riderStateMeta } from "../../../_lib/status";
 import { formatDate, formatDateTimeOrDash } from "../../../_lib/format";
-import { StarIcon } from "../../../_lib/icons";
+import { EditIcon, StarIcon } from "../../../_lib/icons";
 import { useRiderStatusActions } from "../../../_hooks/use-rider-status-actions";
+import { useSendMessage } from "../../../_hooks/use-send-message";
+import { EditRiderDialog } from "./edit-rider-dialog";
+import { RiderLocationMap } from "./rider-location-map";
+import { Avatar } from "../../../_components/avatar";
+import { ImageLightbox } from "../../../_components/image-lightbox";
 import type { RiderDetail as RiderDetailModel, RiderPayout } from "@/lib/mappers/rider.mapper";
 import type { ActivityRow } from "@/lib/mappers/activity.mapper";
 import type { WalletSummary, WalletTransactionRow } from "@/lib/mappers/wallet.mapper";
-import { WalletTab } from "./wallet-tab";
+import { WalletTab } from "../../../_components/wallet-tab";
 import { riderCredentialLabels, riderDocumentLabels } from "@/lib/types/enums";
+import type { VehicleCatalogue } from "../../_components/vehicle-picker";
 
 export type RiderDetailProps = {
   rider: RiderDetailModel;
+  /** The type -> make -> model tree, so the edit dialog's picker cascades. */
+  catalogue: VehicleCatalogue;
   /** Present only when the admin holds `riders.payout`; every read is audit-logged. */
   payout: RiderPayout | null;
   /** From GET /admin/activity filtered to this rider; empty without `audit.view`. */
@@ -29,14 +37,20 @@ export type RiderDetailProps = {
   transactions: WalletTransactionRow[];
   permissions: {
     canModerate: boolean;
+    canUpdate: boolean;
     canDelete: boolean;
     canViewDocuments: boolean;
     canAdjustWallet: boolean;
+    /** `communications.send` — sending SMS spends credits, so it is its own right. */
+    canMessage: boolean;
   };
 };
 
 const TABS = [
   { key: "overview", label: "Overview" },
+  // Second, not buried at the bottom: when somebody opens a rider's profile
+  // during a delivery, where they are is usually the question.
+  { key: "map", label: "Map" },
   { key: "compliance", label: "Compliance" },
   { key: "documents", label: "Documents" },
   { key: "wallet", label: "Wallet" },
@@ -46,6 +60,7 @@ const TABS = [
 
 export function RiderDetail({
   rider,
+  catalogue,
   payout,
   activity,
   wallet,
@@ -54,19 +69,46 @@ export function RiderDetail({
 }: RiderDetailProps) {
   const [tab, setTab] = useState("overview");
   const { actions, dialog } = useRiderStatusActions(rider, permissions);
+  const { actions: messageActions, dialog: messageDialog } = useSendMessage(
+    { userId: rider.userId, name: rider.name, phone: rider.phone },
+    permissions.canMessage,
+  );
+  const [editing, setEditing] = useState(false);
+
+  const headerActions = [
+    // riders.update: correcting a plate or a city, not deciding whether they
+    // may work. The same permission the availability switch carries.
+    ...(permissions.canUpdate
+      ? [{ label: "Edit details", icon: EditIcon, onClick: () => setEditing(true) }]
+      : []),
+    ...messageActions,
+    ...actions,
+  ];
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title={
           <span className="flex flex-wrap items-center gap-3">
+            {/* The photo a customer sees at the door, at a size somebody can
+                actually recognise a face in. It was already on every list row
+                and nowhere on the profile. */}
+            <Avatar
+              name={rider.name}
+              src={rider.photoUrl}
+              className="h-12 w-12 text-sm"
+              // The photo is part of what an admin approves them on — it has
+              // to be checkable against the Ghana Card, not just decorative.
+              zoomable
+              caption={`${rider.name} · ${rider.riderCode}`}
+            />
             {rider.name}
             <Badge meta={riderStateMeta[rider.derivedState]} />
             <RiderPresenceBadge online={rider.isOnline} />
           </span>
         }
         description={`${rider.riderCode} · joined ${formatDate(rider.joinedAt)}`}
-        action={actions.length > 0 ? <ActionMenu items={actions} /> : undefined}
+        action={headerActions.length > 0 ? <ActionMenu items={headerActions} /> : undefined}
       />
 
       {rider.rejectionReason && (
@@ -100,14 +142,16 @@ export function RiderDetail({
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
 
       {tab === "overview" && <OverviewTab rider={rider} />}
+      {tab === "map" && <RiderLocationMap rider={rider} />}
       {tab === "compliance" && <ComplianceTab rider={rider} />}
       {tab === "documents" && (
         <DocumentsTab rider={rider} canView={permissions.canViewDocuments} />
       )}
       {tab === "wallet" && (
         <WalletTab
-          riderId={rider.id}
-          riderName={rider.name}
+          party="rider"
+          ownerId={rider.id}
+          ownerName={rider.name}
           summary={wallet}
           transactions={transactions}
           canAdjust={permissions.canAdjustWallet}
@@ -117,6 +161,10 @@ export function RiderDetail({
       {tab === "activity" && <ActivityTab activity={activity} />}
 
       {dialog}
+      {messageDialog}
+      {editing && (
+        <EditRiderDialog rider={rider} catalogue={catalogue} onClose={() => setEditing(false)} />
+      )}
     </div>
   );
 }
@@ -148,8 +196,25 @@ function OverviewTab({ rider }: { rider: RiderDetailModel }) {
         <Row label="Online right now" value={rider.isOnline ? "Yes" : "No"} />
         <Row label="Cleared to go online" value={rider.canGoOnline ? "Yes" : "No"} />
         <Row label="Last online" value={formatDateTimeOrDash(rider.lastOnlineAt)} />
-        <Row label="Delivery radius" value={`${rider.maxDeliveryRadiusKm} km`} />
-        <Row label="Jobs at once" value={rider.maxConcurrentJobs.toString()} />
+        {/* Say which figure is the rider's own and which is the platform
+            falling back. These columns used to default to 10 and 1, so this
+            screen showed a preference nobody had expressed. */}
+        <Row
+          label="Delivery radius"
+          value={
+            rider.maxDeliveryRadiusKm !== null
+              ? `${rider.maxDeliveryRadiusKm} km`
+              : `Not set — platform default (${rider.effectiveMaxDeliveryRadiusKm} km)`
+          }
+        />
+        <Row
+          label="Jobs at once"
+          value={
+            rider.maxConcurrentJobs !== null
+              ? String(rider.maxConcurrentJobs)
+              : `Not set — platform default (${rider.effectiveMaxConcurrentJobs})`
+          }
+        />
         <Row
           label="Last known position"
           value={
@@ -158,6 +223,7 @@ function OverviewTab({ rider }: { rider: RiderDetailModel }) {
               : "Never reported"
           }
         />
+        <Row label="Photo" value={rider.photoUrl ? "Uploaded" : "Not uploaded"} />
       </Card>
 
       <Card title="Record">
@@ -301,7 +367,14 @@ function ComplianceTab({ rider }: { rider: RiderDetailModel }) {
               : "Not set"
           }
         />
-        <Row label="Delivery radius" value={`${rider.maxDeliveryRadiusKm} km`} />
+        <Row
+          label="Delivery radius"
+          value={
+            rider.maxDeliveryRadiusKm !== null
+              ? `${rider.maxDeliveryRadiusKm} km`
+              : `Not set — platform default (${rider.effectiveMaxDeliveryRadiusKm} km)`
+          }
+        />
       </Card>
 
       {rider.credentials.expiringSoon.length > 0 && (
@@ -353,6 +426,8 @@ function DocumentsTab({ rider, canView }: { rider: RiderDetailModel; canView: bo
   // "missing" would read as an incomplete application that can never complete.
   const required = rider.documents.filter((document) => document.required);
 
+  const [preview, setPreview] = useState<{ src: string; label: string } | null>(null);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -383,16 +458,33 @@ function DocumentsTab({ rider, canView }: { rider: RiderDetailModel; canView: bo
               </TableCell>
               <TableCell>
                 {document.uploaded && canView ? (
-                  <a
-                    // Through the proxy route: the file lives on the private
-                    // disk behind a bearer token the browser cannot supply.
-                    href={`/api/rider-document?riderId=${rider.id}&type=${document.type}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm font-medium text-brand hover:underline"
-                  >
-                    Open
-                  </a>
+                  <span className="flex items-center gap-3">
+                    {/* Inline first: reviewing a rider means flipping through
+                        five documents, and a new tab for each of them is five
+                        tabs to close before the next applicant. */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPreview({
+                          src: `/api/rider-document?riderId=${rider.id}&type=${document.type}`,
+                          label: riderDocumentLabels[document.type],
+                        })
+                      }
+                      className="text-sm font-medium text-brand hover:underline"
+                    >
+                      View
+                    </button>
+                    <a
+                      // Through the proxy route: the file lives on the private
+                      // disk behind a bearer token the browser cannot supply.
+                      href={`/api/rider-document?riderId=${rider.id}&type=${document.type}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm font-medium text-text-secondary hover:underline"
+                    >
+                      Open
+                    </a>
+                  </span>
                 ) : (
                   <span className="text-sm text-text-muted">
                     {document.uploaded ? "Permission required" : "—"}
@@ -403,6 +495,15 @@ function DocumentsTab({ rider, canView }: { rider: RiderDetailModel; canView: bo
           ))}
         </tbody>
       </TableShell>
+
+      {preview && (
+        <ImageLightbox
+          src={preview.src}
+          alt={`${rider.name} — ${preview.label}`}
+          caption={`${rider.name} · ${preview.label}`}
+          onClose={() => setPreview(null)}
+        />
+      )}
     </div>
   );
 }

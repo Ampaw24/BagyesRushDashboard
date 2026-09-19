@@ -1,4 +1,5 @@
 import { PageHeader } from "../../_components/page-header";
+import { ExportAction } from "../../_components/export-action";
 import { NoPermissionState } from "../../_components/empty-state";
 import { OrdersTable } from "../orders-table";
 import { listOrders } from "@/lib/services/orders.service";
@@ -55,9 +56,22 @@ export async function OrdersListPage({
         title={title}
         description={description}
         action={
-          <span className="text-sm text-text-muted">
-            {page.pagination.total.toLocaleString()} order{page.pagination.total === 1 ? "" : "s"}
-          </span>
+          <div className="flex items-center gap-3">
+            <ExportAction
+              resource="orders"
+              filters={{
+                search: list.search,
+                status: fixedStatus ?? readEnumParam(params, "status", ORDER_STATUSES),
+                payment_status: readEnumParam(params, "payment_status", PAYMENT_STATUSES),
+                type: readEnumParam(params, "type", ORDER_TYPES),
+                from: readParam(params, "from"),
+                to: readParam(params, "to"),
+              }}
+            />
+            <span className="text-sm text-text-muted">
+              {page.pagination.total.toLocaleString()} order{page.pagination.total === 1 ? "" : "s"}
+            </span>
+          </div>
         }
       />
       <OrdersTable

@@ -2,6 +2,7 @@ import type { MenuItemDto, VendorDto, VendorPayoutDto } from "../types/api";
 import {
   VENDOR_DOCUMENT_TYPES,
   type MobileMoneyProvider,
+  type UserStatus,
   type VendorDocumentType,
   type VendorStatus,
 } from "../types/enums";
@@ -34,7 +35,11 @@ export type VendorRow = {
   derivedState: VendorDerivedState;
   isActive: boolean;
   isFeatured: boolean;
+  /** The vendor's own switch. Intent, not effect. */
+  isOpen: boolean;
+  /** The switch AND the schedule agreeing. What customers actually see. */
   isOpenNow: boolean;
+  closedReason: "switched_off" | "closed_today" | "outside_hours" | null;
   isProfileComplete: boolean;
   documentsStatus: string | null;
   documentsUploaded: number;
@@ -44,7 +49,15 @@ export type VendorRow = {
   deliveryFee: number;
   minOrder: number;
   logoUrl: string | null;
+  /**
+   * The owner's user id, which is what the direct-message endpoint takes — a
+   * vendor id is not a user id. Null when the response did not carry the
+   * account block, in which case messaging is not offered rather than guessed.
+   */
+  userId: number | null;
+  email: string | null;
   phone: string | null;
+  accountStatus: UserStatus | null;
   joinedAt: Date;
 };
 
@@ -54,6 +67,8 @@ export type VendorDetail = VendorRow & {
   address: string | null;
   taxIdentificationNumber: string | null;
   coverImageUrl: string | null;
+  /** The square storefront shot, distinct from the wide cover. */
+  imageUrl: string | null;
   cuisineTypes: string[];
   openingTime: string | null;
   closingTime: string | null;
@@ -110,7 +125,9 @@ export function toVendorRow(dto: VendorDto): VendorRow {
     derivedState: deriveVendorState(dto),
     isActive: dto.is_active,
     isFeatured: dto.is_featured,
+    isOpen: dto.is_open,
     isOpenNow: dto.is_open_now,
+    closedReason: dto.closed_reason ?? null,
     isProfileComplete: dto.is_profile_complete,
     documentsStatus: dto.documents_status,
     documentsUploaded: uploaded,
@@ -120,7 +137,12 @@ export function toVendorRow(dto: VendorDto): VendorRow {
     deliveryFee: dto.delivery_fee,
     minOrder: dto.min_order,
     logoUrl: dto.logo_url,
-    phone: null,
+    userId: dto.account?.id ?? null,
+    email: dto.account?.email ?? null,
+    // Was hardcoded null: the resource carried no account block at all, so an
+    // admin could read a vendor's bank details and not their phone number.
+    phone: dto.account?.phone ?? null,
+    accountStatus: dto.account?.status ?? null,
     joinedAt: toDateOrEpoch(dto.created_at),
   };
 }
@@ -133,6 +155,7 @@ export function toVendorDetail(dto: VendorDto): VendorDetail {
     address: dto.address,
     taxIdentificationNumber: dto.tax_identification_number,
     coverImageUrl: dto.cover_image_url,
+    imageUrl: dto.image_url,
     cuisineTypes: dto.cuisine_types ?? [],
     openingTime: dto.opening_time,
     closingTime: dto.closing_time,

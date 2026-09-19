@@ -36,7 +36,32 @@ const NUMERIC_FIELDS = [
   "rider_minimum",
   "rider_minimum_withdrawal",
   "vendor_minimum_withdrawal",
+  "customer_minimum_withdrawal",
+  // Not money, but published and versioned alongside it: these decide who gets
+  // offered a job and how long a rider waits at the door.
+  "dispatch_radius_km",
+  "dispatch_radius_step",
+  "dispatch_max_radius_km",
+  "dispatch_batch_size",
+  "dispatch_offer_ttl_seconds",
+  "dispatch_max_rounds",
+  "dispatch_location_max_age_minutes",
+  "parcel_max_rider_distance_km",
+  "rider_max_radius_km",
+  "rider_max_concurrent_jobs",
+  "referral_reward",
+  "referral_referee_bonus",
+  "referral_minimum_order",
+  "customer_wait_minutes",
+  "arrival_radius_metres",
 ] as const;
+
+/**
+ * Published and versioned exactly like the numbers, but a switch rather than a
+ * figure — so it needs its own list, its own control and its own line in the
+ * payload.
+ */
+const BOOLEAN_FIELDS = ["customer_withdrawals_enabled", "referral_enabled"] as const;
 
 /**
  * A ready-to-publish name for a version derived from an existing one.
@@ -69,6 +94,12 @@ function draftFrom(current: PlatformSettingDto): Draft {
   for (const key of NUMERIC_FIELDS) {
     const value = current[key as keyof PlatformSettingDto];
     draft[key] = value === null || value === undefined ? "" : String(value);
+  }
+
+  for (const key of BOOLEAN_FIELDS) {
+    // Carried as a string like everything else in the draft, so one shape
+    // covers the whole form. Off unless the published value says otherwise.
+    draft[key] = current[key as keyof PlatformSettingDto] ? "1" : "";
   }
 
   return draft;
@@ -131,7 +162,13 @@ export function MoneySettingsEditor({
       numbers[key] = raw === "" ? null : Number(raw);
     }
 
-    return { name: draft.name.trim() || "Untitled", ...numbers };
+    const flags: Record<string, boolean> = {};
+
+    for (const key of BOOLEAN_FIELDS) {
+      flags[key] = draft[key] === "1";
+    }
+
+    return { name: draft.name.trim() || "Untitled", ...numbers, ...flags };
   };
 
   // Repriced as the numbers change, so the effect is visible before saving.
@@ -180,6 +217,21 @@ export function MoneySettingsEditor({
     </label>
   );
 
+  const toggle = (key: string, label: string, hint: string) => (
+    <label key={key} className="flex cursor-pointer gap-3 sm:col-span-2">
+      <input
+        type="checkbox"
+        checked={draft[key] === "1"}
+        onChange={(event) => setDraft({ ...draft, [key]: event.target.checked ? "1" : "" })}
+        className="mt-0.5 h-4 w-4 shrink-0 accent-brand"
+      />
+      <span className="text-sm">
+        <span className="block font-medium text-foreground">{label}</span>
+        <span className="block text-xs text-text-muted">{hint}</span>
+      </span>
+    </label>
+  );
+
   const section = (title: string, blurb: string, children: React.ReactNode) => (
     <section className="flex flex-col gap-4 rounded-xl border border-border-subtle bg-surface p-5 shadow-sm">
       <div className="flex flex-col gap-1">
@@ -190,10 +242,14 @@ export function MoneySettingsEditor({
     </section>
   );
 
-  const dirty = NUMERIC_FIELDS.some((key) => {
-    const was = source[key as keyof PlatformSettingDto];
-    return (draft[key] ?? "").trim() !== (was === null || was === undefined ? "" : String(was));
-  });
+  const dirty =
+    NUMERIC_FIELDS.some((key) => {
+      const was = source[key as keyof PlatformSettingDto];
+      return (draft[key] ?? "").trim() !== (was === null || was === undefined ? "" : String(was));
+    }) ||
+    BOOLEAN_FIELDS.some(
+      (key) => (draft[key] === "1") !== Boolean(source[key as keyof PlatformSettingDto]),
+    );
 
   return (
     <div className="flex flex-col gap-6">
@@ -281,6 +337,122 @@ export function MoneySettingsEditor({
           <>
             {field("rider_minimum_withdrawal", "Rider minimum")}
             {field("vendor_minimum_withdrawal", "Vendor minimum")}
+            {field("customer_minimum_withdrawal", "Customer minimum")}
+          </>,
+        )}
+
+        {section(
+          "Customer wallets",
+          "Wallet credit can always be spent on the next order. This decides whether it can also be cashed out.",
+          <>
+            {toggle(
+              "customer_withdrawals_enabled",
+              "Let customers cash out to mobile money",
+              "Payouts go only to the customer's verified phone number, and only from refunded payments — never goodwill credit. Every request still needs your approval.",
+            )}
+          </>,
+        )}
+
+        {section(
+          "Refer and earn",
+          "What a customer is paid for bringing a friend. The reward lands as wallet credit that can be spent on orders and never cashed out — money the platform gives away must not become money that can be walked out of it. Milestone bonuses are set on the Refer & Earn screen.",
+          <>
+            {toggle(
+              "referral_enabled",
+              "Pay referral rewards",
+              "Off still records who brought whom — the relationship is real and worth keeping — it just never becomes money.",
+            )}
+            {field(
+              "referral_reward",
+              "Per referral",
+              "Paid to the referrer once their friend's first order is delivered and paid for. A signup on its own earns nothing: a burner SIM and a fresh email is a complete signup.",
+            )}
+            {field(
+              "referral_referee_bonus",
+              "Welcome bonus",
+              "Paid to the new customer on the same event. Set it to 0 to reward only the referrer.",
+            )}
+            {field(
+              "referral_minimum_order",
+              "Minimum qualifying order",
+              "The smallest order that can earn a referral, judged on the food after any discount. Without a floor, a GHS 2 order mints a full reward.",
+            )}
+          </>,
+        )}
+
+        {section(
+          "Finding a rider",
+          "How far the net is cast when a job goes out, and how it widens when nobody answers. Raise the radius on a quiet afternoon; lower it when riders are complaining about long trips to a pickup.",
+          <>
+            {field(
+              "dispatch_radius_km",
+              "First search radius",
+              "Measured from the pickup — the kitchen, or the parcel's collection point.",
+              "km",
+            )}
+            {field(
+              "dispatch_radius_step",
+              "Widen by",
+              "Each unanswered round multiplies the radius by this. 1 never widens.",
+              "×",
+            )}
+            {field("dispatch_max_radius_km", "Never search beyond", "The outer limit, however many rounds.", "km")}
+            {field(
+              "dispatch_batch_size",
+              "Riders per round",
+              "Offering to everyone at once wastes the nearest rider; one at a time makes a slow rider everybody's problem.",
+              "riders",
+            )}
+            {field(
+              "dispatch_offer_ttl_seconds",
+              "Time to answer",
+              "Long enough to read at a junction, short enough that a pocketed phone does not hold an order.",
+              "sec",
+            )}
+            {field("dispatch_max_rounds", "Rounds before escalating", "Then it lands in the dispatch queue for a human.", "rounds")}
+            {field(
+              "dispatch_location_max_age_minutes",
+              "Ignore positions older than",
+              "A rider whose last fix is staler than this counts as having no known location.",
+              "min",
+            )}
+            {field(
+              "parcel_max_rider_distance_km",
+              "Parcel rider radius",
+              "Parcels are quoted per rider rather than broadcast in rings, so they use one radius.",
+              "km",
+            )}
+            {field(
+              "rider_max_radius_km",
+              "Default rider radius",
+              "How far a rider is sent when they have set no preference of their own. A rider who has chosen a radius keeps theirs; this reaches everybody who has not.",
+              "km",
+            )}
+            {field(
+              "rider_max_concurrent_jobs",
+              "Jobs per rider at once",
+              "Ops policy rather than a rider preference, which is why no rider-facing screen sets it. Raising a single trusted rider above this is a separate, per-rider override.",
+              "jobs",
+            )}
+          </>,
+        )}
+
+        {section(
+          "Waiting at the door",
+          "When a rider reaches the customer they mark themselves arrived, the customer is told, and this clock starts. The radius is what stops that being claimable from the road.",
+          <>
+            {field(
+              "customer_wait_minutes",
+              "How long a rider waits",
+              "After this they may leave. Nothing cancels automatically — it goes to an admin.",
+              "min",
+            )}
+            {field(
+              "arrival_radius_metres",
+              "Counts as arrived within",
+              "Checked against the rider's own live position. Below 250m starts rejecting genuine arrivals — a phone fix in dense Accra is routinely 50–150m out.",
+              "m",
+            )}
           </>,
         )}
 

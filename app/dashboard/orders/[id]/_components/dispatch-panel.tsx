@@ -11,7 +11,6 @@ import { formatCurrency, formatDateTimeOrDash } from "../../../_lib/format";
 import { assignRiderAction } from "../../_actions";
 import type { OrderDetail } from "@/lib/mappers/order.mapper";
 import type { RiderRow } from "@/lib/mappers/rider.mapper";
-import { vehicleTypeLabels } from "@/lib/types/enums";
 
 /**
  * Who is carrying this order, who was asked, and the manual override.
@@ -124,8 +123,11 @@ function RiderCard({ order }: { order: OrderDetail }) {
       <Row
         label="Vehicle"
         value={
-          order.rider.vehicleType
-            ? `${vehicleTypeLabels[order.rider.vehicleType]}${order.rider.plateNumber ? ` · ${order.rider.plateNumber}` : ""}`
+          // The label comes from the API alongside the slug, because the fleet
+          // is an admin-managed table and the dashboard no longer knows its
+          // members by name.
+          order.rider.vehicleTypeLabel ?? order.rider.vehicleType
+            ? `${order.rider.vehicleTypeLabel ?? order.rider.vehicleType}${order.rider.plateNumber ? ` · ${order.rider.plateNumber}` : ""}`
             : "—"
         }
       />

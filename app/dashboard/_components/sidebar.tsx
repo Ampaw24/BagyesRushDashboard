@@ -14,7 +14,7 @@ export function Sidebar({ navTree }: { navTree: NavEntry[] }) {
 
   return (
     <aside
-      className="fixed inset-y-0 left-0 hidden w-[var(--sidebar-w)] shrink-0 flex-col overflow-x-hidden overflow-y-auto border-r border-border-subtle bg-surface transition-[width] duration-200 ease-out lg:flex"
+      className="fixed inset-y-0 left-0 hidden w-[var(--sidebar-w)] shrink-0 flex-col overflow-x-hidden overflow-y-auto border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-out lg:flex"
     >
       <div className={`flex items-center gap-3 px-6 py-6 ${collapsed ? "justify-center px-3" : ""}`}>
         <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg">

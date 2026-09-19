@@ -7,10 +7,11 @@ import { getPlatformSettings } from "@/lib/services/platform-settings.service";
 import { can, getPermissions } from "@/lib/auth/guard";
 
 export const metadata: Metadata = {
-  title: "Money Settings — BagyesRUSH",
+  title: "Platform Settings — BagyesRUSH",
 };
 
-const DESCRIPTION = "What the platform charges customers, and what it pays vendors and riders.";
+const DESCRIPTION =
+  "What the platform charges, what it pays out, how riders are found, and how long they wait.";
 
 /**
  * Every money rule on the platform.
@@ -25,7 +26,7 @@ export default async function MoneySettingsPage() {
   if (!can(permissions, "settings.manage")) {
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader title="Money settings" description={DESCRIPTION} />
+        <PageHeader title="Platform settings" description={DESCRIPTION} />
         <NoPermissionState what="platform settings" />
       </div>
     );
@@ -36,7 +37,7 @@ export default async function MoneySettingsPage() {
   if (!settings) {
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader title="Money settings" description={DESCRIPTION} />
+        <PageHeader title="Platform settings" description={DESCRIPTION} />
         <NotDeployedState what="Platform settings" />
       </div>
     );
@@ -47,7 +48,7 @@ export default async function MoneySettingsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Money settings"
+        title="Platform settings"
         description={DESCRIPTION}
         action={
           current.is_published ? (

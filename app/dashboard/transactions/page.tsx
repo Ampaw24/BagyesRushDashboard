@@ -63,7 +63,10 @@ export default async function TransactionsPage(props: PageProps<"/dashboard/tran
     );
   }
 
-  const owed = summary.owed.riders + summary.owed.vendors;
+  // Customer credit counts here too: it is money the platform holds and owes
+  // something for. Leaving it out would show it as revenue that was kept.
+  const customerCredit = summary.owed.customers ?? 0;
+  const owed = summary.owed.riders + summary.owed.vendors + customerCredit;
 
   return (
     <div className="flex flex-col gap-6">
@@ -96,7 +99,11 @@ export default async function TransactionsPage(props: PageProps<"/dashboard/tran
         <StatTile
           label="Still owed"
           value={formatCurrency(owed)}
-          hint="Earned, not yet withdrawn"
+          hint={
+            customerCredit > 0
+              ? `Includes ${formatCurrency(customerCredit)} of customer credit`
+              : "Earned, not yet withdrawn"
+          }
           icon={<RidersIcon />}
         />
       </div>

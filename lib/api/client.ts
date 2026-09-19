@@ -92,6 +92,43 @@ export async function apiFetchPage<T>(path: string, options: RequestOptions = {}
   return apiFetch<Paginated<T>>(path, options);
 }
 
+/** The largest `per_page` every list endpoint accepts. Asking for more is a 422. */
+export const MAX_PAGE_SIZE = 100;
+
+/**
+ * Every row of a list endpoint, following the pagination to the end.
+ *
+ * For the small reference tables a picker needs whole — vehicle makes and
+ * models, where a truncated list means a rider cannot find their bike and the
+ * screen gives no hint why. `per_page: 200` does not solve it: the API caps
+ * `per_page` at 100 and answers 422, which is what took the rider screens down.
+ *
+ * `maxPages` is a stop so a pagination bug cannot spin forever.
+ */
+export async function apiFetchAll<T>(
+  path: string,
+  options: RequestOptions = {},
+  maxPages = 20,
+): Promise<T[]> {
+  const items: T[] = [];
+  let page = 1;
+
+  for (;;) {
+    const result = await apiFetchPage<T>(path, {
+      ...options,
+      query: { ...options.query, per_page: MAX_PAGE_SIZE, page },
+    });
+
+    items.push(...result.items);
+
+    if (!result.pagination.has_more || page >= result.pagination.last_page || page >= maxPages) {
+      return items;
+    }
+
+    page += 1;
+  }
+}
+
 async function readJson(response: Response): Promise<(ApiEnvelope<unknown> & { success?: boolean }) | null> {
   const text = await response.text();
   if (!text) return null;

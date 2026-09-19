@@ -1,6 +1,7 @@
-import type { ReactElement, SVGProps } from "react";
+import type { CSSProperties, ReactElement, SVGProps } from "react";
 import {
   Activity,
+  ArrowDownToLine,
   Archive,
   ArrowDown,
   ArrowUp,
@@ -14,22 +15,30 @@ import {
   CircleX,
   Clock,
   Copy,
+  Coins,
   EllipsisVertical,
   Eye,
+  FileDown,
+  Gift,
   Image as ImageGlyph,
   KeyRound,
+  Handshake,
   LayoutGrid,
   LockOpen,
   LogOut,
   Mail,
   Megaphone,
+  MapPin,
   Menu,
   MessageCircleQuestionMark,
   MessageSquare,
   Moon,
+  MessageCircle,
   Package,
+  PackageX,
   PanelLeft,
   Pencil,
+  Power,
   Phone,
   Plus,
   RefreshCw,
@@ -54,7 +63,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-type IconProps = { className?: string };
+/**
+ * `style` is here for the one case a class cannot cover: the sidebar paints
+ * each section in its own colour, and that colour is a CSS variable chosen per
+ * item rather than one of a fixed set of utilities.
+ */
+type IconProps = { className?: string; style?: CSSProperties };
 export type IconComponent = (props: IconProps) => ReactElement;
 
 // All dashboard icons come from Lucide (https://lucide.dev) so the whole
@@ -62,8 +76,8 @@ export type IconComponent = (props: IconProps) => ReactElement;
 // Wrapping here means every call site keeps using the same
 // `<XyzIcon className="h-4 w-4" />` API regardless of the underlying icon pack.
 function createIcon(Source: LucideIcon, size = 20, extraProps: SVGProps<SVGSVGElement> = {}): IconComponent {
-  return function Icon({ className }: IconProps) {
-    return <Source className={className} size={size} {...extraProps} />;
+  return function Icon({ className, style }: IconProps) {
+    return <Source className={className} style={style} size={size} {...extraProps} />;
   };
 }
 
@@ -109,6 +123,8 @@ export const ShopIcon = createIcon(Store);
 export const SecuritySafeIcon = createIcon(KeyRound);
 export const VerifyIcon = createIcon(BadgeCheck);
 export const DangerIcon = createIcon(TriangleAlert);
+/** A delivery that reached the door and came back. */
+export const PackageFailedIcon = createIcon(PackageX);
 export const RefreshIcon = createIcon(RefreshCw);
 export const ArchiveIcon = createIcon(Archive);
 export const ActivityIcon = createIcon(Activity);
@@ -118,3 +134,22 @@ export const ProfileDeleteIcon = createIcon(UserX);
 export const MoreIcon = createIcon(EllipsisVertical);
 export const EditIcon = createIcon(Pencil);
 export const TrashIcon = createIcon(Trash2);
+
+// Export and sharing.
+export const ExportIcon = createIcon(FileDown);
+export const DownloadIcon = createIcon(ArrowDownToLine);
+/**
+ * Lucide has no WhatsApp glyph - it ships no brand marks - so this is the
+ * generic message bubble rather than something that looks almost but not
+ * quite like the real logo.
+ */
+export const WhatsappIcon = createIcon(MessageCircle);
+
+// Nav and page headers.
+export const MapPinIcon = createIcon(MapPin);
+export const CoinsIcon = createIcon(Coins);
+export const GiftIcon = createIcon(Gift);
+export const HandshakeIcon = createIcon(Handshake);
+
+/** Switching a rider off the dispatch board. */
+export const PowerOffIcon = createIcon(Power);

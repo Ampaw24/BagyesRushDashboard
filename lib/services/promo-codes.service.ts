@@ -1,6 +1,6 @@
 import { apiFetch, apiFetchPage } from "../api/client";
 import type { Paginated } from "../api/types";
-import type { PromoCodeDto } from "../types/api";
+import type { PromoCodeDto, PromoCodeRedemptionDto } from "../types/api";
 import type { PromoCodeScope, PromoCodeType } from "../types/enums";
 
 export type PromoCodeListQuery = {
@@ -46,6 +46,11 @@ export type SavePromoCodeInput = {
   max_redemptions?: number | null;
   max_per_customer?: number | null;
   is_active?: boolean;
+  /**
+   * List this code in the public offers feed the apps show. False by default:
+   * a code handed to specific customers is targeted, not an advertisement.
+   */
+  is_public?: boolean;
 };
 
 export async function createPromoCode(input: SavePromoCodeInput): Promise<PromoCodeDto> {
@@ -66,4 +71,17 @@ export async function deletePromoCode(id: number): Promise<null> {
 
 export async function togglePromoCodeStatus(id: number): Promise<PromoCodeDto> {
   return apiFetch<PromoCodeDto>(`/admin/promo-codes/${id}/toggle-status`, { method: "PATCH" });
+}
+
+/**
+ * Who redeemed this code, on which order, for how much.
+ *
+ * `redemption_count` on the code says a campaign was used and nothing about
+ * whether it worked or who worked it.
+ */
+export async function listPromoCodeRedemptions(
+  id: number,
+  query: { page?: number; per_page?: number } = {},
+): Promise<Paginated<PromoCodeRedemptionDto>> {
+  return apiFetchPage<PromoCodeRedemptionDto>(`/admin/promo-codes/${id}/redemptions`, { query });
 }

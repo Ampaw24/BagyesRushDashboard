@@ -11,6 +11,7 @@ import { toRiderDetail, toRiderPayout } from "@/lib/mappers/rider.mapper";
 import { toWalletSummary, toWalletTransactionRow } from "@/lib/mappers/wallet.mapper";
 import { toActivityRow } from "@/lib/mappers/activity.mapper";
 import { can, getPermissions } from "@/lib/auth/guard";
+import { EMPTY_VEHICLE_CATALOGUE, getVehicleCatalogue } from "@/lib/services/vehicle-catalogue.service";
 import { isNotFound } from "@/lib/api/errors";
 
 export const metadata: Metadata = {
@@ -40,7 +41,7 @@ export default async function RiderDetailPage(props: PageProps<"/dashboard/rider
   // Reading payout is also audit-logged, so it must not fire speculatively.
   const canAdjustWallet = can(permissions, "riders.wallet");
 
-  const [payout, activity, wallet, transactions] = await Promise.all([
+  const [payout, activity, wallet, transactions, catalogue] = await Promise.all([
     can(permissions, "riders.payout")
       ? getRiderPayout(riderId).then(toRiderPayout)
       : Promise.resolve(null),
@@ -57,20 +58,25 @@ export default async function RiderDetailPage(props: PageProps<"/dashboard/rider
           page.items.map(toWalletTransactionRow),
         )
       : Promise.resolve([]),
+    // The fleet tree, for the edit dialog's type -> make -> model picker.
+    can(permissions, "riders.update") ? getVehicleCatalogue() : Promise.resolve(EMPTY_VEHICLE_CATALOGUE),
   ]);
 
   return (
     <RiderDetail
       rider={rider}
+      catalogue={catalogue}
       payout={payout}
       activity={activity}
       wallet={wallet}
       transactions={transactions}
       permissions={{
         canModerate: can(permissions, "riders.moderate"),
+        canUpdate: can(permissions, "riders.update"),
         canDelete: can(permissions, "riders.delete"),
         canViewDocuments: can(permissions, "riders.documents"),
         canAdjustWallet,
+        canMessage: can(permissions, "communications.send"),
       }}
     />
   );

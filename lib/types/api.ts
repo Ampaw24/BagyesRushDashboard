@@ -15,6 +15,8 @@ import type {
   CommunicationAudience,
   CommunicationChannel,
   CommunicationStatus,
+  ConversationParticipantRole,
+  ConversationStatus,
   DeliveryOfferStatus,
   IdentityDocumentType,
   MobileMoneyProvider,
@@ -35,7 +37,7 @@ import type {
   UserRole,
   UserStatus,
   VehicleOwnership,
-  VehicleType,
+  VehicleTypeSlug,
   VendorStatus,
   WalletTransactionType,
   WithdrawalStatus,
@@ -63,6 +65,23 @@ export type LoginResponseDto = {
   user: UserDto;
   access_token: string;
   token_type: string;
+};
+
+/**
+ * POST /admin/auth/login and /admin/auth/resend-otp.
+ *
+ * Step one of the dashboard sign-in carries no token and no user, deliberately:
+ * a stolen password buys a challenge id and nothing else. The hint is the
+ * number masked to its last four digits, which is the confirmation an admin
+ * needs without publishing their number to whoever is behind them.
+ */
+export type AdminLoginChallengeDto = {
+  challenge_id: string;
+  phone_hint: string | null;
+  expires_at: string;
+  expires_in: number;
+  /** Seconds until another code may be requested. */
+  resend_available_in: number;
 };
 
 /** GET /admin/me */
@@ -333,6 +352,12 @@ export type VendorDto = {
   rejection_reason: string | null;
   is_open: boolean;
   is_open_now: boolean;
+  /**
+   * Why those two disagree, when they do. The toggle is the vendor's intent
+   * and the schedule is the gate, so "closed" covers switching yourself off and
+   * simply being outside your own hours - and they need different answers.
+   */
+  closed_reason?: "switched_off" | "closed_today" | "outside_hours" | null;
   is_active: boolean;
   is_featured: boolean;
   is_profile_complete: boolean;
@@ -352,6 +377,18 @@ export type VendorDto = {
     mobile_money_number_last4: string | null;
     mobile_money_provider: MobileMoneyProvider | null;
     is_configured: boolean;
+  };
+  /**
+   * The person behind the business. Present on the admin and owner endpoints,
+   * which eager-load the relation; absent from any response that does not.
+   */
+  account?: {
+    id: number;
+    email: string | null;
+    phone: string | null;
+    status: UserStatus;
+    phone_verified: boolean;
+    last_login_at: string | null;
   };
   created_at: string | null;
   updated_at: string | null;
@@ -472,7 +509,8 @@ export type AdminOrderDto = {
     rider_id: number | null;
     name: string | null;
     photo_url: string | null;
-    vehicle_type: VehicleType | null;
+    vehicle_type: VehicleTypeSlug | null;
+    vehicle_type_label: string | null;
     plate_number: string | null;
     /** Where they last reported in. Null when they have never opened the app. */
     latitude?: number | null;
@@ -506,6 +544,9 @@ export type AdminOrderDto = {
     latitude: number | null;
     longitude: number | null;
   };
+  /** Optional against a backend that predates the wait timer. */
+  arrival?: OrderArrivalDto;
+  refund?: OrderRefundDto;
   items?: OrderItemDto[];
   totals: {
     subtotal: number;
@@ -536,15 +577,26 @@ export type AdminOrderDto = {
     settings_recorded: boolean;
   };
   /**
-   * Where the money went. Recorded when the order was priced, never
-   * re-derived — vendor + rider + platform = total.
+   * Where the money went. Recorded when the order was priced, never re-derived.
+   *
+   * A figure that is not yet known is null, not zero. The vendor's share and
+   * its commission are settled when the customer pays; the rider's are settled
+   * on delivery, so they stay null while the order is in flight. Reading a null
+   * as 0.00 is exactly what made this panel report a delivered-at-zero split for
+   * every order that simply had not got there yet.
    */
   earnings?: {
-    vendor: number;
-    rider: number;
-    platform: number;
+    vendor: number | null;
+    vendor_commission: number | null;
+    rider: number | null;
+    rider_commission: number | null;
+    platform: number | null;
+    /** total − vendor − rider. Null until the rider has been paid. */
+    platform_keeps: number | null;
     service_fee: number;
     commission_setting_id: number | null;
+    vendor_settled: boolean;
+    rider_settled: boolean;
   };
   notes: string | null;
   rejection_reason: string | null;
@@ -578,6 +630,11 @@ export type DeliveryOfferDto = {
 export type OrderStatsDto = {
   by_status: Record<OrderStatus, number>;
   awaiting_refund: number;
+  /**
+   * Paid for, the rider gave up at the door, still live. A work queue rather
+   * than a statistic — optional against a backend that predates it.
+   */
+  failed_deliveries?: number;
   gross_delivered: number;
 };
 
@@ -658,6 +715,11 @@ export type PromoCodeDto = {
   max_per_customer: number | null;
   redemption_count: number;
   is_active: boolean;
+  /**
+   * Opts this code into the public offers list the apps show. False by
+   * default: a code handed to twenty people is targeted, not an advert.
+   */
+  is_public: boolean;
   /** Active *and* inside its scheduling window. */
   is_live: boolean;
   created_at: string | null;
@@ -745,7 +807,7 @@ export type RiderListDto = {
   email?: string | null;
   photo_url: string | null;
   city: string | null;
-  vehicle_type: VehicleType | null;
+  vehicle_type: VehicleTypeSlug | null;
   vehicle_type_label: string | null;
   plate_number: string | null;
   status: RiderStatus;
@@ -770,6 +832,71 @@ export type RiderListDto = {
   deleted_at: string | null;
 };
 
+/**
+ * GET /admin/riders/live — a rider as a marker on the dispatch map.
+ *
+ * Field-for-field the same shape as the `rider.location` websocket frame, so a
+ * live update merges into a seeded marker without translating between two
+ * vocabularies. The socket frame omits the fields only wanted on first paint
+ * (`phone`, `rating`, `active_orders`); those survive from the seed.
+ */
+export type RiderLiveDto = {
+  rider_id: number;
+  user_id: number;
+  name: string;
+  photo_url: string | null;
+  phone?: string | null;
+  vehicle_type: VehicleTypeSlug | null;
+  vehicle_type_label: string | null;
+  plate_number: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  /** Bearing in degrees; rotate the marker by it so the bike points its way. */
+  heading: number | null;
+  speed_kph: number | null;
+  accuracy_m: number | null;
+  recorded_at: string | null;
+  location_age_seconds: number | null;
+  /** True once the fix is older than the backend's staleness window. */
+  is_stale: boolean;
+  is_online: boolean;
+  status: RiderStatus;
+  rating: number;
+  deliveries_completed: number;
+  active_orders: Array<{
+    id: number;
+    order_number: string;
+    status: OrderStatus;
+    status_label: string;
+    delivery_address: string | null;
+  }>;
+  active_order_count: number;
+};
+
+/**
+ * The `rider.location` broadcast payload.
+ *
+ * A subset of RiderLiveDto — the fields that change as a rider moves, plus
+ * enough identity to paint a marker for somebody who came online after the page
+ * loaded.
+ */
+export type RiderLocationEvent = {
+  rider_id: number;
+  user_id: number;
+  name: string;
+  photo_url: string | null;
+  vehicle_type: VehicleTypeSlug | null;
+  plate_number: string | null;
+  latitude: number;
+  longitude: number;
+  heading: number | null;
+  speed_kph: number | null;
+  accuracy_m: number | null;
+  is_online: boolean;
+  active_order_ids: number[];
+  recorded_at: string | null;
+};
+
 /** GET /admin/riders/{id} — the full owner/admin shape. */
 export type RiderDto = {
   id: number;
@@ -789,10 +916,14 @@ export type RiderDto = {
     number: string | null;
   };
   vehicle: {
-    type: VehicleType | null;
+    type_id: number | null;
+    type: VehicleTypeSlug | null;
+    requires_plate?: boolean;
     type_label: string | null;
     plate_number: string | null;
+    make_id: number | null;
     make: string | null;
+    model_id: number | null;
     model: string | null;
     colour: string | null;
     year: number | null;
@@ -849,8 +980,16 @@ export type RiderDto = {
   current_latitude: number | null;
   current_longitude: number | null;
   location_updated_at: string | null;
-  max_delivery_radius_km: number;
-  max_concurrent_jobs: number;
+  /**
+   * What the rider themselves chose. **Null means they never set one** — these
+   * columns used to default to 10 and 1, so every record showed a preference
+   * nobody had expressed. Render the effective figure alongside, and say which
+   * is which.
+   */
+  max_delivery_radius_km: number | null;
+  effective_max_delivery_radius_km: number;
+  max_concurrent_jobs: number | null;
+  effective_max_concurrent_jobs: number;
   rating: number;
   review_count: number;
   deliveries_completed: number;
@@ -908,13 +1047,22 @@ export type PayoutProviderDto = {
 /** One line of a rider's statement. */
 export type WalletTransactionDto = {
   /** Only on the platform-wide ledger, where both sides are mixed. */
-  owner_type?: "rider" | "vendor";
+  owner_type?: "rider" | "vendor" | "customer";
   owner?: { id: number; name: string | null } | null;
   id: number;
   reference: string;
   type: WalletTransactionType;
   type_label: string;
   is_credit: boolean;
+  /**
+   * Where the row is in its life. A vendor's earning is reserved when the
+   * customer pays and released on delivery, so it appears on the statement
+   * before it joins the spendable balance.
+   */
+  status?: "pending" | "available" | "void";
+  status_label?: string;
+  is_pending?: boolean;
+  released_at?: string | null;
   /** Signed: negative when money went out. */
   amount: number;
   balance_after: number;
@@ -931,11 +1079,59 @@ export type RiderWalletSummaryDto = {
   currency: string;
   lifetime_earned: number;
   lifetime_withdrawn: number;
+  /**
+   * Earned on orders that are paid for but not yet delivered. Not part of
+   * `balance` and not withdrawable - the opposite direction from
+   * pending_withdrawal below, which is money on its way out.
+   */
+  pending_earnings?: number;
   /** Already reserved out of `balance`, but named so a rider can see it. */
   pending_withdrawal: number;
   minimum_withdrawal: number;
   can_withdraw: boolean;
   has_payout_details: boolean;
+  /**
+   * The part of `balance` that may leave as cash. Always the whole balance for
+   * a rider or a vendor — their wallet is their income. It only diverges on a
+   * customer, whose goodwill credit is spendable on the platform and nowhere
+   * else. Optional against a backend that predates the split.
+   */
+  withdrawable?: number;
+  spendable_only?: number;
+  /** False on a customer wallet while admin has cash-out switched off. */
+  withdrawals_enabled?: boolean;
+};
+
+/** Where a customer's payout would go. The number is never returned in full. */
+export type CustomerPayoutMethodDto = {
+  is_configured: boolean;
+  provider: { id: number; name: string; logo_url: string | null } | null;
+  account_name: string | null;
+  account_number_last4: string | null;
+  account_number_source: string;
+  matches_account_phone: boolean;
+  available_providers: Array<{ id: number; name: string; logo_url: string | null }>;
+};
+
+/** What happened when the rider reached the door. */
+export type OrderArrivalDto = {
+  arrived_at: string | null;
+  wait_expires_at: string | null;
+  distance_metres: number | null;
+  verified: boolean;
+  failed_at: string | null;
+  failure_reason: string | null;
+  /** Failed at the door and still live — this is the work queue. */
+  needs_resolution: boolean;
+};
+
+/** What has gone back on an order, and what still could. */
+export type OrderRefundDto = {
+  refunded: number;
+  refundable_remaining: number;
+  paid_from_wallet: number;
+  is_refundable: boolean;
+  presets: Array<{ key: string; label: string; amount: number }>;
 };
 
 /** A payout request. The full account number is never returned. */
@@ -954,7 +1150,7 @@ export type WithdrawalDto = {
     last4: string | null;
   };
   /** Riders and vendors share one payout queue. */
-  owner_type: "rider" | "vendor" | null;
+  owner_type: "rider" | "vendor" | "customer" | null;
   owner?: { id: number; name: string; phone: string | null };
   requested_at: string | null;
   reviewed_at: string | null;
@@ -1143,6 +1339,47 @@ export type PlatformSettingDto = {
   rider_minimum: number | null;
   rider_minimum_withdrawal: number | null;
   vendor_minimum_withdrawal: number | null;
+  customer_minimum_withdrawal: number | null;
+  /**
+   * Whether a customer may cash wallet credit out to mobile money at all.
+   * Ships off: a spendable balance is store credit, a withdrawable one is a
+   * way to move money.
+   */
+  customer_withdrawals_enabled: boolean | null;
+
+  /**
+   * Not money, but published and versioned in the same record — an order's
+   * setting id then records the whole rule set it was dispatched and charged
+   * under, not half of it.
+   */
+  dispatch_radius_km: number | null;
+  dispatch_radius_step: number | null;
+  dispatch_max_radius_km: number | null;
+  dispatch_batch_size: number | null;
+  dispatch_offer_ttl_seconds: number | null;
+  dispatch_max_rounds: number | null;
+  dispatch_location_max_age_minutes: number | null;
+  parcel_max_rider_distance_km: number | null;
+
+  /**
+   * Fleet-wide rider limits. These are what a rider's own blank radius and
+   * capacity fall back to — the columns on `riders` used to default to 10 and
+   * 1, so every record showed a preference nobody had expressed.
+   */
+  rider_max_radius_km: number | null;
+  rider_max_concurrent_jobs: number | null;
+
+  /**
+   * Refer and earn. Money the platform gives away, so it is published and
+   * versioned with commission rather than managed as a campaign.
+   */
+  referral_enabled: boolean;
+  referral_reward: number;
+  referral_referee_bonus: number;
+  referral_minimum_order: number;
+
+  customer_wait_minutes: number | null;
+  arrival_radius_metres: number | null;
 
   is_active: boolean;
   /** False for the config-derived fallback, so a screen can say nothing is published. */
@@ -1265,7 +1502,22 @@ export type FinanceSummaryDto = {
    * Still sitting in wallets — earned, not yet withdrawn. Neither the
    * platform's money nor spent, which is why it is its own figure.
    */
-  owed: { riders: number; vendors: number };
+  owed: {
+    riders: number;
+    vendors: number;
+    /**
+     * Customer wallet credit. A liability like the other two, not revenue: the
+     * platform has been paid for it and still owes something for it. Optional
+     * against a backend that predates customer wallets.
+     */
+    customers?: number;
+  };
+  /**
+   * Reserved when the customer paid, released on delivery. Neither collected
+   * revenue nor withdrawable, which is why it is neither of the two above -
+   * without it, money between payment and delivery appears on no screen.
+   */
+  pending?: { riders: number; vendors: number };
   refunds_owed: { count: number; amount: number };
   currency: string;
   transaction_types: Array<{ value: string; label: string }>;
@@ -1274,14 +1526,267 @@ export type FinanceSummaryDto = {
 /** One party's balance, for a payout run. */
 export type WalletBalanceDto = {
   id: number;
-  owner_type: "rider" | "vendor";
+  owner_type: "rider" | "vendor" | "customer";
   owner_id: number;
   owner_name: string | null;
   /** Whether they can actually be paid — the first thing a payout run needs. */
   has_payout_details: boolean;
   balance: number;
+  /** Earned but not yet released, so a payout run must not try to pay it. */
+  pending?: number;
   lifetime_earned: number;
   lifetime_withdrawn: number;
   currency: string;
   updated_at: string | null;
+};
+
+/** GET /admin/exports — what this admin may export, and how it can be delivered. */
+export type ExportOptionsDto = {
+  resources: Array<{ key: string; label: string; columns: string[] }>;
+  formats: string[];
+  channels: string[];
+  max_rows: number;
+  /** False while MAIL_MAILER is still `log` — the UI disables email with a reason. */
+  email_enabled: boolean;
+};
+
+// --- Delivery conversations -------------------------------------------------
+
+/**
+ * GET /admin/conversations — the customer-and-rider chat on a delivery.
+ *
+ * Deliberately not the shape the apps receive. `ConversationResource` publishes
+ * a first name and an initial, because a customer and a rider are strangers
+ * co-ordinating one doorstep; staff settling a dispute need the full name and
+ * the number, so the admin endpoint has its own resource.
+ */
+export type AdminConversationDto = {
+  id: number;
+  topic: string;
+  topic_label: string;
+  status: ConversationStatus;
+  status_label: string;
+  is_open: boolean;
+  order?: {
+    id: number | null;
+    order_number: string | null;
+    type: string | null;
+    status: OrderStatus | null;
+    status_label: string | null;
+    vendor_name: string | null;
+  };
+  participants?: AdminConversationParticipantDto[];
+  /** Present only on the listing, which adds it with withCount(). */
+  message_count?: number;
+  /** Whether staff have already stepped in — the question a handover asks first. */
+  has_support?: boolean;
+  last_message_at: string | null;
+  created_at: string | null;
+};
+
+export type AdminConversationParticipantDto = {
+  user_id: number;
+  role: ConversationParticipantRole;
+  role_label: string;
+  name: string;
+  phone: string | null;
+  is_me: boolean;
+  last_read_at: string | null;
+};
+
+/** GET /admin/conversations/{id}/messages — cursor-paginated, newest first. */
+export type AdminMessagesPageDto = {
+  items: AdminMessageDto[];
+  cursor: { next: string | null; previous: string | null; has_more: boolean };
+};
+
+export type AdminMessageDto = {
+  id: number;
+  conversation_id: number;
+  /** `system` lines have no sender — "Support has joined this conversation." */
+  type: "text" | "system" | string;
+  body: string;
+  sender: { id: number | null; name: string; role: string | null } | null;
+  is_mine: boolean;
+  created_at: string | null;
+};
+
+/** GET /admin/conversations/stats */
+export type ConversationStatsDto = {
+  total: number;
+  open: number;
+  closed: number;
+  with_support: number;
+  active_today: number;
+};
+
+/* -------------------------------------------------------------------------- */
+/* Vehicles — the fleet reference tables                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * VehicleTypeResource. This replaced the hard-coded VEHICLE_TYPES enum: the
+ * fleet is admin-managed now, so the dashboard reads it rather than knowing it.
+ *
+ * `requires_plate` and `max_parcel_size` are not cosmetic — the first decides
+ * whether a rider form asks for a number plate, the second decides which parcel
+ * sizes customers are offered at all.
+ */
+export type VehicleTypeDto = {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  requires_plate: boolean;
+  max_parcel_size: ParcelSize | null;
+  max_parcel_size_label: string | null;
+  is_active: boolean;
+  display_order: number;
+  created_at: string | null;
+  updated_at: string | null;
+  /** Admin list and show only — adminQuery applies withCount. */
+  makes_count?: number;
+  riders_count?: number;
+};
+
+/** VehicleMakeResource — a manufacturer, filed under the type it makes. */
+export type VehicleMakeDto = {
+  id: number;
+  vehicle_type_id: number;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  display_order: number;
+  created_at: string | null;
+  updated_at: string | null;
+  vehicle_type?: VehicleTypeDto;
+  models_count?: number;
+  riders_count?: number;
+};
+
+/** VehicleModelResource. */
+export type VehicleModelDto = {
+  id: number;
+  vehicle_make_id: number;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  display_order: number;
+  created_at: string | null;
+  updated_at: string | null;
+  vehicle_make?: VehicleMakeDto;
+  riders_count?: number;
+};
+
+/* -------------------------------------------------------------------------- */
+/* Rider agreement — the contract riders sign                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * RiderAgreementResource. Exactly one row is active; that is the contract in
+ * force and the only one `GET /v1/rider-agreement` serves to the rider app.
+ *
+ * `body` is markdown the apps render inline, `file_url` the signed PDF. At
+ * least one is always present. `summary` is a staff note and never reaches a
+ * rider.
+ */
+export type RiderAgreementDto = {
+  id: number;
+  version: string;
+  title: string;
+  summary: string | null;
+  body: string | null;
+  file_url: string | null;
+  file_name: string | null;
+  file_size: number | null;
+  is_active: boolean;
+  published_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  /** How many riders signed this version — what makes it undeletable. */
+  riders_count?: number;
+  author?: { id: number; email: string };
+};
+
+/** One use of a promo code — PromoCodeRedemptionResource. */
+export type PromoCodeRedemptionDto = {
+  id: number;
+  discount: number;
+  currency: string;
+  customer: { id: number; name: string } | null;
+  order: { id: number; order_number: string; status: string | null; total: number } | null;
+  redeemed_at: string | null;
+};
+
+/* -------------------------------------------------------------------------- */
+/* Refer and earn                                                             */
+/* -------------------------------------------------------------------------- */
+
+/** ReferralResource — one introduction, as staff see it. */
+export type ReferralDto = {
+  id: number;
+  code: string;
+  status: "pending" | "qualified" | "cancelled";
+  status_label: string;
+  referrer?: { id: number; name: string; referral_code: string };
+  referee?: { id: number; name: string };
+  qualifying_order?: { id: number; order_number: string } | null;
+  reward: number | null;
+  referee_bonus: number | null;
+  joined_at: string | null;
+  qualified_at: string | null;
+};
+
+/** ReferralMilestoneResource — a one-off bonus for reaching a count. */
+export type ReferralMilestoneDto = {
+  id: number;
+  referrals_required: number;
+  reward: number;
+  description: string | null;
+  is_active: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+  /** How many customers have been paid it — what makes it undeletable. */
+  awards_count?: number;
+};
+
+/** What the programme has cost and produced. */
+export type ReferralSummaryDto = {
+  total_referrals: number;
+  qualified: number;
+  pending: number;
+  cancelled: number;
+  /** Invitations are free; only a qualified one is a customer. */
+  conversion_rate: number;
+  referrer_rewards: number;
+  referee_bonuses: number;
+  milestone_bonuses: number;
+  total_cost: number;
+  currency: string;
+  top_referrers: {
+    customer_id: number;
+    name: string;
+    qualified_count: number;
+    earned: number;
+  }[];
+};
+
+/**
+ * POST /admin/push/test.
+ *
+ * `response` is Firebase's raw answer, passed through untouched - a decoded
+ * JSON object when FCM returned one, the body as a string when it did not.
+ * Reading it verbatim is the whole point of the endpoint, so it is deliberately
+ * not narrowed to a shape that would hide an error field nobody anticipated.
+ */
+export type TestPushResultDto = {
+  project_id: string | null;
+  android_channel_id: string | null;
+  tokens_tried: number;
+  results: {
+    mode: "notification" | "data" | "both";
+    payload: unknown;
+    http_status: number;
+    response: unknown;
+  }[];
 };

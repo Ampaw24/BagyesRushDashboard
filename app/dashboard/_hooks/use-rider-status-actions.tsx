@@ -4,7 +4,14 @@ import { useState } from "react";
 
 import { ConfirmDialog } from "../_components/confirm-dialog";
 import type { ActionMenuItem } from "../_components/action-menu";
-import { ArchiveIcon, DangerIcon, RefreshIcon, VerifyIcon } from "../_lib/icons";
+import {
+  ActivityIcon,
+  ArchiveIcon,
+  DangerIcon,
+  PowerOffIcon,
+  RefreshIcon,
+  VerifyIcon,
+} from "../_lib/icons";
 import { useToast } from "../_components/toast-provider";
 import {
   approveRiderAction,
@@ -12,6 +19,7 @@ import {
   reinstateRiderAction,
   rejectRiderAction,
   restoreRiderAction,
+  setRiderAvailabilityAction,
   suspendRiderAction,
 } from "../riders/_actions";
 import type { RiderRow } from "@/lib/mappers/rider.mapper";
@@ -22,6 +30,8 @@ type PendingAction = "approve" | "reject" | "suspend" | "reinstate" | "delete" |
 export type RiderActionPermissions = {
   canModerate: boolean;
   canDelete: boolean;
+  /** riders.update — the operational switch, not a lifecycle decision. */
+  canUpdate?: boolean;
 };
 
 /**
@@ -33,7 +43,7 @@ export type RiderActionPermissions = {
  */
 export function useRiderStatusActions(
   rider: RiderRow,
-  { canModerate, canDelete }: RiderActionPermissions,
+  { canModerate, canDelete, canUpdate = false }: RiderActionPermissions,
 ) {
   const [pending, setPending] = useState<PendingAction>(null);
 
@@ -73,6 +83,14 @@ export function useRiderStatusActions(
         onClick: () => setPending("suspend"),
       });
     }
+  }
+
+  if (canUpdate && !deleted && rider.status === "approved") {
+    actions.push({
+      label: rider.isOnline ? "Take offline" : "Put online",
+      icon: rider.isOnline ? PowerOffIcon : ActivityIcon,
+      onClick: () => setRiderAvailabilityAction(rider.id, !rider.isOnline),
+    });
   }
 
   if (canDelete) {

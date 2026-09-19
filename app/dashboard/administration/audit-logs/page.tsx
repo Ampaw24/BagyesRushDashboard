@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { PageHeader } from "../../_components/page-header";
+import { ExportAction } from "../../_components/export-action";
 import { NoPermissionState } from "../../_components/empty-state";
 import { AuditLogTable } from "../_components/audit-log-table";
 import { listActivity } from "@/lib/services/activity.service";
@@ -46,10 +47,13 @@ export default async function AuditLogsPage(props: PageProps<"/dashboard/adminis
         title="Audit logs"
         description="Every administrator action, recorded with who did it and from where."
         action={
-          <span className="text-sm text-text-muted">
-            {page.pagination.total.toLocaleString()} entr
-            {page.pagination.total === 1 ? "y" : "ies"}
-          </span>
+          <div className="flex items-center gap-3">
+            <ExportAction resource="audit-log" filters={{ search: list.search }} />
+            <span className="text-sm text-text-muted">
+              {page.pagination.total.toLocaleString()} entr
+              {page.pagination.total === 1 ? "y" : "ies"}
+            </span>
+          </div>
         }
       />
       <AuditLogTable logs={page.items.map(toActivityRow)} pagination={page.pagination} />

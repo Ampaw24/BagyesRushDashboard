@@ -5,7 +5,8 @@ import { useState } from "react";
 import { ActionMenu, type ActionMenuItem } from "../../../_components/action-menu";
 import { ConfirmDialog } from "../../../_components/confirm-dialog";
 import { useToast } from "../../../_components/toast-provider";
-import { refundOrderAction, updateOrderStatusAction } from "../../_actions";
+import { RefundDialog } from "./refund-dialog";
+import { updateOrderStatusAction } from "../../_actions";
 import type { OrderDetail } from "@/lib/mappers/order.mapper";
 import type { OrderStatus } from "@/lib/types/enums";
 
@@ -46,11 +47,16 @@ export function OrderActions({
 
   if (canRefund) {
     items.push({
-      label: "Refund order",
+      // Named for what it opens: a refund is an amount and a destination, not
+      // a yes. The dialog is where both are chosen.
+      label: order.refund.refunded > 0 ? "Refund more…" : "Refund order…",
       danger: true,
-      // The backend refuses a refund unless a settled payment exists.
-      disabled: !order.isPaid,
-      disabledReason: "This order has not been paid for.",
+      // The backend refuses a refund unless a settled payment exists, and
+      // refuses a second one past what is left.
+      disabled: !order.refund.isRefundable,
+      disabledReason: order.isPaid
+        ? "This order has already been refunded in full."
+        : "This order has not been paid for.",
       onClick: () => setPending({ kind: "refund" }),
     });
   }
@@ -85,19 +91,7 @@ export function OrderActions({
       )}
 
       {pending?.kind === "refund" && (
-        <ConfirmDialog
-          title="Refund this order?"
-          description={`This sends a refund request to the payment provider for order ${order.orderNumber}. It cannot be undone.`}
-          confirmLabel="Refund"
-          danger
-          onCancel={() => setPending(null)}
-          onConfirm={async () => {
-            const result = await refundOrderAction(order.id);
-            notifySuccess(result);
-            if (result.ok) setPending(null);
-            return result;
-          }}
-        />
+        <RefundDialog order={order} onClose={() => setPending(null)} />
       )}
     </>
   );

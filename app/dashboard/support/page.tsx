@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { PageHeader } from "../_components/page-header";
+import { ExportAction } from "../_components/export-action";
 import { NoPermissionState } from "../_components/empty-state";
 import { StatTile } from "../_components/stat-tile";
 import { ReportsTable } from "./_components/reports-table";
@@ -62,10 +63,13 @@ export default async function SupportPage({
         title="Support"
         description="Complaints filed from the customer, vendor and rider apps."
         action={
-          <span className="text-sm text-text-muted">
-            {page.pagination.total.toLocaleString()} report
-            {page.pagination.total === 1 ? "" : "s"}
-          </span>
+          <div className="flex items-center gap-3">
+            <ExportAction resource="support" filters={{ search: list.search }} />
+            <span className="text-sm text-text-muted">
+              {page.pagination.total.toLocaleString()} report
+              {page.pagination.total === 1 ? "" : "s"}
+            </span>
+          </div>
         }
       />
 

@@ -2,15 +2,28 @@
 
 import { useState } from "react";
 
-import { TableCell, TableHeadCell, TableShell } from "../../../_components/table-shell";
-import { EmptyState } from "../../../_components/empty-state";
-import { useToast } from "../../../_components/toast-provider";
-import { formatCurrency, formatDateTime } from "../../../_lib/format";
-import { adjustWalletAction } from "../../../transactions/_wallet-actions";
+import { TableCell, TableHeadCell, TableShell } from "./table-shell";
+import { EmptyState } from "./empty-state";
+import { useToast } from "./toast-provider";
+import { formatCurrency, formatDateTime } from "../_lib/format";
+import { adjustWalletAction } from "../transactions/_wallet-actions";
+import type { WalletParty } from "@/lib/services/wallets.service";
 import type { WalletSummary, WalletTransactionRow } from "@/lib/mappers/wallet.mapper";
 
 /**
- * A rider's money, from the staff side.
+ * A rider's, a vendor's or a customer's money, from the staff side.
+ *
+ * One component for all three, because a wallet is a wallet: the same balance,
+ * the same statement, the same adjustment rules, and backend routes that differ
+ * only by the segment. What changes is the wording and which permission gates
+ * it, so all of it is derived from `party` rather than duplicated.
+ *
+ * A customer's wallet is the one that reads differently, and the figures say
+ * why. A rider and a vendor earn their balance and every cedi of it can be paid
+ * out. A customer's arrives as refunds and goodwill, and only the refunds can
+ * ever be cashed out — so `withdrawable` and `spendableOnly` are shown as two
+ * numbers rather than one, and staff can see at a glance which half of somebody
+ * asking to withdraw is actually theirs to take.
  *
  * The statement is the record; the balance at the top is a cached total the
  * backend keeps in step with it. Every adjustment posted here appends a row
@@ -18,24 +31,28 @@ import type { WalletSummary, WalletTransactionRow } from "@/lib/mappers/wallet.m
  * afterwards.
  */
 export function WalletTab({
-  riderId,
-  riderName,
+  party,
+  ownerId,
+  ownerName,
   summary,
   transactions,
   canAdjust,
 }: {
-  riderId: number;
-  riderName: string;
-  /** Null when the admin lacks `riders.wallet` — a separate permission. */
+  party: WalletParty;
+  ownerId: number;
+  ownerName: string;
+  /** Null when the admin lacks `riders.wallet` / `vendors.wallet`. */
   summary: WalletSummary | null;
   transactions: WalletTransactionRow[];
   canAdjust: boolean;
 }) {
+  const isCustomer = party === "customer";
+
   if (!summary) {
     return (
       <EmptyState
         title="Wallet is not visible to your role"
-        description="Seeing or moving a rider's money needs the riders.wallet permission, which is separate from managing them."
+        description={`Seeing or moving a ${party}'s money needs the ${party}s.wallet permission, which is separate from managing them.`}
       />
     );
   }
@@ -44,26 +61,59 @@ export function WalletTab({
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Figure label="Balance" value={formatCurrency(summary.balance)} emphasis />
-        <Figure label="Reserved for payout" value={formatCurrency(summary.pendingWithdrawal)} />
-        <Figure label="Earned all time" value={formatCurrency(summary.lifetimeEarned)} />
+        {isCustomer ? (
+          <>
+            <Figure label="Can be cashed out" value={formatCurrency(summary.withdrawable)} />
+            <Figure label="Spendable here only" value={formatCurrency(summary.spendableOnly)} />
+          </>
+        ) : (
+          <>
+            <Figure label="Reserved for payout" value={formatCurrency(summary.pendingWithdrawal)} />
+            <Figure label="Earned all time" value={formatCurrency(summary.lifetimeEarned)} />
+          </>
+        )}
         <Figure label="Withdrawn all time" value={formatCurrency(summary.lifetimeWithdrawn)} />
       </div>
 
-      {!summary.hasPayoutDetails && (
+      {isCustomer && summary.spendableOnly > 0 && (
+        <p className="break-words rounded-xl border border-border-subtle bg-surface-muted px-4 py-3 text-sm text-text-secondary">
+          <span className="font-medium text-foreground">
+            {formatCurrency(summary.spendableOnly)} of this balance cannot be withdrawn.{" "}
+          </span>
+          Goodwill and promotional credit can be spent on orders and nowhere else. Only credit that
+          came from a refunded payment is real money the platform received.
+        </p>
+      )}
+
+      {isCustomer && !summary.withdrawalsEnabled && (
+        <p className="break-words rounded-xl border border-border-subtle bg-surface-muted px-4 py-3 text-sm text-text-secondary">
+          <span className="font-medium text-foreground">Customer cash-out is switched off. </span>
+          This balance can be spent at checkout but not withdrawn. Turn it on under System Config
+          &rsaquo; Money if you want to start reviewing customer payout requests.
+        </p>
+      )}
+
+      {!summary.hasPayoutDetails && !isCustomer && (
         <p className="break-words rounded-xl border border-status-warning/30 bg-status-warning/5 px-4 py-3 text-sm">
           <span className="font-medium text-foreground">No payout destination. </span>
           <span className="text-text-secondary">
-            {riderName} cannot be paid until they add a bank account or mobile money number.
+            {ownerName} cannot be paid until they add a bank account or mobile money number.
           </span>
         </p>
       )}
 
-      {canAdjust && <AdjustCard riderId={riderId} riderName={riderName} />}
+      {canAdjust && <AdjustCard party={party} ownerId={ownerId} ownerName={ownerName} />}
 
       {transactions.length === 0 ? (
         <EmptyState
           title="Nothing on the statement yet"
-          description="Deliveries, bonuses and payouts all land here as they happen."
+          description={
+            party === "rider"
+              ? "Deliveries, bonuses and payouts all land here as they happen."
+              : party === "customer"
+                ? "Refunds, goodwill credit and anything spent at checkout all land here as they happen."
+                : "Order earnings, adjustments and payouts all land here as they happen."
+          }
         />
       ) : (
         <TableShell>
@@ -108,7 +158,15 @@ export function WalletTab({
   );
 }
 
-function AdjustCard({ riderId, riderName }: { riderId: number; riderName: string }) {
+function AdjustCard({
+  party,
+  ownerId,
+  ownerName,
+}: {
+  party: WalletParty;
+  ownerId: number;
+  ownerName: string;
+}) {
   const { notifySuccess } = useToast();
   const [direction, setDirection] = useState<"credit" | "debit">("credit");
   const [amount, setAmount] = useState("");
@@ -119,7 +177,7 @@ function AdjustCard({ riderId, riderName }: { riderId: number; riderName: string
     event.preventDefault();
     setPending(true);
 
-    const result = await adjustWalletAction(riderId, direction, {
+    const result = await adjustWalletAction(party, ownerId, direction, {
       amount: Number(amount),
       note,
     });
@@ -140,9 +198,16 @@ function AdjustCard({ riderId, riderName }: { riderId: number; riderName: string
     >
       <h3 className="break-words text-sm font-semibold text-foreground">Adjust wallet</h3>
       <p className="text-sm text-text-secondary">
-        Adds a line to {riderName}&rsquo;s statement. A debit is refused if it would take the balance
+        Adds a line to {ownerName}&rsquo;s statement. A debit is refused if it would take the balance
         below zero.
       </p>
+      {party === "customer" && (
+        <p className="text-sm text-text-secondary">
+          Credit added here is <span className="font-medium text-foreground">goodwill</span>: it can
+          be spent on orders but never cashed out. To send real money back, refund the order it came
+          from.
+        </p>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <select

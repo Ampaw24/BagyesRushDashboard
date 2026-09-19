@@ -214,9 +214,13 @@ function RateCard({ settings }: { settings: PlatformSettingDto | null }) {
       </div>
 
       <dl className="flex flex-col gap-2.5 text-sm">
-        <Rate term="Vendor keeps" value={percent(settings.vendor_percent)} />
-        <Rate term="Rider keeps" value={percent(settings.rider_percent)} />
-        <Rate term="Parcel rider keeps" value={percent(settings.parcel_rider_percent)} />
+        {/* These are the platform's cut, not what the party keeps —
+            PlatformSetting::vendorEarningFor() subtracts them. Labelled
+            "Vendor keeps 10%" this said the exact opposite of the truth, and
+            contradicted the order screen, which had it right. */}
+        <Rate term="Vendor commission" value={percent(settings.vendor_percent)} />
+        <Rate term="Rider commission" value={percent(settings.rider_percent)} />
+        <Rate term="Parcel rider commission" value={percent(settings.parcel_rider_percent)} />
 
         <hr className="border-border-subtle" />
 

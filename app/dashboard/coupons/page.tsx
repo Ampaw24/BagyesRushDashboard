@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { PageHeader } from "../_components/page-header";
+import { ExportAction } from "../_components/export-action";
 import { NoPermissionState } from "../_components/empty-state";
 import { CouponsTable } from "./coupons-table";
 import { listPromoCodes } from "@/lib/services/promo-codes.service";
@@ -42,9 +43,12 @@ export default async function CouponsPage(props: PageProps<"/dashboard/coupons">
         title="Coupons"
         description="Discount codes available to customers at checkout."
         action={
-          <span className="text-sm text-text-muted">
-            {page.pagination.total.toLocaleString()} code{page.pagination.total === 1 ? "" : "s"}
-          </span>
+          <div className="flex items-center gap-3">
+            <ExportAction resource="promo-codes" filters={{ search: list.search }} />
+            <span className="text-sm text-text-muted">
+              {page.pagination.total.toLocaleString()} code{page.pagination.total === 1 ? "" : "s"}
+            </span>
+          </div>
         }
       />
       <CouponsTable coupons={page.items.map(toPromoCodeRow)} pagination={page.pagination} />

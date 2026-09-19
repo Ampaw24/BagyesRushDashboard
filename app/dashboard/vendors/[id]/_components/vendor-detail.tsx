@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { Badge } from "../../../_components/status-badge";
 import { Tabs } from "../../../_components/tabs";
+import { WalletTab } from "../../../_components/wallet-tab";
+import { MediaTab } from "./media-tab";
 import { TableCell, TableHeadCell, TableShell } from "../../../_components/table-shell";
 import { ActionMenu } from "../../../_components/action-menu";
 import { EmptyState } from "../../../_components/empty-state";
@@ -13,36 +15,81 @@ import { formatCurrency, formatDate, formatDateTimeOrDash } from "../../../_lib/
 import { StarIcon } from "../../../_lib/icons";
 import { useToast } from "../../../_components/toast-provider";
 import { useVendorStatusActions } from "../../../_hooks/use-vendor-status-actions";
+import { useSendMessage } from "../../../_hooks/use-send-message";
+import { EditVendorDialog } from "./edit-vendor-dialog";
+import { EditIcon } from "../../../_lib/icons";
 import { toggleMenuItemAvailabilityAction } from "../../_actions";
 import type { MenuItemRow, VendorDetail as VendorDetailModel, VendorPayout } from "@/lib/mappers/vendor.mapper";
 import type { ActivityRow } from "@/lib/mappers/activity.mapper";
+import type { WalletSummary, WalletTransactionRow } from "@/lib/mappers/wallet.mapper";
 import { vendorDocumentLabels } from "@/lib/types/enums";
 
 export type VendorDetailProps = {
   vendor: VendorDetailModel;
   menuItems: MenuItemRow[];
+  /**
+   * For the business-type picker on the edit dialog. Empty when the admin does
+   * not hold `catalogue.manage`, in which case the field is disabled rather
+   * than the whole dialog being withheld.
+   */
+  businessTypes: { id: number; name: string }[];
   /** Present only when the admin holds `vendors.payout`; every read is audit-logged. */
   payout: VendorPayout | null;
   /** From GET /admin/activity filtered to this vendor; empty without `audit.view`. */
   activity: ActivityRow[];
+  /** Present only when the admin holds `vendors.wallet`. */
+  wallet: WalletSummary | null;
+  transactions: WalletTransactionRow[];
   permissions: {
     canModerate: boolean;
     canDelete: boolean;
     canUpdateMenu: boolean;
     canViewDocuments: boolean;
+    canAdjustWallet: boolean;
+    /** `communications.send` — sending SMS spends credits, so it is its own right. */
+    canMessage: boolean;
+    /** `vendors.update` — correcting details, not deciding whether they trade. */
+    canEdit: boolean;
   };
 };
 
 const TABS = [
   { key: "overview", label: "Overview" },
   { key: "menu", label: "Menu" },
+  // What customers actually see of them: images, description, categories.
+  { key: "media", label: "Branding" },
+  // Before Payout, matching the rider screen: what they are owed is read far
+  // more often than where it is sent.
+  { key: "wallet", label: "Wallet" },
   { key: "payout", label: "Payout" },
   { key: "activity", label: "Activity" },
 ];
 
-export function VendorDetail({ vendor, menuItems, payout, activity, permissions }: VendorDetailProps) {
+export function VendorDetail({
+  vendor,
+  menuItems,
+  businessTypes,
+  payout,
+  activity,
+  wallet,
+  transactions,
+  permissions,
+}: VendorDetailProps) {
   const [tab, setTab] = useState("overview");
   const { actions, dialog } = useVendorStatusActions(vendor, permissions);
+  const { actions: messageActions, dialog: messageDialog } = useSendMessage(
+    { userId: vendor.userId, name: vendor.businessName, phone: vendor.phone },
+    permissions.canMessage,
+  );
+  const [editing, setEditing] = useState(false);
+
+  const headerActions = [
+    ...(permissions.canEdit
+      ? [{ label: "Edit details", icon: EditIcon, onClick: () => setEditing(true) }]
+      : []),
+    ...messageActions,
+    ...actions,
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -60,7 +107,7 @@ export function VendorDetail({ vendor, menuItems, payout, activity, permissions 
           </span>
         }
         description={`${vendor.vendorId} · joined ${formatDate(vendor.joinedAt)}`}
-        action={actions.length > 0 ? <ActionMenu items={actions} /> : undefined}
+        action={headerActions.length > 0 ? <ActionMenu items={headerActions} /> : undefined}
       />
 
       {vendor.rejectionReason && (
@@ -76,10 +123,29 @@ export function VendorDetail({ vendor, menuItems, payout, activity, permissions 
       {tab === "menu" && (
         <MenuTab vendor={vendor} items={menuItems} canUpdate={permissions.canUpdateMenu} />
       )}
+      {tab === "media" && <MediaTab vendor={vendor} canUpdate={permissions.canEdit} />}
+      {tab === "wallet" && (
+        <WalletTab
+          party="vendor"
+          ownerId={vendor.id}
+          ownerName={vendor.businessName}
+          summary={wallet}
+          transactions={transactions}
+          canAdjust={permissions.canAdjustWallet}
+        />
+      )}
       {tab === "payout" && <PayoutTab vendor={vendor} payout={payout} />}
       {tab === "activity" && <ActivityTab activity={activity} />}
 
       {dialog}
+      {messageDialog}
+      {editing && (
+        <EditVendorDialog
+          vendor={vendor}
+          businessTypes={businessTypes}
+          onClose={() => setEditing(false)}
+        />
+      )}
     </div>
   );
 }
@@ -104,7 +170,11 @@ function OverviewTab({
       </Card>
 
       <Card title="Trading">
-        <Row label="Open right now" value={vendor.isOpenNow ? "Yes" : "No"} />
+        {/* Two rows, because they answer different questions. "No" used to be
+            the whole story, leaving an admin unable to tell a vendor who had
+            switched themselves off from one simply outside their hours. */}
+        <Row label="Vendor switch" value={vendor.isOpen ? "On" : "Off"} />
+        <Row label="Open right now" value={openNowLabel(vendor)} />
         <Row label="Accepting orders" value={vendor.isActive ? "Yes" : "No"} />
         <Row
           label="Hours"
@@ -320,6 +390,24 @@ function ActivityTab({ activity }: { activity: ActivityRow[] }) {
       </tbody>
     </TableShell>
   );
+}
+
+/**
+ * Why a vendor is or is not trading, in one line.
+ */
+function openNowLabel(vendor: VendorDetailModel): string {
+  if (vendor.isOpenNow) return "Yes";
+
+  switch (vendor.closedReason) {
+    case "switched_off":
+      return "No — switched off by the vendor";
+    case "closed_today":
+      return "No — not a trading day";
+    case "outside_hours":
+      return "No — outside their hours";
+    default:
+      return "No";
+  }
 }
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {

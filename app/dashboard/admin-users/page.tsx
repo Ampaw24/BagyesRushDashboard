@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { PageHeader } from "../_components/page-header";
+import { ExportAction } from "../_components/export-action";
 import { NoPermissionState } from "../_components/empty-state";
 import { AdminUsersTable } from "./admin-users-table";
 import { listUsers } from "@/lib/services/admin-users.service";
@@ -51,10 +52,13 @@ export default async function AdminUsersPage(props: PageProps<"/dashboard/admin-
         title="Admin users"
         description="Staff accounts with dashboard access."
         action={
-          <span className="text-sm text-text-muted">
-            {page.pagination.total.toLocaleString()} account
-            {page.pagination.total === 1 ? "" : "s"}
-          </span>
+          <div className="flex items-center gap-3">
+            <ExportAction resource="staff" filters={{ search: list.search }} />
+            <span className="text-sm text-text-muted">
+              {page.pagination.total.toLocaleString()} account
+              {page.pagination.total === 1 ? "" : "s"}
+            </span>
+          </div>
         }
       />
 

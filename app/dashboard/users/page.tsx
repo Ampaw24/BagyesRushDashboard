@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { PageHeader } from "../_components/page-header";
+import { ExportAction } from "../_components/export-action";
 import { StatTile } from "../_components/stat-tile";
 import { NoPermissionState } from "../_components/empty-state";
 import { UsersIcon } from "../_lib/icons";
@@ -39,13 +40,21 @@ export default async function CustomersPage(props: PageProps<"/dashboard/users">
     status,
   });
 
+  // `?customer=` deep-links to one row's dialog, for the payout and ledger
+  // screens: a customer has no detail page to link to.
+  const openCustomer = Number(params.customer);
+
   // The API has no customer-overview endpoint, so the only honest headline
   // figure is the total the current query matched.
   const heading = status ? `${status === "active" ? "Active" : "Suspended"} customers` : "All customers";
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Customers" description="Everyone who orders on the platform." />
+      <PageHeader
+        title="Customers"
+        description="Everyone who orders on the platform."
+        action={<ExportAction resource="customers" filters={{ search: list.search, status }} />}
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile
@@ -55,7 +64,12 @@ export default async function CustomersPage(props: PageProps<"/dashboard/users">
         />
       </div>
 
-      <UsersTable customers={page.items.map(toCustomerRow)} pagination={page.pagination} />
+      <UsersTable
+        customers={page.items.map(toCustomerRow)}
+        pagination={page.pagination}
+        openCustomerId={Number.isFinite(openCustomer) && openCustomer > 0 ? openCustomer : undefined}
+        canMessage={can(permissions, "communications.send")}
+      />
     </div>
   );
 }

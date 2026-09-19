@@ -6,10 +6,14 @@ import { apiAction } from "@/lib/api/action";
 import {
   createRider,
   deleteRider,
+  getRider,
+  updateRider,
   moderateRider,
   restoreRider,
+  setRiderAvailability,
   type CreateRiderInput,
 } from "@/lib/services/riders.service";
+import { toRiderDetail } from "@/lib/mappers/rider.mapper";
 
 /**
  * Rider moderation and lifecycle.
@@ -57,6 +61,19 @@ export async function reinstateRiderAction(id: number) {
   });
 }
 
+/**
+ * Put a rider on or off the dispatch board.
+ *
+ * Refused while they are carrying something - taking a rider offline
+ * mid-delivery would strand the order rather than free them.
+ */
+export async function setRiderAvailabilityAction(id: number, isOnline: boolean) {
+  return apiAction(isOnline ? "Rider is now online" : "Rider is now offline", async () => {
+    await setRiderAvailability(id, isOnline);
+    revalidateRiderViews(id);
+  });
+}
+
 /** Refused by the API while the rider still has a delivery in progress. */
 export async function deleteRiderAction(id: number) {
   return apiAction("Rider deleted", async () => {
@@ -80,4 +97,34 @@ export async function createRiderAction(input: CreateRiderInput) {
 
     return { id: created.rider.id, password: created.password };
   });
+}
+
+/**
+ * Correcting a rider's details — `PUT /admin/riders/{id}`.
+ *
+ * Status, availability, documents and payout are not reachable from here:
+ * `UpdateRiderProfileRequest` does not accept them, `Rider::$fillable` excludes
+ * them, and RiderProfileService strips them again. Three independent barriers,
+ * and this action is on the safe side of all three.
+ */
+export async function updateRiderAction(id: number, input: Partial<CreateRiderInput>) {
+  return apiAction("Rider updated", async () => {
+    await updateRider(id, input);
+    revalidateRiderViews(id);
+  });
+}
+
+/**
+ * Loads a rider's full profile for the quick-view dialog.
+ *
+ * The list response is deliberately thin — it carries no vehicle detail, no
+ * compliance dates and no document list — so the dialog fetches on open rather
+ * than every row over-fetching for a profile nobody may look at.
+ *
+ * `riders.view` is the only permission this needs; the dialog hides the
+ * document links unless the caller also holds `riders.documents`, and the
+ * backend refuses them independently.
+ */
+export async function loadRiderDetailAction(id: number) {
+  return apiAction("Rider retrieved", async () => toRiderDetail(await getRider(id)));
 }

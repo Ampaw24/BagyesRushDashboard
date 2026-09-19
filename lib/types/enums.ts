@@ -117,28 +117,18 @@ export const vehicleOwnershipLabels: Record<VehicleOwnership, string> = {
 };
 
 /**
- * Every vehicle the backend can store. Used for filters and badges, because a
- * rider registered under an earlier fleet policy still has to be findable.
- */
-export const VEHICLE_TYPES = ["motorbike", "bicycle", "tricycle", "car"] as const;
-export type VehicleType = (typeof VEHICLE_TYPES)[number];
-
-/**
- * What the fleet actually runs today, and therefore what a form may offer.
+ * The vehicle type is no longer an enum on either side.
  *
- * Motorbikes only for now. The backend is the authority - it validates against
- * config('marketplace.riders.vehicle_types') - so widening the fleet there
- * without updating this only makes the dashboard form narrower than the API,
- * never the other way round.
+ * It is an admin-managed table now (Catalogue -> Vehicle types), so the fleet
+ * can be widened without a deploy and the mobile apps can fetch the list
+ * instead of hard-coding it. Screens read `VehicleTypeDto` from
+ * `lib/services/vehicle-types.service.ts` and render `vehicle_type_label`,
+ * which the API sends alongside every rider.
+ *
+ * The slug is still a string on the wire, so rows written under an earlier
+ * fleet policy keep reading correctly.
  */
-export const SELECTABLE_VEHICLE_TYPES = ["motorbike"] as const;
-
-export const vehicleTypeLabels: Record<VehicleType, string> = {
-  motorbike: "Motorbike",
-  bicycle: "Bicycle",
-  tricycle: "Tricycle",
-  car: "Car",
-};
+export type VehicleTypeSlug = string;
 
 /**
  * Every document a rider can hold. Which are *required* varies with the
@@ -210,6 +200,22 @@ export const WALLET_TRANSACTION_TYPES = [
 ] as const;
 export type WalletTransactionType = (typeof WALLET_TRANSACTION_TYPES)[number];
 
+/**
+ * The movements a filter should actually offer.
+ *
+ * `tip` is in the backend enum but nothing in the system ever writes one -
+ * it is not produced by any flow, and AdjustWalletRequest does not let an
+ * admin post one by hand either. Offering it meant picking "Tip" and getting
+ * an empty list every time, which reads as a broken filter rather than an
+ * unused feature.
+ *
+ * It stays in the union above so an existing row would still render its
+ * label; it is only removed from the choices.
+ */
+export const FILTERABLE_WALLET_TRANSACTION_TYPES = WALLET_TRANSACTION_TYPES.filter(
+  (type) => type !== "tip",
+);
+
 export const MANUAL_WALLET_TRANSACTION_TYPES = [
   "admin_credit",
   "admin_debit",
@@ -261,13 +267,26 @@ export const withdrawalStatusTransitions: Record<WithdrawalStatus, WithdrawalSta
   reversed: [],
 };
 
-export const PAYMENT_STATUSES = ["pending", "paid", "failed", "refunded"] as const;
+/**
+ * `partially_refunded` is a settled payment with some of it sent back — the
+ * customer who was not at the door and kept the delivery fee, or a parcel run
+ * where one stop of three failed. It counts as paid everywhere that asks
+ * whether money arrived: the vendor is still owed for the food.
+ */
+export const PAYMENT_STATUSES = [
+  "pending",
+  "paid",
+  "failed",
+  "partially_refunded",
+  "refunded",
+] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 export const paymentStatusLabels: Record<PaymentStatus, string> = {
   pending: "Awaiting payment",
   paid: "Paid",
   failed: "Failed",
+  partially_refunded: "Partially refunded",
   refunded: "Refunded",
 };
 
@@ -395,6 +414,7 @@ export const PERMISSIONS = [
   "vendors.delete",
   "vendors.documents",
   "vendors.payout",
+  "vendors.wallet",
   "riders.view",
   "riders.create",
   "riders.update",
@@ -415,6 +435,11 @@ export const PERMISSIONS = [
   "communications.send",
   "reports.view",
   "reports.manage",
+  // Reading a delivery conversation and speaking in one are separate rights:
+  // a support seat in somebody else's thread is visible to both sides, so
+  // joining is a decision and reading is not.
+  "chat.view",
+  "chat.join",
   "payments.view",
   "payments.refund",
   "payments.verify",
@@ -557,4 +582,36 @@ export const PARCEL_STOP_STATUS_LABELS: Record<ParcelStopStatus, string> = {
   // Per stop, not per order: a rider can deliver four of five packages and the
   // fifth recipient not answer the door.
   failed: "Could not deliver",
+};
+
+// --- Delivery conversations -------------------------------------------------
+
+/**
+ * Whether a thread still accepts messages.
+ *
+ * Closed is read-only rather than deleted: what was said about a delivery is
+ * part of that order's record, and is exactly what a dispute weeks later turns
+ * on. `chat:close-stale` closes threads some hours after an order ends, and an
+ * admin can reopen one.
+ */
+export const CONVERSATION_STATUSES = ["open", "closed"] as const;
+export type ConversationStatus = (typeof CONVERSATION_STATUSES)[number];
+
+export const conversationStatusLabels: Record<ConversationStatus, string> = {
+  open: "Open",
+  closed: "Closed",
+};
+
+/**
+ * Somebody's part in a thread, which is not always their role on the platform:
+ * an admin stepping into a delivery argument joins as support.
+ */
+export const CONVERSATION_PARTICIPANT_ROLES = ["customer", "rider", "vendor", "admin"] as const;
+export type ConversationParticipantRole = (typeof CONVERSATION_PARTICIPANT_ROLES)[number];
+
+export const conversationParticipantRoleLabels: Record<ConversationParticipantRole, string> = {
+  customer: "Customer",
+  rider: "Rider",
+  vendor: "Vendor",
+  admin: "Support",
 };

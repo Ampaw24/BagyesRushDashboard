@@ -128,6 +128,31 @@ export async function getVendorPayout(id: number): Promise<VendorPayoutDto> {
   return apiFetch<VendorPayoutDto>(`/admin/vendors/${id}/payout`);
 }
 
+/** The three images a vendor presents itself with, as the API names them. */
+export type VendorImageType = "logo" | "cover" | "banner";
+
+/**
+ * POST /admin/vendors/{id}/images/{type} — requires `vendors.update`.
+ *
+ * POST, not PUT: multipart bodies do not survive PUT in most clients, which is
+ * why the backend exposes every upload this way.
+ *
+ * Note `banner` is what the API calls the square storefront image — the wide
+ * one across the top of a storefront is `cover`. The dashboard keeps its own
+ * labels ("Storefront image", "Cover image"), which read correctly to an admin;
+ * this is the one place the two vocabularies meet.
+ */
+export async function uploadVendorImage(
+  id: number,
+  type: VendorImageType,
+  form: FormData,
+): Promise<VendorDto> {
+  return apiFetch<VendorDto>(`/admin/vendors/${id}/images/${type}`, {
+    method: "POST",
+    formData: form,
+  });
+}
+
 /** Requires `vendors.view` + `menu.view`. Includes items from unapproved vendors. */
 export async function listVendorMenuItems(
   id: number,

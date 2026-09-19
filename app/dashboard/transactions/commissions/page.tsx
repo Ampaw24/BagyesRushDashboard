@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageHeader } from "../../_components/page-header";
+import { ExportAction } from "../../_components/export-action";
 import { NoPermissionState, EmptyState } from "../../_components/empty-state";
 import { StatTile } from "../../_components/stat-tile";
 import { Pagination } from "../../_components/pagination";
@@ -63,6 +64,7 @@ export default async function CommissionsPage(
       <PageHeader
         title="Commissions earned"
         description="The platform's share of every delivered order, as it was recorded."
+        action={<ExportAction resource="commissions" filters={{ from, to }} />}
       />
 
       <DateRangeFilter />
@@ -126,16 +128,18 @@ export default async function CommissionsPage(
                     {formatCurrency(row.total)}
                   </TableCell>
 
-                  {/* Null on orders placed before the split was recorded — shown
-                      as a dash rather than a confident zero. */}
+                  {/* Checked per field, not per object. Each side settles at
+                      its own moment, so an order can legitimately know the
+                      vendor's share and not the rider's — a dash rather than a
+                      confident zero for whichever is still outstanding. */}
                   <TableCell className="tabular-nums text-text-secondary">
-                    {row.earnings ? formatCurrency(row.earnings.vendor) : "—"}
+                    {row.earnings?.vendor != null ? formatCurrency(row.earnings.vendor) : "—"}
                   </TableCell>
                   <TableCell className="tabular-nums text-text-secondary">
-                    {row.earnings ? formatCurrency(row.earnings.rider) : "—"}
+                    {row.earnings?.rider != null ? formatCurrency(row.earnings.rider) : "—"}
                   </TableCell>
                   <TableCell className="tabular-nums font-medium text-foreground">
-                    {row.earnings ? formatCurrency(row.earnings.platform) : "—"}
+                    {row.earnings?.platform != null ? formatCurrency(row.earnings.platform) : "—"}
                   </TableCell>
 
                   <TableCell className="text-text-secondary">

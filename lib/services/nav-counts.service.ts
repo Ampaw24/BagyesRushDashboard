@@ -12,6 +12,10 @@ export type NavCounts = {
   riderRequests: number;
   /** Live orders no rider accepted, waiting on a human. */
   ordersNeedingDispatch: number;
+  /** Deliveries the rider waited out and abandoned, still unresolved. */
+  failedDeliveries: number;
+  /** Paid orders the kitchen has been reminded about and still not accepted. */
+  ordersAwaitingVendor: number;
   /** Riders waiting to be paid. */
   withdrawalRequests: number;
   /** Complaints nobody has looked at yet. */
@@ -34,6 +38,8 @@ export async function getNavCounts(permissions: readonly Permission[]): Promise<
     pendingVendors,
     riderRequests,
     ordersNeedingDispatch,
+    failedDeliveries,
+    ordersAwaitingVendor,
     withdrawalRequests,
     openReports,
     scheduledCommunications,
@@ -42,6 +48,8 @@ export async function getNavCounts(permissions: readonly Permission[]): Promise<
     permissions.includes("vendors.view") ? countPendingVendors() : Promise.resolve(0),
     permissions.includes("riders.view") ? countRiderRequests() : Promise.resolve(0),
     permissions.includes("dispatch.manage") ? countNeedingDispatch() : Promise.resolve(0),
+    permissions.includes("orders.view") ? countFailedDeliveries() : Promise.resolve(0),
+    permissions.includes("orders.view") ? countAwaitingVendor() : Promise.resolve(0),
     permissions.includes("withdrawals.view") ? countWithdrawalRequests() : Promise.resolve(0),
     permissions.includes("reports.view") ? countOpenReports() : Promise.resolve(0),
     permissions.includes("communications.view") ? countScheduled() : Promise.resolve(0),
@@ -52,10 +60,46 @@ export async function getNavCounts(permissions: readonly Permission[]): Promise<
     pendingVendors,
     riderRequests,
     ordersNeedingDispatch,
+    failedDeliveries,
+    ordersAwaitingVendor,
     withdrawalRequests,
     openReports,
     scheduledCommunications,
   };
+}
+
+/**
+ * Paid orders a vendor has been reminded about and still not accepted.
+ *
+ * Asks the list rather than the stats endpoint, which carries no count for
+ * this queue. Badged because it is work somebody does, and because every row
+ * is a customer whose money has been taken with nothing happening.
+ */
+async function countAwaitingVendor(): Promise<number> {
+  try {
+    const page = await apiFetch<Paginated<unknown>>("/admin/orders/awaiting-vendor", {
+      query: { per_page: 1 },
+    });
+    return page.pagination.total;
+  } catch (error) {
+    return rethrowUnexpected(error, 0);
+  }
+}
+
+/**
+ * Paid-for orders the rider abandoned at the door.
+ *
+ * Badged for the same reason Needs Dispatch is: it is a queue somebody works
+ * through, not a statistic. Reads the orders stats endpoint rather than the
+ * list, because the count is already on it.
+ */
+async function countFailedDeliveries(): Promise<number> {
+  try {
+    const stats = await apiFetch<OrderStatsDto>("/admin/orders/stats");
+    return stats.failed_deliveries ?? 0;
+  } catch (error) {
+    return rethrowUnexpected(error, 0);
+  }
 }
 
 /** Pending and in-review together: both are still somebody's work. */

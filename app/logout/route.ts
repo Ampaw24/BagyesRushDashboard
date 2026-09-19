@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { SESSION_COOKIE } from "@/lib/api/config";
+import { redirectTo } from "@/lib/http/redirect";
 
 /**
  * Clears the session cookie and returns to the login screen.
@@ -12,9 +12,10 @@ import { SESSION_COOKIE } from "@/lib/api/config";
  */
 export async function GET(request: NextRequest) {
   const reason = request.nextUrl.searchParams.get("reason");
-  const target = new URL(reason === "expired" ? "/login?expired=1" : "/login", request.url);
 
-  const response = NextResponse.redirect(target);
+  // 303, so the browser follows with GET whatever method got here.
+  const response = redirectTo(reason === "expired" ? "/login?expired=1" : "/login", 303);
   response.cookies.delete(SESSION_COOKIE);
+
   return response;
 }

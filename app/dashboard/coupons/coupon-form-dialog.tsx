@@ -82,6 +82,7 @@ export function CouponFormDialog({
       max_redemptions: numberOrNull("max_redemptions"),
       max_per_customer: numberOrNull("max_per_customer"),
       is_active: form.get("is_active") !== null,
+      is_public: form.get("is_public") !== null,
     });
 
     setPending(false);
@@ -238,6 +239,24 @@ export function CouponFormDialog({
             className="h-4 w-4 rounded border-border-subtle text-brand focus:ring-brand"
           />
           Active
+        </label>
+
+        {/* Off by default. A code handed to twenty people is targeted, and
+            listing it publicly would be giving it away. */}
+        <label className="flex min-h-11 items-start gap-2 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            name="is_public"
+            defaultChecked={coupon?.isPublic ?? false}
+            className="mt-0.5 h-4 w-4 rounded border-border-subtle text-brand focus:ring-brand"
+          />
+          <span>
+            Advertise publicly
+            <span className="block text-xs text-text-muted">
+              Shows in the apps&rsquo; offers list. Leave off for a code you are handing to specific
+              customers — listing it there gives it to everybody.
+            </span>
+          </span>
         </label>
 
         {message && (

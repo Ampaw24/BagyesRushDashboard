@@ -21,10 +21,24 @@ export function AudiencePicker({
   onChange,
   /** Push-only sends cannot reach somebody with no device, so the picker says so. */
   warnWithoutDevice,
+  /**
+   * One person, not an audience.
+   *
+   * Picking replaces the selection rather than adding to it, and the footer
+   * drops the broadcast wording. Push diagnostics sends to one person at a
+   * time; the directory search is the valuable half and is worth having once
+   * rather than twice.
+   */
+  single = false,
+  label = "Find people",
+  placeholder = "Search by name, phone or email",
 }: {
   selected: AudienceCandidateDto[];
   onChange: (people: AudienceCandidateDto[]) => void;
   warnWithoutDevice: boolean;
+  single?: boolean;
+  label?: string;
+  placeholder?: string;
 }) {
   const [term, setTerm] = useState("");
   const [results, setResults] = useState<AudienceCandidateDto[]>([]);
@@ -60,7 +74,9 @@ export function AudiencePicker({
 
   const add = (person: AudienceCandidateDto) => {
     if (chosen.has(person.id)) return;
-    onChange([...selected, person]);
+    // Replace rather than append when only one person is wanted, so picking a
+    // second silently swaps instead of quietly building a list.
+    onChange(single ? [person] : [...selected, person]);
   };
 
   const remove = (id: number) => onChange(selected.filter((person) => person.id !== id));
@@ -69,12 +85,12 @@ export function AudiencePicker({
     <div className="flex flex-col gap-3">
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-medium uppercase tracking-wide text-text-muted">
-          Find people
+          {label}
         </span>
         <input
           value={term}
           onChange={(event) => setTerm(event.target.value)}
-          placeholder="Search by name, phone or email"
+          placeholder={placeholder}
           className={FIELD}
         />
       </label>
@@ -130,7 +146,15 @@ export function AudiencePicker({
                       </span>
                     </span>
                     <span className="shrink-0 text-xs text-text-muted">
-                      {already ? "Added" : warnWithoutDevice && !person.has_device ? "No device" : "Add"}
+                      {already
+                        ? single
+                          ? "Selected"
+                          : "Added"
+                        : warnWithoutDevice && !person.has_device
+                          ? "No device"
+                          : single
+                            ? "Select"
+                            : "Add"}
                     </span>
                   </button>
                 </li>
@@ -141,9 +165,13 @@ export function AudiencePicker({
       </div>
 
       <p className="text-xs text-text-muted">
-        {selected.length === 0
-          ? "Nobody selected yet — an empty list reaches nobody, not everybody."
-          : `${selected.length} selected`}
+        {single
+          ? selected.length === 0
+            ? "Nobody selected yet."
+            : `Sending to ${selected[0].name}.`
+          : selected.length === 0
+            ? "Nobody selected yet — an empty list reaches nobody, not everybody."
+            : `${selected.length} selected`}
       </p>
     </div>
   );
