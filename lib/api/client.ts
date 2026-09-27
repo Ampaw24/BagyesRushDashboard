@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getSessionToken } from "../auth/session";
 import { apiUrl } from "./config";
+import { forwardedClientHeaders } from "./forwarded-headers";
 import {
   ApiRequestError,
   ApiUnreachableError,
@@ -40,7 +41,14 @@ export type RequestOptions = {
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", query, body, formData, anonymous = false } = options;
 
-  const headers: Record<string, string> = { Accept: "application/json" };
+  // The admin's own IP and browser, not this server's. Included on anonymous
+  // calls too - the sign-in attempts are exactly the events an audit log most
+  // needs the real address for, and those are the calls made before a token
+  // exists. See lib/api/forwarded-headers.ts.
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...(await forwardedClientHeaders()),
+  };
 
   if (!anonymous) {
     const token = await getSessionToken();

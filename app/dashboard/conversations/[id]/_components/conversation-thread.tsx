@@ -7,7 +7,10 @@ import { PageHeader } from "../../../_components/page-header";
 import { Badge } from "../../../_components/status-badge";
 import { useToast } from "../../../_components/toast-provider";
 import { conversationStatusMeta, orderStatusMeta } from "../../../_lib/status";
-import { formatDateTime, formatRelative } from "../../../_lib/format";
+import { formatDateTime } from "../../../_lib/format";
+import { RelativeTime } from "../../../_components/relative-time";
+import { RecordExportButton } from "../../../_components/record-export-button";
+import { conversationRecord } from "@/lib/export/records";
 import {
   closeConversationAction,
   loadConversationMessagesAction,
@@ -112,7 +115,15 @@ export function ConversationThread({
             : conversation.topicLabel
         }
         action={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* `build`, not a fixed record: the thread polls while it is open,
+                so exporting has to read the messages as they stand now rather
+                than as they were when the page loaded. */}
+            <RecordExportButton
+              build={() => conversationRecord(conversation, messages)}
+              disabled={messages.length === 0}
+              label="Export chat"
+            />
             {conversation.order?.id && (
               <Link
                 href={`/dashboard/orders/${conversation.order.id}`}
@@ -204,7 +215,13 @@ export function ConversationThread({
                   </a>
                 )}
                 <span className="text-xs text-text-muted">
-                  {person.lastReadAt ? `Read ${formatRelative(person.lastReadAt)}` : "Not read yet"}
+                  {person.lastReadAt ? (
+                    <>
+                      Read <RelativeTime date={person.lastReadAt} />
+                    </>
+                  ) : (
+                    "Not read yet"
+                  )}
                 </span>
               </li>
             ))}

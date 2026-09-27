@@ -65,6 +65,16 @@ export type LoginResponseDto = {
   user: UserDto;
   access_token: string;
   token_type: string;
+  /**
+   * When the token stops working, ISO-8601, or null for a token that never
+   * expires (every app account — only staff sessions have a length).
+   *
+   * The session cookie is sized from this. Guessing it locally is what went
+   * wrong before: the cookie was hard-coded to thirty days while the token died
+   * at twelve hours, so the browser kept presenting a dead token and the admin
+   * was bounced to the login screen with nothing to explain it.
+   */
+  expires_at: string | null;
 };
 
 /**
@@ -1789,4 +1799,46 @@ export type TestPushResultDto = {
     http_status: number;
     response: unknown;
   }[];
+};
+
+/** GET /admin/security/events */
+export type AuthEventDto = {
+  id: number;
+  event: string;
+  event_label: string;
+  is_concerning: boolean;
+  identifier: string | null;
+  reason: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  /** Captured at the time, so a later promotion cannot rewrite the history. */
+  role: string | null;
+  admin_role: string | null;
+  user?: { id: number; name: string | null; email: string | null; phone: string | null };
+  created_at: string | null;
+};
+
+/** GET /admin/security/summary */
+export type SecuritySummaryDto = {
+  window_hours: number;
+  sign_ins: number;
+  failed: number;
+  lockouts: number;
+  /** Distinct addresses behind the failures — one is a forgotten password. */
+  failing_addresses: number;
+  active_staff_sessions: number;
+};
+
+/** GET /admin/security/sessions. The token itself is never published. */
+export type SessionDto = {
+  id: number;
+  name: string;
+  ip_address: string | null;
+  last_used_ip: string | null;
+  user_agent: string | null;
+  is_current: boolean;
+  user?: { id: number; name: string | null; email: string | null; admin_role: string | null };
+  last_used_at: string | null;
+  expires_at: string | null;
+  created_at: string | null;
 };

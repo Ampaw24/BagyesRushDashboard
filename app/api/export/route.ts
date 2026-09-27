@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { apiUrl } from "@/lib/api/config";
+import { forwardedClientHeaders } from "@/lib/api/forwarded-headers";
 import { getSessionToken } from "@/lib/auth/session";
 
 /**
@@ -41,6 +42,9 @@ export async function POST(request: NextRequest) {
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/json",
+      // An export pulls records out of the platform, so the audit row should name
+      // the admin who pulled them — see lib/api/forwarded-headers.ts.
+      ...(await forwardedClientHeaders()),
     },
     cache: "no-store",
   });

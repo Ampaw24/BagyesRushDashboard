@@ -12,6 +12,8 @@ import {
   DetailSection,
   DialogTabs,
 } from "../../_components/detail-dialog";
+import { RecordExportButton } from "../../_components/record-export-button";
+import { vendorRecord } from "@/lib/export/records";
 import { documentsStatusMeta, vendorStateMeta } from "../../_lib/status";
 import { formatCurrency, formatDate, formatDateTimeOrDash } from "../../_lib/format";
 import { StarIcon } from "../../_lib/icons";
@@ -103,12 +105,18 @@ export function ViewVendorDialog({
         </div>
       }
       footer={
-        <Link
+        <>
+          <RecordExportButton
+            build={() => vendorRecord(detail!)}
+            disabled={!detail}
+          />
+          <Link
           href={`/dashboard/vendors/${vendor.id}`}
           className="flex h-11 items-center rounded-lg bg-brand px-5 text-sm font-semibold text-brand-foreground transition duration-150 hover:bg-brand-dark"
         >
-          Open full profile
-        </Link>
+            Open full profile
+          </Link>
+        </>
       }
     >
       {detail?.rejectionReason && (

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { apiAction } from "@/lib/api/action";
+import { listVendors } from "@/lib/services/vendors.service";
 import {
   createPromoCode,
   deletePromoCode,
@@ -62,5 +63,31 @@ export async function loadRedemptionsAction(id: number) {
         redeemedAt: dto.redeemed_at,
       })),
     };
+  });
+}
+
+/**
+ * Vendors matching a search term, for the scope picker.
+ *
+ * The form used to take a raw vendor ID in a number field — a number nobody
+ * knows, which silently scopes a discount to the wrong kitchen on a typo and
+ * only shows up when a customer complains the code will not apply.
+ *
+ * Approved vendors only: scoping a promotion to a kitchen that cannot take
+ * orders produces a code that can never be redeemed.
+ */
+export async function searchVendorsAction(term: string) {
+  return apiAction("", async () => {
+    const page = await listVendors({
+      search: term || undefined,
+      status: "approved",
+      per_page: 20,
+    });
+
+    return page.items.map((vendor) => ({
+      id: vendor.id,
+      name: vendor.business_name,
+      city: vendor.city,
+    }));
   });
 }

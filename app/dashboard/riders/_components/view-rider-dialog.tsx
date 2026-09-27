@@ -12,6 +12,8 @@ import {
   DetailSection,
   DialogTabs,
 } from "../../_components/detail-dialog";
+import { RecordExportButton } from "../../_components/record-export-button";
+import { riderRecord } from "@/lib/export/records";
 import { documentsStatusMeta, riderStateMeta } from "../../_lib/status";
 import { formatCurrency, formatDate, formatDateTimeOrDash } from "../../_lib/format";
 import { StarIcon } from "../../_lib/icons";
@@ -105,12 +107,20 @@ export function ViewRiderDialog({
         </div>
       }
       footer={
-        <Link
+        <>
+          {/* Disabled until the profile arrives - the row alone would export a
+              handful of fields and call itself a rider record. */}
+          <RecordExportButton
+            build={() => riderRecord(detail!)}
+            disabled={!detail}
+          />
+          <Link
           href={`/dashboard/riders/${rider.id}`}
           className="flex h-11 items-center rounded-lg bg-brand px-5 text-sm font-semibold text-brand-foreground transition duration-150 hover:bg-brand-dark"
         >
-          Open full profile
-        </Link>
+            Open full profile
+          </Link>
+        </>
       }
     >
       {/* The three things that stop a rider working, stated before any tab —

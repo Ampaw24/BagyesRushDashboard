@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "../../_components/page-header";
+import { RecordExportButton } from "../../_components/record-export-button";
+import { orderRecord } from "@/lib/export/records";
 import { MoneyBreakdown } from "./_components/money-breakdown";
 import { Badge, OrderStatusBadge } from "../../_components/status-badge";
 import { TableCell, TableHeadCell, TableShell } from "../../_components/table-shell";
@@ -71,11 +73,17 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
         }
         description={`Placed ${formatDateTime(order.placedAt)}`}
         action={
-          <OrderActions
-            order={order}
-            canUpdateStatus={can(permissions, "orders.update_status")}
-            canRefund={can(permissions, "payments.refund")}
-          />
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Built here, on the server, and passed as a plain object: a
+                build function cannot cross into a client component, and this
+                page is a server component. */}
+            <RecordExportButton record={orderRecord(order)} />
+            <OrderActions
+              order={order}
+              canUpdateStatus={can(permissions, "orders.update_status")}
+              canRefund={can(permissions, "payments.refund")}
+            />
+          </div>
         }
       />
 

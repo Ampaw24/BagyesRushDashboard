@@ -1,5 +1,6 @@
 import type { PromoCodeDto } from "../types/api";
 import type { PromoCodeScope, PromoCodeType } from "../types/enums";
+import { scheduleState } from "./catalogue.mapper";
 import { toDate, toDateOrEpoch } from "./dates";
 
 export type PromoCodeRow = {
@@ -26,6 +27,8 @@ export type PromoCodeRow = {
   /** Active *and* inside its window — what the badge should reflect. */
   isLive: boolean;
   createdAt: Date;
+  /** Server-computed; see the identical note on BannerRow.state. */
+  state: "live" | "scheduled" | "expired" | "inactive";
 };
 
 export function toPromoCodeRow(dto: PromoCodeDto): PromoCodeRow {
@@ -51,16 +54,13 @@ export function toPromoCodeRow(dto: PromoCodeDto): PromoCodeRow {
     isPublic: dto.is_public,
     isLive: dto.is_live,
     createdAt: toDateOrEpoch(dto.created_at),
+    state: scheduleState({
+      isActive: dto.is_active,
+      isLive: dto.is_live,
+      startsAt: toDate(dto.starts_at),
+      endsAt: toDate(dto.ends_at),
+    }),
   };
 }
 
-/** What the badge should say, combining `is_active` with the scheduling window. */
-export function promoCodeState(row: PromoCodeRow): "live" | "scheduled" | "expired" | "inactive" {
-  if (!row.isActive) return "inactive";
-  if (row.isLive) return "live";
 
-  const now = Date.now();
-  if (row.startsAt && row.startsAt.getTime() > now) return "scheduled";
-  if (row.endsAt && row.endsAt.getTime() < now) return "expired";
-  return "inactive";
-}

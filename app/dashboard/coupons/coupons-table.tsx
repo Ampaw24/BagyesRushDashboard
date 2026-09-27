@@ -16,7 +16,7 @@ import { EyeIcon, PlusIcon, RefreshIcon, TrashIcon } from "../_lib/icons";
 import { formatCurrency, formatDate } from "../_lib/format";
 import { CouponFormDialog } from "./coupon-form-dialog";
 import { deletePromoCodeAction, togglePromoCodeStatusAction } from "./_actions";
-import { promoCodeState, type PromoCodeRow } from "@/lib/mappers/promo-code.mapper";
+import type { PromoCodeRow } from "@/lib/mappers/promo-code.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
 import { PROMO_CODE_SCOPES, promoCodeScopeLabels } from "@/lib/types/enums";
 
@@ -120,7 +120,7 @@ export function CouponsTable({
                   <TableCell>
                     {/* `is_live` folds in the schedule, so an active-but-future
                         code reads "Scheduled" rather than "Live". */}
-                    <Badge meta={promoCodeStateMeta[promoCodeState(coupon)]} />
+                    <Badge meta={promoCodeStateMeta[coupon.state]} />
                   </TableCell>
                   <TableCell>
                     <ActionMenu

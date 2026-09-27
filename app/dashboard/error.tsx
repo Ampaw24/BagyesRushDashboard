@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 
+import { recoverFromStaleDeployment } from "@/lib/http/chunk-recovery";
+
 /**
  * Catches failures from any dashboard page — most often the API being
  * unreachable, or a 403 for a permission the role does not hold.
@@ -17,6 +19,12 @@ export default function DashboardError({
   retry: () => void;
 }) {
   useEffect(() => {
+    // A deploy that landed while this tab was open leaves it asking for
+    // JavaScript chunks that no longer exist. Nothing is wrong with the code —
+    // the code is gone — and a reload fixes it, so do that rather than show an
+    // error somebody can only respond to by reloading anyway.
+    if (recoverFromStaleDeployment(error)) return;
+
     console.error(error);
   }, [error]);
 

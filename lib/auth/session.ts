@@ -9,10 +9,21 @@ import { SESSION_COOKIE } from "../api/config";
  * Importing `next/headers` is what keeps this module server-side: pulling it
  * into a Client Component is a build error, so the token cannot leak.
  *
- * `config/sanctum.php` sets `expiration = null`, so the token itself never
- * expires; the cookie lifetime below is purely a client-side session policy.
+ * A staff token *does* expire — `config/sanctum.php` leaves the global
+ * `expiration` null but sets `admin_expiration` to 12 hours, or
+ * `admin_remember_expiration` to 5 days when "remember me" was ticked. So the
+ * cookie is sized from the token's own `expires_at` rather than from a number
+ * chosen here: a cookie that outlives its token means the browser keeps
+ * presenting something dead, and the admin is bounced to /login?expired=1 with
+ * no explanation. That was the bug — a 30-day cookie over a 12-hour token.
  */
-const REMEMBER_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+
+/**
+ * Used only when the API did not say when the token expires, which for a staff
+ * account it now always does. Matches `ADMIN_REMEMBER_MINUTES` so a fallback is
+ * never *longer* than the token behind it.
+ */
+const REMEMBER_MAX_AGE = 60 * 60 * 24 * 5; // 5 days
 
 /**
  * Whether to mark the cookie `Secure`.
@@ -50,7 +61,11 @@ export async function getSessionToken(): Promise<string | null> {
  * Writable only from a Server Action or Route Handler — HTTP cannot set a
  * cookie once a Server Component has begun streaming.
  */
-export async function setSessionToken(token: string, remember: boolean): Promise<void> {
+export async function setSessionToken(
+  token: string,
+  remember: boolean,
+  expiresAt?: string | null,
+): Promise<void> {
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -59,8 +74,24 @@ export async function setSessionToken(token: string, remember: boolean): Promise
     path: "/",
     // Without `maxAge` the cookie is dropped when the browser closes, which is
     // what an admin who did not tick "remember me" should get.
-    ...(remember ? { maxAge: REMEMBER_MAX_AGE } : {}),
+    ...(remember ? { maxAge: rememberMaxAge(expiresAt) } : {}),
   });
+}
+
+/**
+ * How long to keep the cookie, in seconds: exactly as long as the token behind
+ * it lives, never longer.
+ *
+ * A past or unparseable date falls back to the constant rather than to zero — a
+ * `maxAge` of 0 deletes the cookie outright, which would turn a clock skew of a
+ * few seconds into "signing in does nothing".
+ */
+function rememberMaxAge(expiresAt?: string | null): number {
+  if (!expiresAt) return REMEMBER_MAX_AGE;
+
+  const seconds = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000);
+
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : REMEMBER_MAX_AGE;
 }
 
 /** Also only valid from a Server Action or Route Handler. */

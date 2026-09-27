@@ -73,6 +73,21 @@ export type BannerRow = {
   startsAt: Date | null;
   endsAt: Date | null;
   createdAt: Date;
+  /**
+   * Computed here rather than in the table, because the table is a client
+   * component and this depends on the clock.
+   *
+   * `bannerState()` used to be called during render with `Date.now()`. Client
+   * components are server-rendered for the initial HTML, so a banner whose
+   * window opened between the server render and the browser's hydration got a
+   * different badge on each side - a hydration mismatch that surfaces in
+   * production as a minified React error and looks intermittent, because it
+   * only fires when a scheduling boundary happens to fall in that gap.
+   *
+   * Computed once here, it is serialised into the payload and both sides read
+   * the same value.
+   */
+  state: "live" | "scheduled" | "expired" | "inactive";
 };
 
 export function toBannerRow(dto: BannerDto): BannerRow {
@@ -93,17 +108,34 @@ export function toBannerRow(dto: BannerDto): BannerRow {
     startsAt: toDate(dto.starts_at),
     endsAt: toDate(dto.ends_at),
     createdAt: toDateOrEpoch(dto.created_at),
+    state: scheduleState({
+      isActive: dto.is_active,
+      isLive: dto.is_live,
+      startsAt: toDate(dto.starts_at),
+      endsAt: toDate(dto.ends_at),
+    }),
   };
 }
 
-/** Why a banner is not showing, for the status badge. */
-export function bannerState(row: BannerRow): "live" | "scheduled" | "expired" | "inactive" {
+/**
+ * Why something with a schedule is not showing.
+ *
+ * Call this where the row is built - on the server - never during a client
+ * render. See the note on `BannerRow.state`.
+ */
+export function scheduleState(row: {
+  isActive: boolean;
+  isLive: boolean;
+  startsAt: Date | null;
+  endsAt: Date | null;
+}): "live" | "scheduled" | "expired" | "inactive" {
   if (!row.isActive) return "inactive";
   if (row.isLive) return "live";
 
   const now = Date.now();
   if (row.startsAt && row.startsAt.getTime() > now) return "scheduled";
   if (row.endsAt && row.endsAt.getTime() < now) return "expired";
+
   return "inactive";
 }
 

@@ -3,22 +3,36 @@
  * so every money figure the API returns is GHS — not the dollars this file
  * used to render.
  */
-const GHS = new Intl.NumberFormat("en-GH", {
-  style: "currency",
-  currency: "GHS",
+/**
+ * Grouping only, with the symbol written by hand.
+ *
+ * `Intl.NumberFormat("en-GH", { style: "currency" })` was a hydration hazard:
+ * whether that locale resolves depends on the ICU data in the runtime, so a
+ * Node build without it rendered "GHS 1,234.00" while the browser rendered
+ * "GH₵1,234.00" — different text in the same node, which React reports in
+ * production as a minified error.
+ *
+ * It was also inconsistent with `formatCompactCurrency` below, which has always
+ * written the symbol literally, so one screen could show a figure two ways.
+ * `en-US` grouping is present in every runtime, and the symbol is now ours.
+ */
+const GROUPED = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
 /** Exact amount, for tables and detail rows where the figure must be readable. */
 export function formatCurrency(value: number): string {
-  return GHS.format(value);
+  const sign = value < 0 ? "-" : "";
+
+  return `${sign}GH₵${GROUPED.format(Math.abs(value))}`;
 }
 
 /** Abbreviated amount, for stat tiles where space is tight. */
 export function formatCompactCurrency(value: number): string {
   if (Math.abs(value) >= 1_000_000) return `GH₵${(value / 1_000_000).toFixed(1)}M`;
   if (Math.abs(value) >= 1_000) return `GH₵${(value / 1_000).toFixed(1)}K`;
-  return GHS.format(value);
+  return formatCurrency(value);
 }
 
 export function formatCompactNumber(value: number): string {
@@ -31,8 +45,27 @@ export function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`;
 }
 
+/**
+ * The timezone is pinned, and that is the point.
+ *
+ * Without it these read the *runtime's* zone: the Node server renders in the
+ * VPS timezone and the browser renders in the viewer's. Any difference between
+ * the two puts different text in the same node on hydration, which React
+ * reports in production as a minified error that a refresh appears to fix.
+ *
+ * Ghana keeps GMT year-round with no daylight saving, so this is also simply
+ * the correct zone for every figure on this dashboard: an order placed at 14:05
+ * in Accra should read 14:05 to everyone looking at it, including staff abroad.
+ */
+const ZONE = "Africa/Accra";
+
 export function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: ZONE,
+  });
 }
 
 export function formatDateTime(date: Date): string {
@@ -41,6 +74,7 @@ export function formatDateTime(date: Date): string {
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    timeZone: ZONE,
   });
 }
 

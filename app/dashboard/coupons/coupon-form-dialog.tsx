@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 
 import { savePromoCodeAction } from "./_actions";
+import { VendorPicker } from "./vendor-picker";
 import { useToast } from "../_components/toast-provider";
 import { fieldError, type FieldErrors } from "@/lib/api/errors";
 import {
@@ -39,6 +40,17 @@ export function CouponFormDialog({
 }) {
   const [type, setType] = useState<PromoCodeType>(coupon?.type ?? "percentage");
   const [scope, setScope] = useState<PromoCodeScope>(coupon?.scope ?? "platform");
+
+  /**
+   * Platform-wide or one vendor. Category is grandfathered, never offered.
+   *
+   * Dropping it outright would mean opening an existing category-scoped code
+   * and saving it as something else without anybody choosing that, so the
+   * option survives exactly as long as a code is still using it.
+   */
+  const selectableScopes = PROMO_CODE_SCOPES.filter(
+    (option) => option !== "category" || coupon?.scope === "category",
+  );
   const [pending, setPending] = useState(false);
   const { notifySuccess } = useToast();
   const [message, setMessage] = useState("");
@@ -193,7 +205,7 @@ export function CouponFormDialog({
             onChange={(event) => setScope(event.target.value as PromoCodeScope)}
             className={inputClass}
           >
-            {PROMO_CODE_SCOPES.map((option) => (
+            {selectableScopes.map((option) => (
               <option key={option} value={option}>
                 {promoCodeScopeLabels[option]}
               </option>
@@ -202,14 +214,31 @@ export function CouponFormDialog({
         </Field>
 
         {scope === "vendor" && (
-          <Field label="Vendor ID" error={fieldError(errors, "vendor_id")}>
-            <input name="vendor_id" type="number" min={1} required defaultValue={coupon?.vendorId ?? ""} className={inputClass} />
+          <Field label="Vendor" error={fieldError(errors, "vendor_id")}>
+            <VendorPicker name="vendor_id" defaultVendorId={coupon?.vendorId} />
           </Field>
         )}
 
+        {/* Category scope is retired and is offered only on a code that already
+            uses it, so an old code can be read and re-saved without silently
+            changing what it applies to. It matched on the names in the vendor's
+            `categories` JSON column rather than a real relation, so a vendor
+            re-tagging themselves quietly changed which codes applied to them -
+            it was never as precise as it looked. */}
         {scope === "category" && (
           <Field label="Category ID" error={fieldError(errors, "category_id")}>
-            <input name="category_id" type="number" min={1} required defaultValue={coupon?.categoryId ?? ""} className={inputClass} />
+            <input
+              name="category_id"
+              type="number"
+              min={1}
+              required
+              defaultValue={coupon?.categoryId ?? ""}
+              className={inputClass}
+            />
+            <p className="mt-1.5 text-xs text-text-muted">
+              Category scope is being retired. Move this code to a single vendor or platform-wide
+              when you next review it.
+            </p>
           </Field>
         )}
 

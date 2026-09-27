@@ -18,6 +18,8 @@ import { useVendorStatusActions } from "../../../_hooks/use-vendor-status-action
 import { useSendMessage } from "../../../_hooks/use-send-message";
 import { EditVendorDialog } from "./edit-vendor-dialog";
 import { EditIcon } from "../../../_lib/icons";
+import { RecordExportButton } from "../../../_components/record-export-button";
+import { vendorRecord } from "@/lib/export/records";
 import { toggleMenuItemAvailabilityAction } from "../../_actions";
 import type { MenuItemRow, VendorDetail as VendorDetailModel, VendorPayout } from "@/lib/mappers/vendor.mapper";
 import type { ActivityRow } from "@/lib/mappers/activity.mapper";
@@ -107,7 +109,12 @@ export function VendorDetail({
           </span>
         }
         description={`${vendor.vendorId} · joined ${formatDate(vendor.joinedAt)}`}
-        action={headerActions.length > 0 ? <ActionMenu items={headerActions} /> : undefined}
+        action={
+          <div className="flex items-center gap-3">
+            <RecordExportButton build={() => vendorRecord(vendor)} />
+            {headerActions.length > 0 && <ActionMenu items={headerActions} />}
+          </div>
+        }
       />
 
       {vendor.rejectionReason && (

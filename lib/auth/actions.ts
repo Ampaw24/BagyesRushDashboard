@@ -49,7 +49,11 @@ export async function startLogin(_prev: LoginState, formData: FormData): Promise
   try {
     const challenge = await apiFetch<AdminLoginChallengeDto>("/admin/auth/login", {
       method: "POST",
-      body: { phone, password },
+      // `remember` goes with the password, not with the code: the backend holds
+      // it on the challenge for the rest of the flow, so the length of the
+      // session cannot be claimed at the last moment. It is what decides whether
+      // the token lasts 12 hours or 5 days.
+      body: { phone, password, remember },
       anonymous: true,
     });
 
@@ -118,7 +122,10 @@ export async function verifyLogin(_prev: LoginState, formData: FormData): Promis
     return { status: "error", message: "This account does not have dashboard access." };
   }
 
-  await setSessionToken(session.access_token, remember);
+  // The cookie lives exactly as long as the token does, which the backend now
+  // states. Sizing it locally is how a 30-day cookie came to sit over a 12-hour
+  // token, silently signing people out.
+  await setSessionToken(session.access_token, remember, session.expires_at);
 
   // Throws NEXT_REDIRECT, so nothing below runs.
   redirect(safeNext(formData.get("next")));

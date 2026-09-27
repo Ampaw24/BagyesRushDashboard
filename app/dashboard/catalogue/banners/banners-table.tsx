@@ -17,7 +17,7 @@ import { useToast } from "../../_components/toast-provider";
 import { CheckboxField, Field, FormDialog, inputClass, textareaClass } from "../_components/form-dialog";
 import { deleteBannerAction, saveBannerAction, toggleBannerStatusAction } from "../_actions";
 import { fieldError, type FieldErrors } from "@/lib/api/errors";
-import { bannerState, type BannerRow } from "@/lib/mappers/catalogue.mapper";
+import type { BannerRow } from "@/lib/mappers/catalogue.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
 import {
   BANNER_LINK_TYPES,
@@ -154,7 +154,7 @@ export function BannersTable({
                   <TableCell>
                     {/* is_live folds the schedule in, so an active-but-future
                         banner reads "Scheduled" rather than "Live". */}
-                    <Badge meta={promoCodeStateMeta[bannerState(banner)]} />
+                    <Badge meta={promoCodeStateMeta[banner.state]} />
                   </TableCell>
                   <TableCell>
                     <ActionMenu

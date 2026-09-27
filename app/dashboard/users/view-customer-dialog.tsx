@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { Avatar } from "../_components/avatar";
 import { Badge } from "../_components/status-badge";
 import { DetailDialog, DialogTabs } from "../_components/detail-dialog";
+import { RecordExportButton } from "../_components/record-export-button";
+import type { ExportableRecord } from "@/lib/export/record-export";
 import { userStatusMeta } from "../_lib/status";
 import { formatCurrency, formatDate, formatDateTimeOrDash } from "../_lib/format";
 import { loadCustomerDetailAction } from "./_actions";
@@ -75,11 +77,86 @@ export function ViewCustomerDialog({ customer, onClose }: { customer: CustomerRo
     };
   }, [tab, wallet, customer.id]);
 
+  /**
+   * Built at click time, not at render: the spend summary and the wallet both
+   * arrive after the dialog opens, so a record captured earlier would export
+   * blanks for the figures somebody most likely wants.
+   *
+   * The wallet section appears only once that tab has been opened - it is a
+   * separate request behind `customers.wallet`, and firing it for an export
+   * would 403 for the support role this dialog mostly serves.
+   */
+  const buildExport = (): ExportableRecord => ({
+    kind: "Customer",
+    title: customer.fullName,
+    subtitle: [customer.phone, customer.email].filter(Boolean).join(" · ") || undefined,
+    sections: [
+      {
+        title: "Customer",
+        fields: [
+          { label: "Full name", value: customer.fullName },
+          { label: "Phone", value: customer.phone ?? "—" },
+          { label: "Email", value: customer.email ?? "—" },
+          { label: "Phone verified", value: customer.phoneVerified ? "Yes" : "No" },
+          { label: "Status", value: userStatusMeta[customer.status].label },
+          { label: "Joined", value: formatDate(customer.joinedAt) },
+          { label: "Referral code", value: customer.referralCode ?? "—" },
+          { label: "Referrals", value: String(customer.referralCount) },
+        ],
+      },
+      ...(detail
+        ? [
+            {
+              title: "Order history",
+              fields: [
+                { label: "Orders placed", value: String(detail.summary.ordersPlaced) },
+                { label: "Delivered", value: String(detail.summary.ordersDelivered) },
+                { label: "Cancelled", value: String(detail.summary.ordersCancelled) },
+                { label: "Lifetime value", value: formatCurrency(detail.summary.lifetimeValue) },
+                {
+                  label: "Last ordered",
+                  value: formatDateTimeOrDash(detail.summary.lastOrderedAt),
+                },
+              ],
+            },
+          ]
+        : []),
+      ...(wallet
+        ? [
+            {
+              title: "Wallet",
+              fields: [
+                { label: "Balance", value: formatCurrency(wallet.summary.balance) },
+                {
+                  label: "Payout network",
+                  value: wallet.payoutMethod?.provider?.name ?? "Not chosen",
+                },
+                {
+                  label: "Payout number",
+                  value: wallet.payoutMethod?.account_number_last4
+                    ? `•••• ${wallet.payoutMethod.account_number_last4}`
+                    : "—",
+                },
+              ],
+            },
+          ]
+        : []),
+    ],
+  });
+
   return (
     <DetailDialog
       label="View customer"
       onClose={onClose}
       className="max-w-2xl"
+      footer={
+        <RecordExportButton
+          build={buildExport}
+          // Until the detail request lands the record would export the row and
+          // nothing else, which is not what anybody means by "export".
+          disabled={!detail && !error}
+        />
+      }
       header={
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">

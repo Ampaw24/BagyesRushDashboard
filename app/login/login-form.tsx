@@ -83,7 +83,7 @@ export default function LoginForm() {
               name="remember"
               className="h-4 w-4 rounded border-zinc-300 text-brand focus:ring-brand"
             />
-            Remember me for 30 days
+            Remember me for 5 days
           </label>
         </>
       ) : (

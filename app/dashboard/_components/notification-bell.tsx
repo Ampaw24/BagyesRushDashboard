@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { BellIcon } from "../_lib/icons";
-import { formatRelative } from "../_lib/format";
+import { RelativeTime } from "./relative-time";
 import {
   fetchNotificationsAction,
   markAllNotificationsReadAction,
@@ -175,7 +175,9 @@ export function NotificationBell({ initialUnread = 0 }: { initialUnread?: number
                         <span className="line-clamp-2 text-xs text-text-muted">{notification.body}</span>
                       )}
                       <span className="text-xs text-text-muted">
-                        {notification.created_at ? formatRelative(new Date(notification.created_at)) : ""}
+                        {notification.created_at ? (
+                          <RelativeTime date={notification.created_at} />
+                        ) : null}
                       </span>
                     </span>
                   );

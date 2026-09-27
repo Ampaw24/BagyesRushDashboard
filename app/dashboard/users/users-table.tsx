@@ -128,10 +128,17 @@ function CustomerRowView({
   return (
     <tr>
       <TableCell className="font-medium">
-        <span className="flex items-center gap-2.5">
+        {/* The name opens the dialog, matching riders and vendors. A customer
+            has no detail page to link to, so before this the only way in was
+            the ⋯ menu — and the name is what everybody aims at first. */}
+        <button
+          type="button"
+          onClick={onView}
+          className="flex items-center gap-2.5 rounded-lg text-left transition duration-150 hover:text-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+        >
           <Avatar name={customer.fullName} src={customer.avatarUrl} className="h-8 w-8 text-xs" />
-          {customer.fullName}
-        </span>
+          <span className="break-words">{customer.fullName}</span>
+        </button>
       </TableCell>
       <TableCell className="text-text-secondary">{customer.email ?? "—"}</TableCell>
       <TableCell className="text-text-secondary">{customer.phone ?? "—"}</TableCell>

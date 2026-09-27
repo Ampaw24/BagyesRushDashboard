@@ -322,6 +322,18 @@ export function buildNavTree({ counts, permissions }: BuildNavTreeInput): NavEnt
           { href: "/dashboard/administration/permissions", label: "Permissions", icon: "shield" },
           { href: "/dashboard/administration/role-changes", label: "Role Changes", icon: "refresh" },
           { href: "/dashboard/administration/audit-logs", label: "Audit Logs", icon: "archive" },
+          // The door, as opposed to the audit log's record of what somebody did
+          // once they were already inside.
+          {
+            href: "/dashboard/administration/login-history",
+            label: "Login History",
+            icon: "activity",
+          },
+          {
+            href: "/dashboard/administration/sessions",
+            label: "Active Sessions",
+            icon: "shield",
+          },
         ],
       },
     },

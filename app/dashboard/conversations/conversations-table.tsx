@@ -8,7 +8,7 @@ import { EmptyState } from "../_components/empty-state";
 import { Pagination } from "../_components/pagination";
 import { FilterBar, type SelectFilter } from "../_components/filter-bar";
 import { conversationStatusMeta, orderStatusMeta } from "../_lib/status";
-import { formatDateTimeOrDash, formatRelative } from "../_lib/format";
+import { RelativeTime } from "../_components/relative-time";
 import type { ConversationRow } from "@/lib/mappers/conversation.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
 import { CONVERSATION_STATUSES, conversationStatusLabels } from "@/lib/types/enums";
@@ -111,9 +111,7 @@ export function ConversationsTable({
                   </TableCell>
                   <TableCell className="text-text-secondary">
                     {conversation.lastMessageAt ? (
-                      <span title={formatDateTimeOrDash(conversation.lastMessageAt)}>
-                        {formatRelative(conversation.lastMessageAt)}
-                      </span>
+                      <RelativeTime date={conversation.lastMessageAt} />
                     ) : (
                       "—"
                     )}

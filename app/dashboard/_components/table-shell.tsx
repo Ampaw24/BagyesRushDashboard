@@ -2,7 +2,10 @@ import type { ReactNode } from "react";
 
 export function TableShell({ children }: { children: ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-border-subtle bg-surface shadow-sm">
+    // `w-full min-w-0` so the scroll container measures itself against the
+    // column it sits in rather than against its own content - without it the
+    // wrapper grows to the table's width and there is nothing left to scroll.
+    <div className="w-full min-w-0 overflow-x-auto rounded-xl border border-border-subtle bg-surface shadow-sm">
       <table className="w-full min-w-[640px] border-collapse text-left text-sm">{children}</table>
     </div>
   );

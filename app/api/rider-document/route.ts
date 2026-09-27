@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { apiUrl } from "@/lib/api/config";
+import { forwardedClientHeaders } from "@/lib/api/forwarded-headers";
 import { getSessionToken } from "@/lib/auth/session";
 import { redirectTo } from "@/lib/http/redirect";
 import { RIDER_DOCUMENT_TYPES, type RiderDocumentType } from "@/lib/types/enums";
@@ -33,7 +34,10 @@ export async function GET(request: NextRequest) {
   if (!token) return redirectTo("/login?expired=1", 303);
 
   const upstream = await fetch(apiUrl(`/admin/riders/${riderId}/documents/${type}`), {
-    headers: { Authorization: `Bearer ${token}` },
+    // The admin who asked, not this server. Reading an identity document is a
+    // recorded action on the API side, and that record is worth nothing if every
+    // row names the dashboard host — see lib/api/forwarded-headers.ts.
+    headers: { Authorization: `Bearer ${token}`, ...(await forwardedClientHeaders()) },
     cache: "no-store",
   });
 

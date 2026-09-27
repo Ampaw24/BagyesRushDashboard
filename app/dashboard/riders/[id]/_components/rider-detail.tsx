@@ -16,6 +16,8 @@ import { useSendMessage } from "../../../_hooks/use-send-message";
 import { EditRiderDialog } from "./edit-rider-dialog";
 import { RiderLocationMap } from "./rider-location-map";
 import { Avatar } from "../../../_components/avatar";
+import { RecordExportButton } from "../../../_components/record-export-button";
+import { riderRecord } from "@/lib/export/records";
 import { ImageLightbox } from "../../../_components/image-lightbox";
 import type { RiderDetail as RiderDetailModel, RiderPayout } from "@/lib/mappers/rider.mapper";
 import type { ActivityRow } from "@/lib/mappers/activity.mapper";
@@ -108,7 +110,15 @@ export function RiderDetail({
           </span>
         }
         description={`${rider.riderCode} · joined ${formatDate(rider.joinedAt)}`}
-        action={headerActions.length > 0 ? <ActionMenu items={headerActions} /> : undefined}
+        action={
+          <div className="flex items-center gap-3">
+            {/* Beside the menu rather than inside it: exporting a rider is a
+                thing staff do routinely when onboarding or handing a record to
+                a partner, and it is not a lifecycle action like the rest. */}
+            <RecordExportButton build={() => riderRecord(rider)} />
+            {headerActions.length > 0 && <ActionMenu items={headerActions} />}
+          </div>
+        }
       />
 
       {rider.rejectionReason && (

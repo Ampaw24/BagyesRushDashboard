@@ -170,6 +170,29 @@ body {
   font-family: var(--font-sans), sans-serif;
 }
 
+/* The page never scrolls sideways.
+
+   Wide tables scroll inside their own container (`TableShell` sets
+   `overflow-x-auto`); the document behind them must not. Without this, reaching
+   the end of a table's scroll hands the gesture to the page, which slides the
+   sidebar and the header out of position - the table appears to scroll "outside
+   of itself".
+
+   `clip` rather than `hidden`, and this is the important part: `overflow-x:
+   hidden` forces the computed `overflow-y` to `auto`, which would make these
+   elements scroll containers and break every `position: sticky` descendant -
+   the asides on the composer and the money settings screen among them. `clip`
+   only clips, and leaves the vertical axis genuinely visible.
+
+   This sits at the document level deliberately. `main` carries the same
+   property, which handles anything inside page content; this catches anything
+   that manages to be wide outside it, and nothing further down can override it. */
+html,
+body {
+  overflow-x: clip;
+  max-width: 100%;
+}
+
 /* Nav hover, in the item's own colour.
    Written as a rule rather than a Tailwind `hover:` utility because the colour
    is per item: each nav row sets `--item-accent` inline and this thins it.
