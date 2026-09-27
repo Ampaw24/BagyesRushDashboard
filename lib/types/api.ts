@@ -1842,3 +1842,46 @@ export type SessionDto = {
   expires_at: string | null;
   created_at: string | null;
 };
+
+/**
+ * GET /admin/compliance/logs — one delivery as filed with the Postal and Courier
+ * Services Regulatory Commission (iCOLMS Ghana).
+ *
+ * One row per delivery, not per order: a parcel run with three drops is three
+ * deliveries to three people, each needing its own recipient verified.
+ *
+ * The parties are the values that were *submitted*, not what the order says now —
+ * a regulatory filing that rewrites itself is not a filing.
+ */
+export type ComplianceLogDto = {
+  id: number;
+  reference: string;
+  status: string;
+  status_label: string;
+  needs_attention: boolean;
+  can_retry: boolean;
+  order: { id: number; order_number: string | null; type: string | null };
+  stop_id: number | null;
+  sender: { full_name: string; phone: string; status: string | null };
+  recipient: { full_name: string; phone: string; status: string | null };
+  pickup_location: string;
+  delivery_location: string;
+  package_description: string;
+  icolms_id: string | null;
+  package_id: string | null;
+  attempts: number;
+  failure_reason: string | null;
+  submitted_at: string | null;
+  verified_at: string | null;
+  created_at: string | null;
+};
+
+/** GET /admin/compliance/summary — four numbers for the stat tiles. */
+export type ComplianceSummaryDto = {
+  total: number;
+  awaiting_verification: number;
+  verified: number;
+  needs_attention: number;
+  /** Filed by us but never sent. Hours of this means no queue worker is running. */
+  not_yet_filed: number;
+};

@@ -140,6 +140,16 @@ export function buildNavTree({ counts, permissions }: BuildNavTreeInput): NavEnt
           { href: "/dashboard/orders/in-transit", label: "In Transit", icon: "activity" },
           { href: "/dashboard/orders/delivered", label: "Delivered", icon: "check" },
           { href: "/dashboard/orders/cancelled", label: "Cancelled", icon: "cancel" },
+          // Deliveries as filed with the Postal and Courier Services Regulatory
+          // Commission. Under Orders rather than Administration deliberately:
+          // that section is gated on `users.view`, which support does not hold —
+          // and support are the people who field the call when the Commission or
+          // a customer asks about a flagged delivery.
+          {
+            href: "/dashboard/administration/compliance",
+            label: "Delivery Compliance",
+            icon: "shield",
+          },
         ],
       },
     },
