@@ -5,7 +5,14 @@ import Link from "next/link";
 import type { Map as LeafletMap, Marker } from "leaflet";
 
 import { EmptyState } from "../../../_components/empty-state";
-import { ACCRA, glide, riderIconOptions, riderTooltip } from "../../_components/rider-marker";
+import {
+  ACCRA,
+  activeDeliveriesLabel,
+  glide,
+  riderIconOptions,
+  riderTooltip,
+} from "../../_components/rider-marker";
+import { RiderMapLegend } from "../../_components/rider-map-legend";
 import { formatDateTimeOrDash } from "../../../_lib/format";
 import { useRiderPositions } from "@/lib/realtime/use-rider-positions";
 import { REALTIME_CONFIGURED } from "@/lib/api/config";
@@ -130,10 +137,14 @@ export function RiderLocationMap({ rider }: { rider: RiderDetail }) {
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_18rem]">
-      <div
-        ref={container}
-        className="h-[30rem] w-full overflow-hidden rounded-xl border border-border-subtle bg-surface-muted"
-      />
+      <div className="flex flex-col gap-3">
+        <div
+          ref={container}
+          className="h-[30rem] w-full overflow-hidden rounded-xl border border-border-subtle bg-surface-muted"
+        />
+
+        <RiderMapLegend />
+      </div>
 
       <aside className="flex flex-col gap-4 rounded-xl border border-border-subtle bg-surface p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
@@ -170,7 +181,9 @@ export function RiderLocationMap({ rider }: { rider: RiderDetail }) {
 
         <div className="flex flex-col gap-2 border-t border-border-subtle pt-4">
           <h2 className="break-words text-sm font-semibold text-foreground">
-            Carrying {live.active_order_count === 0 ? "nothing" : `${live.active_order_count}`}
+            {live.active_order_count === 0
+              ? "No active deliveries"
+              : activeDeliveriesLabel(live.active_order_count)}
           </h2>
           {live.active_orders.map((order) => (
             <Link

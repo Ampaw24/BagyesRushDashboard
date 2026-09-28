@@ -9,6 +9,7 @@ import type { RiderLiveDto } from "@/lib/types/api";
 import { RiderDetailPanel } from "./rider-detail-panel";
 import { RiderMapFilters, type MapFilter } from "./rider-map-filters";
 import { ACCRA, glide, riderIconOptions, riderTooltip } from "../../_components/rider-marker";
+import { RiderMapLegend } from "../../_components/rider-map-legend";
 
 /**
  * Every rider on one map, moving.
@@ -173,10 +174,14 @@ export function RiderMap({ seed }: { seed: RiderLiveDto[] }) {
       />
 
       <div className="relative grid grid-cols-1 gap-4 lg:grid-cols-[1fr_20rem]">
-        <div
-          ref={container}
-          className="h-[34rem] w-full overflow-hidden rounded-xl border border-border-subtle bg-surface-muted"
-        />
+        <div className="flex flex-col gap-3">
+          <div
+            ref={container}
+            className="h-[34rem] w-full overflow-hidden rounded-xl border border-border-subtle bg-surface-muted"
+          />
+
+          <RiderMapLegend />
+        </div>
 
         <RiderDetailPanel
           rider={selected}

@@ -130,55 +130,134 @@ function glyphFor(vehicleType: string | null): string {
 }
 
 /**
- * A rider drawn as what they are riding, with a separate pointer for which way
- * they are going.
+ * What a marker's colour means.
  *
- * The two are split deliberately. A side-on vehicle is what makes the marker
- * readable at a glance, but rotating one by its heading turns it upside down
- * every time a rider travels west — so the vehicle stays upright and a nose
- * outside the badge carries the bearing instead. The silhouette only mirrors,
- * left or right, so it still faces the way it is travelling.
- *
- * Colour carries state and is not decoration: red is carrying an order, green
- * is free, grey has not reported a position in a while. A dispatcher reads the
- * map for exactly those three things, so the vehicle shape answers "what" while
- * the colour answers "can I give them a job".
+ * Exported so the legend on a map page is generated from the same list the
+ * markers are coloured from, rather than a second copy of the rule that drifts
+ * the first time somebody changes a shade.
  */
-export function riderIconOptions(rider: RiderLiveDto) {
-  const colour = rider.is_stale ? "#898781" : rider.active_order_count > 0 ? "#e91d26" : "#0ca30c";
-  const heading = rider.heading ?? 0;
+export const RIDER_STATES = [
+  { key: "busy", colour: "#e91d26", label: "On a delivery" },
+  { key: "free", colour: "#0ca30c", label: "Free for a job" },
+  { key: "stale", colour: "#898781", label: "No recent position" },
+] as const;
+
+const COLOUR_BUSY = RIDER_STATES[0].colour;
+const COLOUR_FREE = RIDER_STATES[1].colour;
+const COLOUR_STALE = RIDER_STATES[2].colour;
+
+/**
+ * The colour that says what a dispatcher can do with this rider.
+ *
+ * Staleness wins: somebody whose phone stopped reporting twenty minutes ago is
+ * not "free for a job" however empty their queue looks, because the queue is as
+ * old as the position.
+ */
+function stateColour(rider: RiderLiveDto): string {
+  if (rider.is_stale) {
+    return COLOUR_STALE;
+  }
+
+  return rider.active_order_count > 0 ? COLOUR_BUSY : COLOUR_FREE;
+}
+
+/**
+ * The marker itself: a vehicle in a coloured badge, optionally with a nose
+ * outside it pointing the way the rider is travelling.
+ *
+ * The badge and the pointer are split deliberately. A side-on vehicle is what
+ * makes the marker readable at a glance, but rotating one by its heading turns
+ * it upside down every time a rider travels west — so the vehicle stays upright
+ * and the nose carries the bearing instead. The silhouette only mirrors, left
+ * or right, so it still faces the way it is going.
+ *
+ * Shared with the order tracking map, which draws one rider beside a pickup and
+ * a drop-off pin and has no heading to show — hence `heading: null` drawing no
+ * pointer at all rather than one stuck pointing north.
+ */
+export function vehicleMarkerOptions({
+  vehicleType,
+  colour,
+  heading = null,
+  badge = 42,
+  dimmed = false,
+}: {
+  vehicleType: string | null;
+  colour: string;
+  heading?: number | null;
+  badge?: number;
+  dimmed?: boolean;
+}) {
+  // The pointer sits outside the badge, so the box has to be bigger than it.
+  const box = heading === null ? badge : badge + 10;
+  const inset = (box - badge) / 2;
+  const glyphWidth = Math.round(badge * 0.72);
 
   // Headings between south and north through west mean the rider is travelling
   // leftwards across the screen.
-  const facingLeft = heading > 180;
+  const facingLeft = (heading ?? 0) > 180;
+
+  const pointer =
+    heading === null
+      ? ""
+      : `<span style="position:absolute;inset:0;transform:rotate(${heading}deg);transition:transform .8s linear">
+           <svg viewBox="0 0 ${box} ${box}" width="${box}" height="${box}">
+             <path d="M${box / 2} 0 L${box / 2 + 5.5} 10 L${box / 2 - 5.5} 10 Z"
+                   fill="${colour}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+           </svg>
+         </span>`;
 
   return {
     className: "",
     html: `
-      <span style="position:relative;display:block;width:52px;height:52px;opacity:${rider.is_stale ? 0.65 : 1}">
-        <span style="position:absolute;inset:0;transform:rotate(${heading}deg);transition:transform .8s linear">
-          <svg viewBox="0 0 52 52" width="52" height="52">
-            <path d="M26 0 L31.5 10 L20.5 10 Z" fill="${colour}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
-          </svg>
-        </span>
-
+      <span style="position:relative;display:block;width:${box}px;height:${box}px;opacity:${dimmed ? 0.65 : 1}">
+        ${pointer}
         <span style="
-          position:absolute;left:5px;top:5px;
+          position:absolute;left:${inset}px;top:${inset}px;
           display:flex;align-items:center;justify-content:center;
-          width:42px;height:42px;border-radius:9999px;
+          width:${badge}px;height:${badge}px;border-radius:9999px;
           background:${colour};border:3px solid #fff;
           box-shadow:0 2px 6px rgba(0,0,0,.45);
         ">
-          <svg viewBox="0 0 64 44" width="30" height="21" fill="none" stroke="#fff" color="#fff"
+          <svg viewBox="0 0 64 44" width="${glyphWidth}" height="${Math.round(glyphWidth * 0.69)}"
+               fill="none" stroke="#fff" color="#fff"
                stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"
                style="transform:scaleX(${facingLeft ? -1 : 1})">
-            ${glyphFor(rider.vehicle_type)}
+            ${glyphFor(vehicleType)}
           </svg>
         </span>
       </span>`,
-    iconSize: [52, 52] as [number, number],
-    iconAnchor: [26, 26] as [number, number],
+    iconSize: [box, box] as [number, number],
+    iconAnchor: [box / 2, box / 2] as [number, number],
   };
+}
+
+/**
+ * A rider on the dispatch map or their own profile map.
+ *
+ * Colour carries state and is not decoration: a dispatcher reads this map to
+ * decide who to give a job to, so the vehicle shape answers "what" while the
+ * colour answers "can I give them one".
+ */
+export function riderIconOptions(rider: RiderLiveDto) {
+  return vehicleMarkerOptions({
+    vehicleType: rider.vehicle_type,
+    colour: stateColour(rider),
+    heading: rider.heading ?? 0,
+    dimmed: rider.is_stale,
+  });
+}
+
+/**
+ * How many jobs this rider is holding.
+ *
+ * Spelled out rather than "on board", which was the old wording and read as
+ * cargo physically on the bike — it is not. The count includes orders still
+ * being cooked, because a rider assigned to one is committed to it and cannot
+ * take unlimited others.
+ */
+export function activeDeliveriesLabel(count: number): string {
+  return count === 1 ? "1 active delivery" : `${count} active deliveries`;
 }
 
 export function riderTooltip(rider: RiderLiveDto): string {
@@ -186,7 +265,7 @@ export function riderTooltip(rider: RiderLiveDto): string {
 
   if (rider.vehicle_type_label) parts.push(rider.vehicle_type_label);
   if (rider.plate_number) parts.push(rider.plate_number);
-  if (rider.active_order_count > 0) parts.push(`${rider.active_order_count} on board`);
+  if (rider.active_order_count > 0) parts.push(activeDeliveriesLabel(rider.active_order_count));
   if (rider.is_stale) parts.push("last seen a while ago");
 
   return parts.join(" · ");

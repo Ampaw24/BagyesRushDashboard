@@ -52,8 +52,11 @@ export function TrackingPanel({ order }: { order: OrderDetail }) {
     points.push({
       lat: rider.latitude,
       lng: rider.longitude,
-      label: `${rider.name ?? "Rider"} · ${rider.plateNumber ?? "on the way"}`,
+      label: [rider.name ?? "Rider", rider.vehicleTypeLabel, rider.plateNumber]
+        .filter(Boolean)
+        .join(" · "),
       kind: "rider",
+      vehicleType: rider.vehicleType,
     });
   }
 
@@ -111,7 +114,9 @@ export function TrackingPanel({ order }: { order: OrderDetail }) {
 
           <div className="flex flex-wrap gap-4 text-xs text-text-muted">
             <Legend colour="#2a78d6" label="Pick up" />
-            {hasRider && <Legend colour="#e91d26" label="Rider" />}
+            {hasRider && (
+              <Legend colour="#e91d26" label={rider?.vehicleTypeLabel ?? "Rider"} vehicle />
+            )}
             <Legend colour="#0ca30c" label="Drop off" />
             <span className="ml-auto">Refreshes every {REFRESH_MS / 1000}s while open</span>
           </div>
@@ -121,11 +126,18 @@ export function TrackingPanel({ order }: { order: OrderDetail }) {
   );
 }
 
-function Legend({ colour, label }: { colour: string; label: string }) {
+/**
+ * A swatch and what it means.
+ *
+ * `vehicle` draws the larger badge the rider marker actually uses, so the key
+ * matches the map rather than describing it - the pickup and drop-off are
+ * plain dots and their swatches say so.
+ */
+function Legend({ colour, label, vehicle = false }: { colour: string; label: string; vehicle?: boolean }) {
   return (
     <span className="inline-flex items-center gap-1.5">
       <span
-        className="h-2.5 w-2.5 rounded-full border-2 border-white shadow"
+        className={`rounded-full border-2 border-white shadow ${vehicle ? "h-3.5 w-3.5" : "h-2.5 w-2.5"}`}
         style={{ background: colour }}
       />
       {label}

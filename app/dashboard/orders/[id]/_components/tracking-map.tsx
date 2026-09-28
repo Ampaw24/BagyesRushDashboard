@@ -3,7 +3,21 @@
 import { useEffect, useRef } from "react";
 import type { Map as LeafletMap, Marker, Polyline } from "leaflet";
 
-export type TrackingPoint = { lat: number; lng: number; label: string; kind: "rider" | "pickup" | "dropoff" };
+import { vehicleMarkerOptions } from "../../../riders/_components/rider-marker";
+
+export type TrackingPoint = {
+  lat: number;
+  lng: number;
+  label: string;
+  kind: "rider" | "pickup" | "dropoff";
+  /**
+   * What the rider is riding, on the `rider` point only. Drawn as the vehicle
+   * rather than a dot, so a rider does not read as a motorbike on the dispatch
+   * map and an anonymous circle here - the two screens are looked at minutes
+   * apart by the same person.
+   */
+  vehicleType?: string | null;
+};
 
 /**
  * A live map of where a delivery has got to.
@@ -50,16 +64,32 @@ export function TrackingMap({ points }: { points: TrackingPoint[] }) {
       };
 
       for (const point of points) {
-        const icon = L.divIcon({
-          className: "",
-          html: `<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:9999px;background:${colours[point.kind]};border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></span>`,
-          iconSize: [22, 22],
-          iconAnchor: [11, 11],
-        });
+        // The rider gets the vehicle badge; the pickup and drop-off stay plain
+        // dots, because they are places rather than things that move. No
+        // heading is available on an order's rider, so no bearing pointer is
+        // drawn rather than one permanently stuck pointing north.
+        const icon =
+          point.kind === "rider"
+            ? L.divIcon(
+                vehicleMarkerOptions({
+                  vehicleType: point.vehicleType ?? null,
+                  colour: colours.rider,
+                  badge: 34,
+                }),
+              )
+            : L.divIcon({
+                className: "",
+                html: `<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:9999px;background:${colours[point.kind]};border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></span>`,
+                iconSize: [22, 22],
+                iconAnchor: [11, 11],
+              });
 
         const marker = L.marker([point.lat, point.lng], { icon })
           .addTo(map.current!)
-          .bindTooltip(point.label, { direction: "top", offset: [0, -12] });
+          .bindTooltip(point.label, {
+            direction: "top",
+            offset: [0, point.kind === "rider" ? -18 : -12],
+          });
 
         markers.current.push(marker);
       }

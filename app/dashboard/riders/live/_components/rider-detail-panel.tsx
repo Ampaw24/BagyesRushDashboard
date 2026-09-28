@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Avatar } from "../../../_components/avatar";
 import type { RiderLiveDto } from "@/lib/types/api";
+import { activeDeliveriesLabel } from "../../_components/rider-marker";
 
 /**
  * Who is on the map, and everything about whoever is selected.
@@ -102,8 +103,8 @@ export function RiderDetailPanel({
           ) : (
             <p className="text-sm text-muted">
               {rider.active_order_count > 0
-                ? `${rider.active_order_count} job(s) — reload for the details.`
-                : "Nothing on board."}
+                ? `${activeDeliveriesLabel(rider.active_order_count)} — reload for the details.`
+                : "No active deliveries."}
             </p>
           )}
         </div>
@@ -147,7 +148,7 @@ export function RiderDetailPanel({
                   <span className="block truncate text-sm font-medium">{entry.name}</span>
                   <span className="block truncate text-xs text-muted">
                     {entry.active_order_count > 0
-                      ? `${entry.active_order_count} on board`
+                      ? activeDeliveriesLabel(entry.active_order_count)
                       : "Idle"}
                     {" · "}
                     {lastSeen(entry)}
