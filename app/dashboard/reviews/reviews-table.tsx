@@ -18,6 +18,24 @@ import { deleteReviewAction, toggleReviewVisibilityAction } from "./_actions";
 import type { ReviewRow } from "@/lib/mappers/catalogue.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
 
+/**
+ * Which half of a review the list is of.
+ *
+ * Not cosmetic: a review rates the kitchen, the courier or both, so without
+ * narrowing, "rider ratings" would list every food review with an empty rider
+ * column. The server does the narrowing, and `rating` filters against whichever
+ * half this names.
+ */
+const SUBJECT_FILTER: SelectFilter = {
+  key: "subject",
+  label: "Rated",
+  allLabel: "Vendors and riders",
+  options: [
+    { value: "vendor", label: "Vendor ratings" },
+    { value: "rider", label: "Rider ratings" },
+  ],
+};
+
 const RATING_FILTER: SelectFilter = {
   key: "rating",
   label: "Rating",
@@ -62,7 +80,7 @@ export function ReviewsTable({
   return (
     <div className="flex flex-col gap-4">
       {/* No search box: ListReviewsRequest takes no `search` param. */}
-      <FilterBar searchable={false} filters={[RATING_FILTER, VISIBILITY_FILTER]} />
+      <FilterBar searchable={false} filters={[SUBJECT_FILTER, RATING_FILTER, VISIBILITY_FILTER]} />
 
       {reviews.length === 0 ? (
         <EmptyState
@@ -75,9 +93,10 @@ export function ReviewsTable({
             <thead>
               <tr>
                 <TableHeadCell>Customer</TableHeadCell>
-                <TableHeadCell>Rating</TableHeadCell>
-                <TableHeadCell>Comment</TableHeadCell>
                 <TableHeadCell>Vendor</TableHeadCell>
+                <TableHeadCell>Rider</TableHeadCell>
+                <TableHeadCell>Comment</TableHeadCell>
+                <TableHeadCell>Rated</TableHeadCell>
                 <TableHeadCell>Order</TableHeadCell>
                 <TableHeadCell>Status</TableHeadCell>
                 <TableHeadCell>Date</TableHeadCell>
@@ -98,31 +117,41 @@ export function ReviewsTable({
                       {review.authorName}
                     </span>
                   </TableCell>
+                  {/*
+                    Each half gets its own score column. A single "rating"
+                    column would have to pick one of the two, and on a review
+                    that rated both it would silently hide the other.
+                  */}
                   <TableCell>
-                    <span className="flex items-center gap-1 whitespace-nowrap">
-                      <StarIcon className="h-4 w-4 text-brand" />
-                      {review.rating}
+                    <Score value={review.vendorRating} />
+                  </TableCell>
+                  <TableCell>
+                    <Score value={review.riderRating} />
+                  </TableCell>
+                  <TableCell className="text-text-secondary">
+                    <Comments review={review} />
+                  </TableCell>
+                  <TableCell className="text-text-secondary">
+                    <span className="flex flex-col gap-0.5">
+                      {review.vendorId ? (
+                        <Link
+                          href={`/dashboard/vendors/${review.vendorId}`}
+                          className="text-brand transition duration-150 hover:opacity-80"
+                        >
+                          {review.vendorName}
+                        </Link>
+                      ) : (
+                        <span className="text-text-muted">Parcel — no vendor</span>
+                      )}
+                      {review.riderId && (
+                        <Link
+                          href={`/dashboard/riders/${review.riderId}`}
+                          className="text-xs text-brand transition duration-150 hover:opacity-80"
+                        >
+                          {review.riderName ?? "Rider"}
+                        </Link>
+                      )}
                     </span>
-                  </TableCell>
-                  <TableCell className="text-text-secondary">
-                    {review.comment ?? <span className="text-text-muted">No comment</span>}
-                    {review.replyBody && (
-                      <span className="mt-1 block text-xs text-text-muted">
-                        Vendor replied: {review.replyBody}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-text-secondary">
-                    {review.vendorId ? (
-                      <Link
-                        href={`/dashboard/vendors/${review.vendorId}`}
-                        className="text-brand transition duration-150 hover:opacity-80"
-                      >
-                        {review.vendorName}
-                      </Link>
-                    ) : (
-                      "—"
-                    )}
                   </TableCell>
                   <TableCell className="text-text-secondary">
                     {review.orderId ? (
@@ -204,5 +233,54 @@ export function ReviewsTable({
         />
       )}
     </div>
+  );
+}
+
+/**
+ * A star score, or an honest dash.
+ *
+ * A missing half is not a zero — "the customer did not rate the rider" and "the
+ * customer gave the rider nothing" are different facts, and rendering 0 for the
+ * first is the kind of thing somebody acts on.
+ */
+function Score({ value }: { value: number | null }) {
+  if (value === null) {
+    return <span className="text-text-muted">—</span>;
+  }
+
+  return (
+    <span className="flex items-center gap-1 whitespace-nowrap">
+      <StarIcon className="h-4 w-4 text-brand" />
+      {value}
+    </span>
+  );
+}
+
+/** Whichever comments were left, each labelled with who it was about. */
+function Comments({ review }: { review: ReviewRow }) {
+  const both = review.vendorComment && review.riderComment;
+
+  if (!review.vendorComment && !review.riderComment) {
+    return <span className="text-text-muted">No comment</span>;
+  }
+
+  return (
+    <span className="flex flex-col gap-1">
+      {review.vendorComment && (
+        <span>
+          {both && <span className="mr-1 text-xs text-text-muted">Food:</span>}
+          {review.vendorComment}
+        </span>
+      )}
+      {review.riderComment && (
+        <span>
+          {both && <span className="mr-1 text-xs text-text-muted">Rider:</span>}
+          {review.riderComment}
+        </span>
+      )}
+      {review.replyBody && (
+        <span className="text-xs text-text-muted">Vendor replied: {review.replyBody}</span>
+      )}
+    </span>
   );
 }

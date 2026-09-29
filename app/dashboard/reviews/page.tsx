@@ -33,14 +33,20 @@ export default async function ReviewsPage(props: PageProps<"/dashboard/reviews">
 
   const rating = readNumberParam(params, "rating");
 
+  // Guarded the same way the rating is: a hand-edited URL must not 422 the page.
+  const subjectParam = params.subject;
+  const subject = subjectParam === "vendor" || subjectParam === "rider" ? subjectParam : undefined;
+
   const [page, dashboard] = await Promise.all([
     listReviews({
       page: list.page,
       per_page: list.per_page,
+      subject,
       // Guard the range so a hand-edited URL cannot 422 the page.
       rating: rating !== undefined && rating >= 1 && rating <= 5 ? rating : undefined,
       is_visible: readBooleanParam(params, "is_visible"),
       vendor_id: readNumberParam(params, "vendor_id"),
+      rider_id: readNumberParam(params, "rider_id"),
     }),
     // The reviews summary lives on the dashboard endpoint, which every admin
     // who can see reviews also has access to.
@@ -53,18 +59,31 @@ export default async function ReviewsPage(props: PageProps<"/dashboard/reviews">
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Reviews"
-        description="What customers are saying about vendors. Hiding a review removes it from the storefront but keeps its rating."
+        description="What customers say about the kitchen and about the courier. One order is one review, and it may rate either or both. Hiding one removes it from the storefront and from the average, but keeps the row."
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/*
+        The two averages are deliberately separate. One figure across both would
+        mix the food and the courier into a number that describes neither, and
+        would move when the split between food orders and parcels moved rather
+        than when service changed.
+      */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatTile
           label="Total reviews"
           value={formatCompactNumber(summary.total)}
           icon={<StarIcon className="h-4.5 w-4.5" />}
         />
         <StatTile
-          label="Average rating"
-          value={summary.average_rating.toFixed(1)}
+          label="Vendor average"
+          value={summary.average_vendor_rating.toFixed(1)}
+          hint={`${formatCompactNumber(summary.vendor_rating_count)} rated`}
+          icon={<StarIcon className="h-4.5 w-4.5" />}
+        />
+        <StatTile
+          label="Rider average"
+          value={summary.average_rider_rating.toFixed(1)}
+          hint={`${formatCompactNumber(summary.rider_rating_count)} rated`}
           icon={<StarIcon className="h-4.5 w-4.5" />}
         />
         <StatTile

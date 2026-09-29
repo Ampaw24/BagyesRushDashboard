@@ -216,7 +216,12 @@ export type DashboardDto = {
   };
   reviews: {
     total: number;
-    average_rating: number;
+    /** Averaged over the reviews that rated a kitchen, not over all of them. */
+    average_vendor_rating: number;
+    vendor_rating_count: number;
+    /** Averaged over the reviews that rated a courier. */
+    average_rider_rating: number;
+    rider_rating_count: number;
     hidden_by_moderation: number;
     awaiting_vendor_reply: number;
   };
@@ -782,13 +787,25 @@ export type BannerDto = {
 };
 
 /** ReviewResource */
+/**
+ * One review covers two things, and either half may be absent.
+ *
+ * `vendor_rating` is null on a parcel and on an order where the customer only
+ * rated the courier; `rider_rating` is null where nobody delivered it or nobody
+ * was rated. Never fall back to the other half — that would show the kitchen's
+ * score against the rider.
+ */
 export type ReviewDto = {
   id: number;
-  rating: number;
-  comment: string | null;
+  vendor_rating: number | null;
+  vendor_comment: string | null;
+  rider_rating: number | null;
+  rider_comment: string | null;
   /** Deliberately anonymised server-side to "First L." — never the full surname. */
   author?: { name: string; avatar_url: string | null };
-  vendor?: { id: number | null; slug: string | null; name: string | null };
+  vendor?: { id: number | null; slug: string | null; name: string | null } | null;
+  /** Masked the same way the tracking screen masks it — never the full name. */
+  rider?: { id: number; name: string | null; photo_url: string | null } | null;
   order?: { id: number | null; order_number: string | null };
   reply: { body: string; replied_at: string | null } | null;
   is_visible: boolean;

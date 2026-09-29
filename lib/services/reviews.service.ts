@@ -5,9 +5,16 @@ import type { ReviewDto } from "../types/api";
 export type ReviewListQuery = {
   page?: number;
   per_page?: number;
+  /**
+   * Which half the list is of. Without it a "rider ratings" screen would show
+   * every food review with an empty rider column — on a food-heavy platform,
+   * most of them. `rating` filters against whichever half `subject` names.
+   */
+  subject?: "vendor" | "rider";
   rating?: number;
   is_visible?: boolean;
   vendor_id?: number;
+  rider_id?: number;
 };
 
 /**

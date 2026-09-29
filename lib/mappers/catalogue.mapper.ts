@@ -141,13 +141,20 @@ export function scheduleState(row: {
 
 export type ReviewRow = {
   id: number;
-  rating: number;
-  comment: string | null;
+  /** Null when this review did not rate the kitchen — a parcel, or rider-only. */
+  vendorRating: number | null;
+  vendorComment: string | null;
+  /** Null when no courier delivered it, or the customer did not rate them. */
+  riderRating: number | null;
+  riderComment: string | null;
   /** Anonymised by the API to "First L." — the full surname is never sent. */
   authorName: string;
   authorAvatarUrl: string | null;
   vendorId: number | null;
   vendorName: string | null;
+  riderId: number | null;
+  riderName: string | null;
+  riderPhotoUrl: string | null;
   orderId: number | null;
   orderNumber: string | null;
   replyBody: string | null;
@@ -159,12 +166,17 @@ export type ReviewRow = {
 export function toReviewRow(dto: ReviewDto): ReviewRow {
   return {
     id: dto.id,
-    rating: dto.rating,
-    comment: dto.comment,
+    vendorRating: dto.vendor_rating ?? null,
+    vendorComment: dto.vendor_comment ?? null,
+    riderRating: dto.rider_rating ?? null,
+    riderComment: dto.rider_comment ?? null,
     authorName: dto.author?.name ?? "Customer",
     authorAvatarUrl: dto.author?.avatar_url ?? null,
     vendorId: dto.vendor?.id ?? null,
     vendorName: dto.vendor?.name ?? null,
+    riderId: dto.rider?.id ?? null,
+    riderName: dto.rider?.name ?? null,
+    riderPhotoUrl: dto.rider?.photo_url ?? null,
     orderId: dto.order?.id ?? null,
     orderNumber: dto.order?.order_number ?? null,
     replyBody: dto.reply?.body ?? null,
