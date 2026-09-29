@@ -10,7 +10,7 @@ import { listReviews } from "@/lib/services/reviews.service";
 import { getDashboard } from "@/lib/services/dashboard.service";
 import { toReviewRow } from "@/lib/mappers/catalogue.mapper";
 import { can, getPermissions } from "@/lib/auth/guard";
-import { parseListParams, readBooleanParam, readNumberParam } from "@/lib/api/query";
+import { parseListParams, readBooleanParam, readEnumParam, readNumberParam } from "@/lib/api/query";
 
 export const metadata: Metadata = {
   title: "Reviews — BagyesRUSH",
@@ -33,9 +33,10 @@ export default async function ReviewsPage(props: PageProps<"/dashboard/reviews">
 
   const rating = readNumberParam(params, "rating");
 
-  // Guarded the same way the rating is: a hand-edited URL must not 422 the page.
-  const subjectParam = params.subject;
-  const subject = subjectParam === "vendor" || subjectParam === "rider" ? subjectParam : undefined;
+  // readEnumParam rather than a hand comparison: it drops anything outside the
+  // backend's `in:` rule, and handles the array form Next produces when a key
+  // is repeated in the URL.
+  const subject = readEnumParam(params, "subject", ["vendor", "rider"] as const);
 
   const [page, dashboard] = await Promise.all([
     listReviews({
