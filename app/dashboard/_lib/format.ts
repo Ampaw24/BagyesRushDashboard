@@ -105,3 +105,44 @@ export function formatRelative(date: Date): string {
 
   return formatDate(date);
 }
+
+/**
+ * How a ledger amount should read, given what actually happened to it.
+ *
+ * Colouring on `isCredit` alone made a **voided** credit render as a green
+ * +GHS 100 - the same as money sitting in the wallet. On a cancelled order,
+ * where the vendor's earning is written off and the customer refunded, an
+ * admin glancing at the ledger saw the vendor being paid for an order that
+ * never happened. The badge beside it said "Void", but the eye goes to the
+ * green number.
+ *
+ * So the three states look like three different things:
+ *
+ * - **void** - struck through and muted, with no sign. This money did not move.
+ * - **pending** - the credit is real but not released yet, so it is amber
+ *   rather than the green of a settled balance.
+ * - **available** - green for a credit, red for a debit, as a statement reads.
+ */
+export function ledgerAmountTone(isCredit: boolean, status: "pending" | "available" | "void"): string {
+  if (status === "void") {
+    return "text-text-muted line-through";
+  }
+
+  if (status === "pending") {
+    return "text-status-warning";
+  }
+
+  return isCredit ? "text-status-good" : "text-status-critical";
+}
+
+/** The sign in front of it. A voided row gets none - nothing was added or taken. */
+export function ledgerAmountSign(
+  isCredit: boolean,
+  status: "pending" | "available" | "void",
+): string {
+  if (status === "void") {
+    return "";
+  }
+
+  return isCredit ? "+" : "\u2212";
+}

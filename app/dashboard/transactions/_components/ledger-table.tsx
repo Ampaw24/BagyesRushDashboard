@@ -6,7 +6,12 @@ import { TableCell, TableHeadCell, TableShell } from "../../_components/table-sh
 import { EmptyState } from "../../_components/empty-state";
 import { Pagination } from "../../_components/pagination";
 import { FilterBar, type SelectFilter } from "../../_components/filter-bar";
-import { formatCurrency, formatDateTime } from "../../_lib/format";
+import {
+  formatCurrency,
+  formatDateTime,
+  ledgerAmountSign,
+  ledgerAmountTone,
+} from "../../_lib/format";
 import type { WalletTransactionRow } from "@/lib/mappers/wallet.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
 import {
@@ -150,9 +155,9 @@ export function LedgerTable({
                   {/* Signed, because that is how a statement reads: money out
                       should look different from money in at a glance. */}
                   <span
-                    className={`tabular-nums font-medium ${row.isCredit ? "text-status-good" : "text-status-critical"}`}
+                    className={`tabular-nums font-medium ${ledgerAmountTone(row.isCredit, row.status)}`}
                   >
-                    {row.isCredit ? "+" : ""}
+                    {ledgerAmountSign(row.isCredit, row.status)}
                     {formatCurrency(row.amount)}
                   </span>
                 </TableCell>

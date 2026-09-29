@@ -5,7 +5,12 @@ import { useState } from "react";
 import { TableCell, TableHeadCell, TableShell } from "./table-shell";
 import { EmptyState } from "./empty-state";
 import { useToast } from "./toast-provider";
-import { formatCurrency, formatDateTime } from "../_lib/format";
+import {
+  formatCurrency,
+  formatDateTime,
+  ledgerAmountSign,
+  ledgerAmountTone,
+} from "../_lib/format";
 import { adjustWalletAction } from "../transactions/_wallet-actions";
 import type { WalletParty } from "@/lib/services/wallets.service";
 import type { WalletSummary, WalletTransactionRow } from "@/lib/mappers/wallet.mapper";
@@ -140,10 +145,11 @@ export function WalletTab({
                 </TableCell>
                 <TableCell className="break-words text-text-secondary">{row.note ?? "—"}</TableCell>
                 <TableCell
-                  className={`font-medium ${row.isCredit ? "text-status-good" : "text-status-critical"}`}
+                  className={`font-medium ${ledgerAmountTone(row.isCredit, row.status)}`}
                 >
-                  {/* Signed, because that is how a statement reads. */}
-                  {row.isCredit ? "+" : "−"}
+                  {/* Signed, because that is how a statement reads — except a
+                      voided row, which gets no sign because nothing moved. */}
+                  {ledgerAmountSign(row.isCredit, row.status)}
                   {formatCurrency(Math.abs(row.amount))}
                 </TableCell>
                 <TableCell className="text-text-secondary">
