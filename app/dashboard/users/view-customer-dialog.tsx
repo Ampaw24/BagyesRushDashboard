@@ -132,10 +132,8 @@ export function ViewCustomerDialog({ customer, onClose }: { customer: CustomerRo
                   value: wallet.payoutMethod?.provider?.name ?? "Not chosen",
                 },
                 {
-                  label: "Payout number",
-                  value: wallet.payoutMethod?.account_number_last4
-                    ? `•••• ${wallet.payoutMethod.account_number_last4}`
-                    : "—",
+                  label: "Payout destination",
+                  value: payoutDestination(wallet.payoutMethod, customer.phone, customer.phoneVerified),
                 },
               ],
             },
@@ -216,19 +214,21 @@ export function ViewCustomerDialog({ customer, onClose }: { customer: CustomerRo
                     value={wallet.payoutMethod.provider?.name ?? "Not chosen"}
                   />
                   <Field
-                    label="Payout number"
-                    value={
-                      wallet.payoutMethod.account_number_last4
-                        ? `•••• ${wallet.payoutMethod.account_number_last4}`
-                        : "—"
-                    }
+                    label="Payout destination"
+                    value={payoutDestination(
+                      wallet.payoutMethod,
+                      customer.phone,
+                      customer.phoneVerified,
+                    )}
                   />
                   <div className="sm:col-span-2">
                     <dt className="text-text-muted">Where payouts go</dt>
                     <dd className="break-words text-text-secondary">
                       {wallet.payoutMethod.matches_account_phone
                         ? "The verified phone number on this account. A customer cannot send a payout anywhere else."
-                        : "No verified payout number on file. Cash-out is refused until the customer picks a network for their own verified number."}
+                        : customer.phoneVerified
+                          ? "Their verified number, once they choose a network. A customer never types a payout number — the server takes it from the line they signed in with, so a wallet cannot become a cash-out route for somebody else's card."
+                          : "Nowhere yet. The destination is the account's own verified number, and this phone is not verified."}
                     </dd>
                   </div>
                 </dl>
@@ -265,4 +265,30 @@ export function ViewCustomerDialog({ customer, onClose }: { customer: CustomerRo
         )}
     </DetailDialog>
   );
+}
+
+/**
+ * Where a cash-out would actually land.
+ *
+ * "Payout number: —" read as "we do not know where to pay them", which is not
+ * what an empty field means here. A customer never types a payout number: they
+ * choose a mobile-money network and the server stamps the number from the
+ * verified line they sign in with. So the destination is already decided the
+ * moment the phone is verified, and the only thing that can be missing is the
+ * network.
+ */
+function payoutDestination(
+  payout: CustomerPayoutMethodDto | null,
+  phone: string | null,
+  phoneVerified: boolean,
+): string {
+  if (payout?.account_number_last4) {
+    return `•••• ${payout.account_number_last4}`;
+  }
+
+  if (!phoneVerified) {
+    return "Phone not verified — cannot be paid";
+  }
+
+  return phone ? `${phone} — once a network is chosen` : "Their verified number";
 }

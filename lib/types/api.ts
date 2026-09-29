@@ -983,11 +983,24 @@ export type RiderDto = {
   };
   consent: {
     terms_accepted_at: string | null;
+    /** Denormalised at acceptance. `agreement` below is the document itself. */
     terms_version: string | null;
     data_consent_at: string | null;
     is_complete: boolean;
-    /** A rider on an older version has to agree again. */
-    current_terms_version: string | null;
+    /** The document they actually signed. Null for pre-document acceptances. */
+    agreement: { id: number; version: string; title: string; file_url: string | null } | null;
+    /** What is in force now, straight from the published document. */
+    current_version: string | null;
+    current_agreement_id: number | null;
+    /**
+     * Whether what they signed has since been replaced.
+     *
+     * Computed by the API, which compares the agreement *id* and only falls
+     * back to the version string for riders who accepted before agreements
+     * were documents. Do not re-derive it from the two version strings — that
+     * is what this field exists to stop.
+     */
+    needs_reacceptance: boolean;
   };
   emergency_contact: {
     name: string | null;

@@ -163,8 +163,16 @@ export type RiderDetail = RiderRow & {
     termsVersion: string | null;
     dataConsentAt: Date | null;
     isComplete: boolean;
+    /** The document they signed, so a screen can name it rather than a number. */
+    signedTitle: string | null;
+    signedFileUrl: string | null;
     currentTermsVersion: string | null;
-    /** Agreed, but to a version that has since been replaced. */
+    /**
+     * Agreed, but to a document that has since been replaced.
+     *
+     * Straight from the API, which compares agreement ids. Never re-derive it
+     * from the two version strings.
+     */
     isOutdated: boolean;
   };
   emergencyContact: {
@@ -271,10 +279,20 @@ export function toRiderDetail(dto: RiderDto): RiderDetail {
       termsVersion: dto.consent?.terms_version ?? null,
       dataConsentAt: toDate(dto.consent?.data_consent_at),
       isComplete: dto.consent?.is_complete ?? false,
-      currentTermsVersion: dto.consent?.current_terms_version ?? null,
-      isOutdated:
-        (dto.consent?.is_complete ?? false) &&
-        dto.consent?.terms_version !== dto.consent?.current_terms_version,
+      signedTitle: dto.consent?.agreement?.title ?? null,
+      signedFileUrl: dto.consent?.agreement?.file_url ?? null,
+      currentTermsVersion: dto.consent?.current_version ?? null,
+      /*
+       * Straight from the API, which owns this rule.
+       *
+       * This used to compare `terms_version` against `current_terms_version` —
+       * a field the API has never sent. It read `undefined` every time, so the
+       * comparison was always unequal and **every rider with completed consent
+       * was told they owed a re-acceptance**, including ones who had just
+       * signed the document in force. The version in force rendered as a dash
+       * beside it, which was the same bug showing its working.
+       */
+      isOutdated: dto.consent?.needs_reacceptance ?? false,
     },
 
     emergencyContact: {

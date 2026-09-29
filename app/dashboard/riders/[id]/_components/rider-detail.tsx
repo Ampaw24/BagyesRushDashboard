@@ -335,6 +335,23 @@ function ComplianceTab({ rider }: { rider: RiderDetailModel }) {
               : "Not accepted"
           }
         />
+        <Row
+          label="Document signed"
+          value={
+            rider.consent.signedFileUrl ? (
+              <a
+                href={rider.consent.signedFileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-brand transition duration-150 hover:opacity-80"
+              >
+                {rider.consent.signedTitle ?? rider.consent.termsVersion ?? "Open"}
+              </a>
+            ) : (
+              (rider.consent.signedTitle ?? rider.consent.termsVersion ?? "—")
+            )
+          }
+        />
         <Row label="Version agreed" value={rider.consent.termsVersion ?? "—"} />
         <Row label="Version in force" value={rider.consent.currentTermsVersion ?? "—"} />
         <Row
