@@ -148,7 +148,9 @@ export function ViewVendorDialog({
           {tab === "business" && <BusinessTab vendor={detail} />}
           {tab === "trading" && <TradingTab vendor={detail} />}
           {tab === "branding" && <BrandingTab vendor={detail} onPreview={setPreview} />}
-          {tab === "documents" && <DocumentsTab vendor={detail} canView={canViewDocuments} />}
+          {tab === "documents" && (
+            <DocumentsTab vendor={detail} canView={canViewDocuments} onPreview={setPreview} />
+          )}
         </>
       )}
 
@@ -321,7 +323,28 @@ function BrandingTab({
   );
 }
 
-function DocumentsTab({ vendor, canView }: { vendor: VendorDetail; canView: boolean }) {
+/**
+ * The paperwork, previewed in place.
+ *
+ * These used to open in a new tab, which threw an admin out of the list they
+ * were working through - the whole point of a quick view is that the filters
+ * and the scroll position survive looking at something. The rider dialog has
+ * always previewed its documents inline and the two should not differ.
+ *
+ * A vendor document is as often a PDF as an image, and the lightbox handles
+ * that: an image that will not decode falls back to "no preview available"
+ * with an Open original button, which is the honest answer rather than a torn
+ * image glyph.
+ */
+function DocumentsTab({
+  vendor,
+  canView,
+  onPreview,
+}: {
+  vendor: VendorDetail;
+  canView: boolean;
+  onPreview: (preview: { src: string; label: string }) => void;
+}) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
@@ -349,18 +372,20 @@ function DocumentsTab({ vendor, canView }: { vendor: VendorDetail; canView: bool
             </span>
 
             {document.uploaded && canView ? (
-              // The endpoint streams a binary file from the private disk, so
-              // this is a link out rather than something fetched as JSON. A
-              // vendor document is as often a PDF as an image, which is why
-              // this is not the inline viewer the rider photos use.
-              <a
-                href={`/api/vendor-document?vendorId=${vendor.id}&type=${document.type}`}
-                target="_blank"
-                rel="noreferrer"
+              <button
+                type="button"
+                onClick={() =>
+                  onPreview({
+                    // Through the proxy route: the file is on the private disk
+                    // behind a bearer token the browser cannot supply.
+                    src: `/api/vendor-document?vendorId=${vendor.id}&type=${document.type}`,
+                    label: vendorDocumentLabels[document.type],
+                  })
+                }
                 className="flex h-9 items-center rounded-lg border border-border-subtle px-3.5 text-sm font-medium text-brand transition duration-150 hover:bg-surface-muted"
               >
-                Open
-              </a>
+                View
+              </button>
             ) : (
               <span className="text-xs text-text-muted">
                 {document.uploaded ? "Permission required" : "—"}
