@@ -7,6 +7,7 @@ import { useToast } from "../../../_components/toast-provider";
 import { uploadVendorImageAction } from "../../_actions";
 import type { VendorImageType } from "@/lib/services/vendors.service";
 import type { VendorDetail } from "@/lib/mappers/vendor.mapper";
+import { ImageLightbox } from "../../../_components/image-lightbox";
 
 /**
  * Everything the vendor uploaded or typed about how they present themselves.
@@ -37,6 +38,9 @@ export function MediaTab({
   /** `vendors.update`. Without it the tab is exactly what it used to be. */
   canUpdate?: boolean;
 }) {
+  // Held here rather than on the page: this tab owns the pictures, and lifting
+  // it would mean threading a setter through for one overlay nothing else uses.
+  const [preview, setPreview] = useState<{ src: string; label: string } | null>(null);
   const images: {
     label: string;
     url: string | null;
@@ -95,15 +99,23 @@ export function MediaTab({
                   className={`${image.aspect} w-full overflow-hidden rounded-lg border border-border-subtle bg-surface-muted`}
                 >
                   {image.url ? (
-                    // A plain <img>: these are vendor-uploaded URLs on the
-                    // public disk, and next/image would need every possible
-                    // host allow-listed in next.config.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={image.url}
-                      alt={`${vendor.businessName} ${image.label.toLowerCase()}`}
-                      className="h-full w-full object-cover"
-                    />
+                    // The tile itself opens the viewer: an admin judging a
+                    // storefront photo clicks the picture, not a link under it.
+                    // A plain <img> for the reason Avatar uses one - these are
+                    // vendor-uploaded URLs on the public disk, and next/image
+                    // would need every possible host allow-listed.
+                    <button
+                      type="button"
+                      onClick={() => setPreview({ src: image.url!, label: image.label })}
+                      className="h-full w-full cursor-zoom-in transition duration-150 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={image.url}
+                        alt={`${vendor.businessName} ${image.label.toLowerCase()}`}
+                        className="h-full w-full object-cover"
+                      />
+                    </button>
                   ) : (
                     <div className="flex h-full items-center justify-center text-xs text-text-muted">
                       Not uploaded
@@ -115,14 +127,13 @@ export function MediaTab({
                   <span className="text-sm font-medium text-foreground">{image.label}</span>
                   <span className="text-xs text-text-muted">{image.hint}</span>
                   {image.url ? (
-                    <a
-                      href={image.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 text-xs text-brand hover:underline"
+                    <button
+                      type="button"
+                      onClick={() => setPreview({ src: image.url!, label: image.label })}
+                      className="mt-1 self-start text-xs text-brand hover:underline"
                     >
-                      Open full size
-                    </a>
+                      View full size
+                    </button>
                   ) : null}
 
                   {canUpdate && (
@@ -160,6 +171,15 @@ export function MediaTab({
           />
         </div>
       </section>
+
+      {preview && (
+        <ImageLightbox
+          src={preview.src}
+          alt={`${vendor.businessName} — ${preview.label}`}
+          caption={`${vendor.businessName} · ${preview.label}`}
+          onClose={() => setPreview(null)}
+        />
+      )}
     </div>
   );
 }

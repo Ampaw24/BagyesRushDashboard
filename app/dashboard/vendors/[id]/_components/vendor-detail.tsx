@@ -25,6 +25,7 @@ import type { MenuItemRow, VendorDetail as VendorDetailModel, VendorPayout } fro
 import type { ActivityRow } from "@/lib/mappers/activity.mapper";
 import type { WalletSummary, WalletTransactionRow } from "@/lib/mappers/wallet.mapper";
 import { vendorDocumentLabels } from "@/lib/types/enums";
+import { ImageLightbox } from "../../../_components/image-lightbox";
 
 export type VendorDetailProps = {
   vendor: VendorDetailModel;
@@ -78,6 +79,7 @@ export function VendorDetail({
   permissions,
 }: VendorDetailProps) {
   const [tab, setTab] = useState("overview");
+  const [preview, setPreview] = useState<{ src: string; label: string } | null>(null);
   const { actions, dialog } = useVendorStatusActions(vendor, permissions);
   const { actions: messageActions, dialog: messageDialog } = useSendMessage(
     { userId: vendor.userId, name: vendor.businessName, phone: vendor.phone },
@@ -126,7 +128,13 @@ export function VendorDetail({
 
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
 
-      {tab === "overview" && <OverviewTab vendor={vendor} canViewDocuments={permissions.canViewDocuments} />}
+      {tab === "overview" && (
+        <OverviewTab
+          vendor={vendor}
+          canViewDocuments={permissions.canViewDocuments}
+          onPreview={setPreview}
+        />
+      )}
       {tab === "menu" && (
         <MenuTab vendor={vendor} items={menuItems} canUpdate={permissions.canUpdateMenu} />
       )}
@@ -144,6 +152,15 @@ export function VendorDetail({
       {tab === "payout" && <PayoutTab vendor={vendor} payout={payout} />}
       {tab === "activity" && <ActivityTab activity={activity} />}
 
+      {preview && (
+        <ImageLightbox
+          src={preview.src}
+          alt={`${vendor.businessName} — ${preview.label}`}
+          caption={`${vendor.businessName} · ${preview.label}`}
+          onClose={() => setPreview(null)}
+        />
+      )}
+
       {dialog}
       {messageDialog}
       {editing && (
@@ -160,9 +177,11 @@ export function VendorDetail({
 function OverviewTab({
   vendor,
   canViewDocuments,
+  onPreview,
 }: {
   vendor: VendorDetailModel;
   canViewDocuments: boolean;
+  onPreview: (preview: { src: string; label: string }) => void;
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -222,14 +241,34 @@ function OverviewTab({
               !document.uploaded ? (
                 <span className="text-text-muted">Not uploaded</span>
               ) : canViewDocuments ? (
-                // The endpoint streams a binary file, so this is a plain link
-                // out rather than something fetched as JSON.
-                <a
-                  href={`/api/vendor-document?vendorId=${vendor.id}&type=${document.type}`}
-                  className="text-brand transition duration-150 hover:opacity-80"
-                >
-                  View document
-                </a>
+                // View opens it over this page; Open is the escape hatch for a
+                // PDF or anything the viewer shrinks - a registration number
+                // has to be legible to be checked. Same pair the rider profile
+                // offers, so the two read alike.
+                <span className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onPreview({
+                        // Through the proxy route: the file is on the private
+                        // disk behind a bearer token the browser cannot supply.
+                        src: `/api/vendor-document?vendorId=${vendor.id}&type=${document.type}`,
+                        label: vendorDocumentLabels[document.type],
+                      })
+                    }
+                    className="text-brand transition duration-150 hover:opacity-80"
+                  >
+                    View
+                  </button>
+                  <a
+                    href={`/api/vendor-document?vendorId=${vendor.id}&type=${document.type}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-text-secondary transition duration-150 hover:opacity-80"
+                  >
+                    Open
+                  </a>
+                </span>
               ) : (
                 <span className="text-text-muted">Uploaded</span>
               )
