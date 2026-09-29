@@ -12,6 +12,18 @@ import type {
 import { toDate, toDateOrEpoch } from "./dates";
 
 /** One row in the orders table. */
+/** Where the money for an order came from. */
+export type OrderTender = {
+  source: "wallet" | "wallet_and_gateway" | "gateway" | "cash" | "wallet_and_cash";
+  label: string;
+  orderTotal: number;
+  fromWallet: number;
+  atGateway: number;
+  usedWallet: boolean;
+  /** False when credit covered everything - there is no gateway attempt to find. */
+  expectsGatewayPayment: boolean;
+};
+
 export type OrderRow = {
   id: number;
   orderNumber: string;
@@ -33,6 +45,14 @@ export type OrderRow = {
   paymentMethod: PaymentMethod;
   isPaid: boolean;
   needsRefund: boolean;
+  /**
+   * Which money settled the order.
+   *
+   * Wallet credit is tender, not a discount - the total is untouched by it and
+   * only the gateway's share shrinks - so this is never added to the coupon.
+   * Null on an older backend.
+   */
+  tender: OrderTender | null;
   /**
    * How this order's money was split. Absent on an older backend, so every
    * reader has to tolerate null rather than render a confident zero.
@@ -280,6 +300,17 @@ export function toOrderRow(dto: AdminOrderDto): OrderRow {
     paymentMethod: dto.payment.method,
     isPaid: dto.payment.is_paid,
     needsRefund: dto.payment.needs_refund,
+    tender: dto.payment.tender
+      ? {
+          source: dto.payment.tender.source,
+          label: dto.payment.tender.label,
+          orderTotal: dto.payment.tender.order_total,
+          fromWallet: dto.payment.tender.from_wallet,
+          atGateway: dto.payment.tender.at_gateway,
+          usedWallet: dto.payment.tender.used_wallet,
+          expectsGatewayPayment: dto.payment.tender.expects_gateway_payment,
+        }
+      : null,
     earnings: dto.earnings
       ? {
           vendor: dto.earnings.vendor,

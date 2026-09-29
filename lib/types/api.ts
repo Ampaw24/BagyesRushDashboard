@@ -510,6 +510,24 @@ export type AdminOrderDto = {
     status: PaymentStatus;
     is_paid: boolean;
     needs_refund: boolean;
+    /**
+     * Which money settled the order, and in what shares.
+     *
+     * Wallet credit is tender, not a discount: the totals above are untouched
+     * by it and only the gateway's share shrinks. A coupon is the opposite — it
+     * changes the total — so the two are never added together.
+     */
+    tender?: {
+      source: "wallet" | "wallet_and_gateway" | "gateway" | "cash" | "wallet_and_cash";
+      label: string;
+      order_total: number;
+      from_wallet: number;
+      at_gateway: number;
+      used_wallet: boolean;
+      /** False when credit covered everything — there is no attempt to find. */
+      expects_gateway_payment: boolean;
+      currency: string;
+    };
     attempts?: PaymentAttemptDto[];
   };
   customer?: { id: number; name: string; email: string | null; phone: string | null };

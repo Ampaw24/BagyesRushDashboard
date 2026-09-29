@@ -96,6 +96,34 @@ export function MoneyBreakdown({ order }: { order: OrderDetail }) {
 
           <Divider />
           <Line label="Total" value={formatCurrency(order.total)} strong />
+
+          {/*
+            Where the money actually came from.
+
+            Wallet credit is tender, not a discount: the total above is
+            untouched by it and only the gateway's share shrinks. Without this
+            an admin looking at a GHS 46.70 order against a GHS 16.70 Paystack
+            charge had no way to tell whether the missing 30 was credit or
+            money that was never collected.
+
+            Only shown when credit was used - on the ordinary order it would be
+            a row of zeroes saying nothing.
+          */}
+          {order.tender?.usedWallet && (
+            <>
+              <Divider />
+              <Line
+                label="Paid from wallet"
+                value={`−${formatCurrency(order.tender.fromWallet)}`}
+              />
+              <Line
+                label="Charged to card / mobile money"
+                value={formatCurrency(order.tender.atGateway)}
+                strong
+              />
+              <p className="pt-1 text-xs text-text-muted">{order.tender.label}</p>
+            </>
+          )}
         </Card>
 
         {/* Each side settles at its own moment: the vendor's share the moment
