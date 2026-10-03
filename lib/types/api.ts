@@ -974,6 +974,11 @@ export type RiderDto = {
     year: number | null;
     ownership: VehicleOwnership | null;
     ownership_label: string | null;
+    /** Uploaded by the rider; null until they do. Optional for older API builds. */
+    photos?: {
+      front: string | null;
+      back: string | null;
+    };
   };
   licence: {
     number: string | null;

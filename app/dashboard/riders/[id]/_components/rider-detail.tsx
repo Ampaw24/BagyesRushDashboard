@@ -19,6 +19,7 @@ import { Avatar } from "../../../_components/avatar";
 import { RecordExportButton } from "../../../_components/record-export-button";
 import { riderRecord } from "@/lib/export/records";
 import { ImageLightbox } from "../../../_components/image-lightbox";
+import { VehiclePhotos } from "./vehicle-photos";
 import type { RiderDetail as RiderDetailModel, RiderPayout } from "@/lib/mappers/rider.mapper";
 import type { ActivityRow } from "@/lib/mappers/activity.mapper";
 import type { WalletSummary, WalletTransactionRow } from "@/lib/mappers/wallet.mapper";
@@ -200,6 +201,11 @@ function OverviewTab({ rider }: { rider: RiderDetailModel }) {
         <Row label="Colour" value={rider.vehicle.colour ?? "—"} />
         <Row label="Year" value={rider.vehicle.year?.toString() ?? "—"} />
         <Row label="Ownership" value={rider.vehicle.ownershipLabel ?? "—"} />
+        <VehiclePhotos
+          front={rider.vehicle.frontPhotoUrl}
+          back={rider.vehicle.backPhotoUrl}
+          riderName={rider.name}
+        />
       </Card>
 
       <Card title="Working">

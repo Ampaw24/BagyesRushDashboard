@@ -133,6 +133,8 @@ export type RiderDetail = RiderRow & {
     year: number | null;
     ownership: VehicleOwnership | null;
     ownershipLabel: string | null;
+    frontPhotoUrl: string | null;
+    backPhotoUrl: string | null;
   };
   licence: {
     number: string | null;
@@ -245,6 +247,8 @@ export function toRiderDetail(dto: RiderDto): RiderDetail {
       year: dto.vehicle.year,
       ownership: dto.vehicle.ownership ?? null,
       ownershipLabel: dto.vehicle.ownership_label ?? null,
+      frontPhotoUrl: dto.vehicle.photos?.front ?? null,
+      backPhotoUrl: dto.vehicle.photos?.back ?? null,
     },
 
     licence: {
