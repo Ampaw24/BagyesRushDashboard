@@ -48,6 +48,15 @@ import type {
 /* -------------------------------------------------------------------------- */
 
 /** UserResource — returned by POST /v1/login and GET /v1/profile. */
+/**
+ * A vendor's or rider's commission-free welcome period. `ends_at` is null when
+ * they have none: the switch is off, or they were never approved.
+ */
+export type CommissionGraceDto = {
+  active: boolean;
+  ends_at: string | null;
+};
+
 export type UserDto = {
   id: number;
   email: string;
@@ -384,6 +393,9 @@ export type VendorDto = {
   };
   documents_status: string | null;
   documents_reviewed_at: string | null;
+  /** Optional so an older API build still renders. */
+  approved_at?: string | null;
+  commission_grace?: CommissionGraceDto;
   payout: {
     bank_name: string | null;
     account_name: string | null;
@@ -603,6 +615,9 @@ export type AdminOrderDto = {
     distance_charge: number;
     vendor_percent: number;
     rider_percent: number;
+    /** True when the vendor / rider was inside their commission-free welcome period. */
+    vendor_grace?: boolean;
+    rider_grace?: boolean;
     service_fee_percent: number;
     service_fee_flat: number;
     settings_name: string;
@@ -1037,6 +1052,8 @@ export type RiderDto = {
   is_profile_complete: boolean;
   missing_profile_fields: string[];
   approved_at: string | null;
+  /** Optional so an older API build still renders. */
+  commission_grace?: CommissionGraceDto;
   is_online: boolean;
   can_go_online: boolean;
   last_online_at: string | null;
@@ -1443,6 +1460,15 @@ export type PlatformSettingDto = {
 
   customer_wait_minutes: number | null;
   arrival_radius_metres: number | null;
+
+  /**
+   * Commission-free welcome periods, counted per vendor and per rider from
+   * their own approval. Optional so an older API build still renders.
+   */
+  vendor_grace_enabled?: boolean;
+  vendor_grace_days?: number;
+  rider_grace_enabled?: boolean;
+  rider_grace_days?: number;
 
   is_active: boolean;
   /** False for the config-derived fallback, so a screen can say nothing is published. */

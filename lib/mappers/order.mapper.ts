@@ -78,6 +78,8 @@ export type OrderPricing = {
   distanceCharge: number;
   vendorPercent: number;
   riderPercent: number;
+  vendorGrace: boolean;
+  riderGrace: boolean;
   serviceFeePercent: number;
   serviceFeeFlat: number;
   settingsName: string;
@@ -336,6 +338,8 @@ export function toOrderRow(dto: AdminOrderDto): OrderRow {
           distanceCharge: dto.pricing.distance_charge,
           vendorPercent: dto.pricing.vendor_percent,
           riderPercent: dto.pricing.rider_percent,
+          vendorGrace: dto.pricing.vendor_grace ?? false,
+          riderGrace: dto.pricing.rider_grace ?? false,
           serviceFeePercent: dto.pricing.service_fee_percent,
           serviceFeeFlat: dto.pricing.service_fee_flat,
           settingsName: dto.pricing.settings_name,

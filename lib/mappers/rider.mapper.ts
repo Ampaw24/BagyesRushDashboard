@@ -112,6 +112,7 @@ export type RiderDocument = {
 };
 
 export type RiderDetail = RiderRow & {
+  commissionGrace: { active: boolean; endsAt: Date | null } | null;
   firstName: string;
   lastName: string;
   dateOfBirth: Date | null;
@@ -351,6 +352,9 @@ export function toRiderDetail(dto: RiderDto): RiderDetail {
 
     lastOnlineAt: toDate(dto.last_online_at),
     approvedAt: toDate(dto.approved_at),
+    commissionGrace: dto.commission_grace
+      ? { active: dto.commission_grace.active, endsAt: toDate(dto.commission_grace.ends_at) }
+      : null,
     joinedAt: toDateOrEpoch(dto.created_at),
     // RiderProfileResource carries no deleted_at - a rider opened from the
     // Deleted list still reads by their real status here.

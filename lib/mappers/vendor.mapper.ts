@@ -84,6 +84,8 @@ export type VendorDetail = VendorRow & {
   missingProfileFields: string[];
   documents: { type: VendorDocumentType; uploaded: boolean }[];
   documentsReviewedAt: Date | null;
+  approvedAt: Date | null;
+  commissionGrace: { active: boolean; endsAt: Date | null } | null;
   payoutConfigured: boolean;
   payoutMasked: {
     bankName: string | null;
@@ -174,6 +176,10 @@ export function toVendorDetail(dto: VendorDto): VendorDetail {
       uploaded: dto.documents[type]?.uploaded ?? false,
     })),
     documentsReviewedAt: toDate(dto.documents_reviewed_at),
+    approvedAt: toDate(dto.approved_at ?? null),
+    commissionGrace: dto.commission_grace
+      ? { active: dto.commission_grace.active, endsAt: toDate(dto.commission_grace.ends_at) }
+      : null,
     payoutConfigured: dto.payout.is_configured,
     payoutMasked: {
       bankName: dto.payout.bank_name,

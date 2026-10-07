@@ -11,7 +11,12 @@ import { ActionMenu } from "../../../_components/action-menu";
 import { EmptyState } from "../../../_components/empty-state";
 import { PageHeader } from "../../../_components/page-header";
 import { documentsStatusMeta, vendorStateMeta } from "../../../_lib/status";
-import { formatCurrency, formatDate, formatDateTimeOrDash } from "../../../_lib/format";
+import {
+  formatCommissionGrace,
+  formatCurrency,
+  formatDate,
+  formatDateTimeOrDash,
+} from "../../../_lib/format";
 import { StarIcon } from "../../../_lib/icons";
 import { useToast } from "../../../_components/toast-provider";
 import { useVendorStatusActions } from "../../../_hooks/use-vendor-status-actions";
@@ -280,6 +285,9 @@ function OverviewTab({
 
       <Card title="Profile completeness">
         <Row label="Complete" value={vendor.isProfileComplete ? "Yes" : "No"} />
+        <Row label="Approved" value={formatDateTimeOrDash(vendor.approvedAt)} />
+        {/* Counted from the approval above, set on System Config. */}
+        <Row label="Welcome period" value={formatCommissionGrace(vendor.commissionGrace)} />
         {vendor.missingProfileFields.length > 0 && (
           <Row label="Missing" value={vendor.missingProfileFields.join(", ")} />
         )}

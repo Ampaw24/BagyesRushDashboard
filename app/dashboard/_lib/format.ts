@@ -146,3 +146,15 @@ export function ledgerAmountSign(
 
   return isCredit ? "+" : "\u2212";
 }
+
+/**
+ * One line for a commission-free welcome period: running, finished, or never
+ * applied (the switch was off, or the vendor/rider has not been approved).
+ */
+export function formatCommissionGrace(grace: { active: boolean; endsAt: Date | null } | null): string {
+  if (!grace?.endsAt) return "None";
+
+  return grace.active
+    ? `No commission until ${formatDate(grace.endsAt)}`
+    : `Ended ${formatDate(grace.endsAt)}`;
+}

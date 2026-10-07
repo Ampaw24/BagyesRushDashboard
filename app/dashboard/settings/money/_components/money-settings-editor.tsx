@@ -54,6 +54,8 @@ const NUMERIC_FIELDS = [
   "referral_minimum_order",
   "customer_wait_minutes",
   "arrival_radius_metres",
+  "vendor_grace_days",
+  "rider_grace_days",
 ] as const;
 
 /**
@@ -61,7 +63,12 @@ const NUMERIC_FIELDS = [
  * figure — so it needs its own list, its own control and its own line in the
  * payload.
  */
-const BOOLEAN_FIELDS = ["customer_withdrawals_enabled", "referral_enabled"] as const;
+const BOOLEAN_FIELDS = [
+  "customer_withdrawals_enabled",
+  "referral_enabled",
+  "vendor_grace_enabled",
+  "rider_grace_enabled",
+] as const;
 
 /**
  * A ready-to-publish name for a version derived from an existing one.
@@ -291,6 +298,25 @@ export function MoneySettingsEditor({
               "Rider floor per delivery",
               "The least a rider earns however short the trip. 0 disables it.",
             )}
+          </>,
+        )}
+
+        {section(
+          "Commission-free welcome period",
+          "New vendors and riders keep everything they earn for their first days on the platform. Counted for each one from the day they were approved, so somebody approved today gets the full period and somebody approved months ago gets none. During it the platform earns only the service fee; afterwards the commissions above apply.",
+          <>
+            {toggle(
+              "vendor_grace_enabled",
+              "No commission for new vendors",
+              "Applies to orders placed while the vendor is inside their period.",
+            )}
+            {field("vendor_grace_days", "Vendor period", "Days from the vendor's approval.", "days")}
+            {toggle(
+              "rider_grace_enabled",
+              "No commission for new riders",
+              "The rider sees the full delivery fee on every offer while it lasts.",
+            )}
+            {field("rider_grace_days", "Rider period", "Days from the rider's approval.", "days")}
           </>,
         )}
 

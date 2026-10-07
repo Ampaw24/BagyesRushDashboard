@@ -9,7 +9,7 @@ import { ActionMenu } from "../../../_components/action-menu";
 import { EmptyState } from "../../../_components/empty-state";
 import { PageHeader } from "../../../_components/page-header";
 import { documentsStatusMeta, riderStateMeta } from "../../../_lib/status";
-import { formatDate, formatDateTimeOrDash } from "../../../_lib/format";
+import { formatCommissionGrace, formatDate, formatDateTimeOrDash } from "../../../_lib/format";
 import { EditIcon, StarIcon } from "../../../_lib/icons";
 import { useRiderStatusActions } from "../../../_hooks/use-rider-status-actions";
 import { useSendMessage } from "../../../_hooks/use-send-message";
@@ -258,6 +258,8 @@ function OverviewTab({ rider }: { rider: RiderDetailModel }) {
           }
         />
         <Row label="Approved" value={formatDateTimeOrDash(rider.approvedAt)} />
+        {/* Counted from the approval above, set on System Config. */}
+        <Row label="Welcome period" value={formatCommissionGrace(rider.commissionGrace)} />
         <Row
           label="Emergency contact"
           value={

@@ -138,14 +138,22 @@ export function MoneyBreakdown({ order }: { order: OrderDetail }) {
                 <Line
                   label={
                     pricing
-                      ? `Vendor (less ${pricing.vendorPercent}% commission)`
+                      ? pricing.vendorGrace
+                        ? "Vendor (no commission: welcome period)"
+                        : `Vendor (less ${pricing.vendorPercent}% commission)`
                       : "Vendor"
                   }
                   value={money(earnings.vendor)}
                 />
               )}
               <Line
-                label={pricing ? `Rider (less ${pricing.riderPercent}% commission)` : "Rider"}
+                label={
+                  pricing
+                    ? pricing.riderGrace
+                      ? "Rider (no commission: welcome period)"
+                      : `Rider (less ${pricing.riderPercent}% commission)`
+                    : "Rider"
+                }
                 value={money(earnings.rider, "Paid on delivery")}
               />
 

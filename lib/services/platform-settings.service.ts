@@ -40,6 +40,11 @@ export type PlatformSettingInput = {
   vendor_minimum_withdrawal?: number | null;
   customer_minimum_withdrawal?: number | null;
   customer_withdrawals_enabled?: boolean;
+
+  vendor_grace_enabled?: boolean;
+  vendor_grace_days?: number | null;
+  rider_grace_enabled?: boolean;
+  rider_grace_days?: number | null;
 };
 
 /**
