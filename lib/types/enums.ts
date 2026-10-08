@@ -318,13 +318,20 @@ export const userStatusLabels: Record<UserStatus, string> = {
 };
 
 /**
- * Staff roles. These replace the dashboard's former super_admin/admin/
- * support_staff triple — the backend's AssignRoleRequest accepts nothing else.
+ * The four staff roles built into the backend (app/Enums/AdminRole.php).
+ *
+ * Not the full list: a super administrator can create more from the Roles
+ * screen, so anything offering a choice of role reads `GET /admin/roles`
+ * rather than this constant.
  */
 export const ADMIN_ROLES = ["super_admin", "manager", "support", "finance"] as const;
-export type AdminRole = (typeof ADMIN_ROLES)[number];
+export type BuiltInAdminRole = (typeof ADMIN_ROLES)[number];
 
-export const adminRoleLabels: Record<AdminRole, string> = {
+/** A built-in role, or the slug of one created from the dashboard. */
+export type AdminRole = string;
+
+/** Fallback labels for the built-ins; the API sends a label for every role. */
+export const adminRoleLabels: Record<string, string> = {
   super_admin: "Super administrator",
   manager: "Manager",
   support: "Support",

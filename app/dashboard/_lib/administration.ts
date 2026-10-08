@@ -54,6 +54,17 @@ export function canChangeRole(
   return { allowed: true };
 }
 
+/**
+ * A role a staff account can be given, built in or created on the Roles screen.
+ * Read from `GET /admin/roles`, never from the ADMIN_ROLES constant, so a role
+ * created today is offered everywhere without a dashboard change.
+ */
+export type RoleOption = { value: AdminRole; label: string };
+
+export function toRoleOptions(roles: { value: AdminRole; label: string }[]): RoleOption[] {
+  return roles.map((role) => ({ value: role.value, label: role.label }));
+}
+
 /** Only an `admin` account can hold a staff role — the backend rejects anything else. */
 export function canHoldAdminRole(target: Pick<AdminUserRow, "role">): boolean {
   return target.role === "admin";

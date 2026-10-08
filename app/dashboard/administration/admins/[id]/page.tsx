@@ -6,7 +6,8 @@ import { NoPermissionState } from "../../../_components/empty-state";
 import { AdminDetail } from "./_components/admin-detail";
 import { AuditLogTable } from "../../_components/audit-log-table";
 import { getUser, listUsers } from "@/lib/services/admin-users.service";
-import { getAdminProfile } from "@/lib/services/profile.service";
+import { getAdminProfile, getRoles } from "@/lib/services/profile.service";
+import { toRoleOptions } from "../../../_lib/administration";
 import { listActivity } from "@/lib/services/activity.service";
 import { toAdminUserRow } from "@/lib/mappers/admin-user.mapper";
 import { toActivityRow } from "@/lib/mappers/activity.mapper";
@@ -39,9 +40,10 @@ export default async function AdminDetailPage(
 
   const list = parseListParams(await props.searchParams, 25);
 
-  const [admin, profile, superAdmins, activityPage] = await Promise.all([
+  const [admin, profile, roles, superAdmins, activityPage] = await Promise.all([
     loadAdmin(adminId),
     getAdminProfile(),
+    getRoles(),
     listUsers({ role: "admin", admin_role: "super_admin", status: "active", per_page: 1 }),
     // Their own audit trail. Only super admins and finance hold `audit.view`,
     // so this degrades to an empty feed rather than failing the page.
@@ -67,6 +69,7 @@ export default async function AdminDetailPage(
         activeSuperAdminCount: superAdmins.pagination.total,
         canManage: can(permissions, "users.manage"),
         canAssignRole: can(permissions, "users.assign_role"),
+        roles: toRoleOptions(roles.roles),
       }}
     />
   );

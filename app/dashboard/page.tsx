@@ -46,7 +46,9 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
   accepted: "bg-status-info",
   preparing: "bg-status-info/80",
   ready: "bg-status-info/60",
-  out_for_delivery: "bg-brand",
+  // Blue like the rest of the in-progress run, but the deepest shade so it
+  // still reads apart from accepted. Red belongs to cancellations.
+  out_for_delivery: "bg-blue-700",
   delivered: "bg-status-good",
   cancelled: "bg-status-critical",
   rejected: "bg-status-critical/70",

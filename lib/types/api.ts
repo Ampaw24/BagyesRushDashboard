@@ -106,6 +106,7 @@ export type AdminLoginChallengeDto = {
 /** GET /admin/me */
 export type AdminProfileDto = {
   id: number;
+  name: string | null;
   email: string;
   phone: string;
   status: UserStatus;
@@ -123,7 +124,9 @@ export type RolesResponseDto = {
   roles: Array<{
     value: AdminRole;
     label: string;
-    description: string;
+    description: string | null;
+    /** Created from the Roles screen rather than built into the backend. */
+    is_custom: boolean;
     permissions: Permission[];
   }>;
   /** Keyed by permission group: dashboard, vendors, menu, orders, ... */
@@ -134,10 +137,14 @@ export type RolesResponseDto = {
 export type ManagedRoleDto = {
   value: AdminRole;
   label: string;
-  description: string;
+  description: string | null;
+  /** Created from this screen: can be renamed and deleted. Built-ins cannot. */
+  is_custom: boolean;
+  /** Staff accounts holding it. A custom role cannot be deleted while above zero. */
+  user_count: number;
   /** What it holds right now — stored overrides included. */
   permissions: Permission[];
-  /** The baseline it ships with, from the AdminRole enum. */
+  /** The baseline it ships with, from the AdminRole enum. Empty for a custom role. */
   default_permissions: Permission[];
   /** False for super_admin, which always holds everything. */
   is_editable: boolean;
@@ -273,11 +280,14 @@ export type ActivityDto = {
 /** AdminUserResource */
 export type AdminUserDto = {
   id: number;
+  /** Staff accounts only; everyone else is named by their profile. */
+  name: string | null;
   email: string;
   phone: string;
   role: UserRole;
   admin_role: AdminRole | null;
   admin_role_label: string | null;
+  admin_role_is_custom?: boolean;
   status: UserStatus;
   is_active: boolean;
   phone_verified: boolean;

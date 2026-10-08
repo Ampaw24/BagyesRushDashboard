@@ -5,7 +5,7 @@ import { useState, type FormEvent } from "react";
 import { createStaffAction } from "./_actions";
 import { useToast } from "../_components/toast-provider";
 import { fieldError, type FieldErrors } from "@/lib/api/errors";
-import { ADMIN_ROLES, adminRoleLabels, type AdminRole } from "@/lib/types/enums";
+import type { RoleOption } from "../_lib/administration";
 
 /**
  * Creates a staff account.
@@ -14,7 +14,7 @@ import { ADMIN_ROLES, adminRoleLabels, type AdminRole } from "@/lib/types/enums"
  * the only path to a customer or vendor. The response carries a one-time
  * password that is shown here and never again.
  */
-export function NewStaffDialog({ onClose }: { onClose: () => void }) {
+export function NewStaffDialog({ roles, onClose }: { roles: RoleOption[]; onClose: () => void }) {
   const [pending, setPending] = useState(false);
   const { notifySuccess } = useToast();
   const [message, setMessage] = useState("");
@@ -24,6 +24,7 @@ export function NewStaffDialog({ onClose }: { onClose: () => void }) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const name = String(form.get("name") ?? "").trim();
     const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("password") ?? "").trim();
 
@@ -32,11 +33,12 @@ export function NewStaffDialog({ onClose }: { onClose: () => void }) {
     setErrors({});
 
     const result = await createStaffAction({
+      ...(name ? { name } : {}),
       email,
       phone: String(form.get("phone") ?? "").trim(),
       // Omitted when blank so the backend generates one.
       ...(password ? { password } : {}),
-      admin_role: String(form.get("admin_role") ?? "support") as AdminRole,
+      admin_role: String(form.get("admin_role") ?? "support"),
     });
 
     setPending(false);
@@ -80,6 +82,10 @@ export function NewStaffDialog({ onClose }: { onClose: () => void }) {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <h2 className="break-words text-base font-semibold text-foreground">New staff account</h2>
 
+        <Field label="Full name (optional)" error={fieldError(errors, "name")}>
+          <input name="name" type="text" maxLength={100} className={inputClass} />
+        </Field>
+
         <Field label="Email" error={fieldError(errors, "email")}>
           <input name="email" type="email" required className={inputClass} />
         </Field>
@@ -100,9 +106,9 @@ export function NewStaffDialog({ onClose }: { onClose: () => void }) {
 
         <Field label="Role" error={fieldError(errors, "admin_role")}>
           <select name="admin_role" defaultValue="support" className={inputClass}>
-            {ADMIN_ROLES.map((role) => (
-              <option key={role} value={role}>
-                {adminRoleLabels[role]}
+            {roles.map((role) => (
+              <option key={role.value} value={role.value}>
+                {role.label}
               </option>
             ))}
           </select>

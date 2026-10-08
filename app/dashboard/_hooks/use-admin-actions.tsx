@@ -4,9 +4,10 @@ import { useState } from "react";
 
 import { ConfirmDialog } from "../_components/confirm-dialog";
 import type { ActionMenuItem } from "../_components/action-menu";
-import { DangerIcon, RefreshIcon, ShieldIcon, UnlockIcon } from "../_lib/icons";
+import { DangerIcon, EditIcon, RefreshIcon, ShieldIcon, UnlockIcon } from "../_lib/icons";
 import { useToast } from "../_components/toast-provider";
-import { canChangeRole, canSuspendAdmin } from "../_lib/administration";
+import { canChangeRole, canSuspendAdmin, type RoleOption } from "../_lib/administration";
+import { EditStaffDialog } from "../admin-users/edit-staff-dialog";
 import {
   assignAdminRoleAction,
   reinstateAdminUserAction,
@@ -14,13 +15,13 @@ import {
   suspendAdminUserAction,
 } from "../admin-users/_actions";
 import type { AdminUserRow } from "@/lib/mappers/admin-user.mapper";
-import { ADMIN_ROLES, adminRoleLabels, type AdminRole } from "@/lib/types/enums";
 
 type Pending =
+  | { kind: "edit" }
   | { kind: "suspend" }
   | { kind: "reinstate" }
   | { kind: "reset-password" }
-  | { kind: "role"; role: AdminRole }
+  | { kind: "role"; role: RoleOption }
   | null;
 
 export type AdminActionContext = {
@@ -28,10 +29,12 @@ export type AdminActionContext = {
   activeSuperAdminCount: number;
   canManage: boolean;
   canAssignRole: boolean;
+  /** Every role, built in or custom, from `GET /admin/roles`. */
+  roles: RoleOption[];
 };
 
 /**
- * Suspend / reinstate / reset-password / change-role for one staff account.
+ * Edit / suspend / reinstate / reset-password / change-role for one staff account.
  *
  * The self-suspension and last-super-admin rules are enforced by the backend;
  * they are mirrored here only to disable the menu item with an explanation
@@ -45,6 +48,12 @@ export function useAdminActions(admin: AdminUserRow, context: AdminActionContext
   const actions: ActionMenuItem[] = [];
 
   if (context.canManage) {
+    actions.push({
+      label: "Edit details",
+      icon: EditIcon,
+      onClick: () => setPending({ kind: "edit" }),
+    });
+
     if (admin.status === "suspended") {
       actions.push({
         label: "Reinstate account",
@@ -73,10 +82,10 @@ export function useAdminActions(admin: AdminUserRow, context: AdminActionContext
   if (context.canAssignRole) {
     const change = canChangeRole(admin, context.currentAdminId, context.activeSuperAdminCount);
 
-    for (const role of ADMIN_ROLES) {
-      if (role === admin.adminRole) continue;
+    for (const role of context.roles) {
+      if (role.value === admin.adminRole) continue;
       actions.push({
-        label: `Make ${adminRoleLabels[role].toLowerCase()}`,
+        label: `Make ${role.label.toLowerCase()}`,
         icon: ShieldIcon,
         disabled: !change.allowed,
         disabledReason: change.reason,
@@ -102,6 +111,8 @@ export function useAdminActions(admin: AdminUserRow, context: AdminActionContext
         </output>
       </ConfirmDialog>
     );
+  } else if (pending?.kind === "edit") {
+    dialog = <EditStaffDialog admin={admin} onClose={() => setPending(null)} />;
   } else if (pending?.kind === "suspend") {
     dialog = (
       <ConfirmDialog
@@ -158,11 +169,11 @@ export function useAdminActions(admin: AdminUserRow, context: AdminActionContext
     dialog = (
       <ConfirmDialog
         title="Change role"
-        description={`${admin.email} will become ${adminRoleLabels[pending.role]}. This changes their dashboard access immediately and signs out their existing sessions.`}
+        description={`${admin.email} will become ${pending.role.label}. This changes their dashboard access immediately and signs out their existing sessions.`}
         confirmLabel="Change role"
         onCancel={() => setPending(null)}
         onConfirm={async () => {
-          const result = await assignAdminRoleAction(admin.id, pending.role);
+          const result = await assignAdminRoleAction(admin.id, pending.role.value);
           notifySuccess(result);
           if (result.ok) setPending(null);
           return result;

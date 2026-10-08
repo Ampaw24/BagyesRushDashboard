@@ -5,10 +5,13 @@ import { Fragment, useMemo, useState } from "react";
 import { useToast } from "../../_components/toast-provider";
 import { ConfirmDialog } from "../../_components/confirm-dialog";
 import {
+  deleteRoleAction,
   resetRolePermissionsAction,
   syncRoleDefaultsAction,
   updateRolePermissionsAction,
 } from "./_actions";
+import { RoleDialog } from "./role-dialog";
+import { PlusIcon } from "../../_lib/icons";
 import type { ManagedRoleDto, ManagedRolesResponseDto } from "@/lib/types/api";
 import type { AdminRole, Permission } from "@/lib/types/enums";
 
@@ -28,6 +31,10 @@ const HEAD_CELL =
  * so it picks up new modules automatically. Editing one freezes it — which is
  * why "Sync defaults" exists, and why a frozen role missing something its
  * baseline has is called out rather than left to be noticed.
+ *
+ * Roles created here sit beside the built-ins as ordinary columns. They have no
+ * defaults, so they hold exactly what is ticked; they can be renamed, and
+ * deleted once nobody holds them.
  */
 export function RolesMatrix({ roles, permissions }: ManagedRolesResponseDto) {
   const { notify } = useToast();
@@ -38,6 +45,9 @@ export function RolesMatrix({ roles, permissions }: ManagedRolesResponseDto) {
   const [saving, setSaving] = useState<AdminRole | null>(null);
   const [resetting, setResetting] = useState<ManagedRoleDto | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [renaming, setRenaming] = useState<ManagedRoleDto | null>(null);
+  const [deleting, setDeleting] = useState<ManagedRoleDto | null>(null);
 
   const held = useMemo(() => {
     const map = new Map<AdminRole, Set<Permission>>();
@@ -129,6 +139,17 @@ export function RolesMatrix({ roles, permissions }: ManagedRolesResponseDto) {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setCreating(true)}
+          className="flex h-11 shrink-0 items-center gap-2 rounded-lg bg-brand px-5 text-sm font-semibold text-brand-foreground transition duration-150 hover:bg-brand-dark"
+        >
+          <PlusIcon className="h-4 w-4" />
+          New role
+        </button>
+      </div>
+
       {behindDefaults.length > 0 && (
         <div className="flex flex-col gap-3 rounded-xl border border-status-warning/30 bg-status-warning/10 p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-foreground">
@@ -167,6 +188,11 @@ export function RolesMatrix({ roles, permissions }: ManagedRolesResponseDto) {
                     {role.is_editable && role.is_customised && (
                       <span className="font-normal normal-case tracking-normal text-status-info">
                         customised
+                      </span>
+                    )}
+                    {role.is_custom && (
+                      <span className="font-normal normal-case tracking-normal text-status-good">
+                        custom
                       </span>
                     )}
                   </span>
@@ -268,11 +294,16 @@ export function RolesMatrix({ roles, permissions }: ManagedRolesResponseDto) {
               key={role.value}
               className="flex flex-col gap-2 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm"
             >
-              <span className="text-sm font-semibold text-foreground">{role.label}</span>
+              <span className="break-words text-sm font-semibold text-foreground">{role.label}</span>
+              {role.description && (
+                <span className="break-words text-xs text-text-secondary">{role.description}</span>
+              )}
               <span className="text-xs text-text-muted">
                 {role.is_editable
                   ? `${(held.get(role.value)?.size ?? 0).toLocaleString()} of ${Object.values(permissions).flat().length} permissions`
                   : "Every permission, always"}
+                {" · "}
+                {role.user_count.toLocaleString()} staff
               </span>
 
               {role.is_editable && (
@@ -296,6 +327,31 @@ export function RolesMatrix({ roles, permissions }: ManagedRolesResponseDto) {
                     </button>
                   )}
 
+                  {role.is_custom && !dirty && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setRenaming(role)}
+                        className="h-9 rounded-lg border border-border-subtle px-3 text-xs font-medium text-text-secondary transition duration-150 hover:bg-surface-muted"
+                      >
+                        Rename
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleting(role)}
+                        disabled={role.user_count > 0}
+                        title={
+                          role.user_count > 0
+                            ? "Give everyone on this role another role before deleting it."
+                            : undefined
+                        }
+                        className="h-9 rounded-lg border border-status-critical/30 px-3 text-xs font-medium text-status-critical transition duration-150 hover:bg-status-critical/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
+
                   {role.is_customised && !dirty && (
                     <button
                       type="button"
@@ -311,6 +367,32 @@ export function RolesMatrix({ roles, permissions }: ManagedRolesResponseDto) {
           );
         })}
       </div>
+
+      {creating && <RoleDialog permissions={permissions} onClose={() => setCreating(false)} />}
+
+      {renaming && (
+        <RoleDialog role={renaming} permissions={permissions} onClose={() => setRenaming(null)} />
+      )}
+
+      {deleting && (
+        <ConfirmDialog
+          title={`Delete ${deleting.label}?`}
+          description="The role and its permissions are removed. Nobody holds it, so nobody loses access."
+          confirmLabel="Delete role"
+          danger
+          onCancel={() => setDeleting(null)}
+          onConfirm={async () => {
+            const result = await deleteRoleAction(deleting.value);
+            notify(result);
+            if (result.ok) {
+              discard(deleting);
+              setDeleting(null);
+            }
+
+            return { ok: result.ok, message: result.message };
+          }}
+        />
+      )}
 
       {resetting && (
         <ConfirmDialog

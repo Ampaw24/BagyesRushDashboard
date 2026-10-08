@@ -28,6 +28,7 @@ export async function getUser(id: number): Promise<AdminUserDto> {
  * The returned password is shown once and cannot be retrieved again.
  */
 export async function createStaff(input: {
+  name?: string;
   email: string;
   phone: string;
   password?: string;
@@ -38,7 +39,7 @@ export async function createStaff(input: {
 
 export async function updateUser(
   id: number,
-  input: { email?: string; phone?: string },
+  input: { name?: string | null; email?: string; phone?: string },
 ): Promise<AdminUserDto> {
   return apiFetch<AdminUserDto>(`/admin/users/${id}`, { method: "PUT", body: input });
 }

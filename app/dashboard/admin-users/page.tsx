@@ -5,11 +5,12 @@ import { ExportAction } from "../_components/export-action";
 import { NoPermissionState } from "../_components/empty-state";
 import { AdminUsersTable } from "./admin-users-table";
 import { listUsers } from "@/lib/services/admin-users.service";
-import { getAdminProfile } from "@/lib/services/profile.service";
+import { getAdminProfile, getRoles } from "@/lib/services/profile.service";
 import { toAdminUserRow } from "@/lib/mappers/admin-user.mapper";
 import { can, getPermissions } from "@/lib/auth/guard";
 import { parseListParams, readEnumParam } from "@/lib/api/query";
-import { ADMIN_ROLES, USER_STATUSES } from "@/lib/types/enums";
+import { USER_STATUSES } from "@/lib/types/enums";
+import { toRoleOptions } from "../_lib/administration";
 
 export const metadata: Metadata = {
   title: "Admin Users — BagyesRUSH",
@@ -30,6 +31,10 @@ export default async function AdminUsersPage(props: PageProps<"/dashboard/admin-
   const params = await props.searchParams;
   const list = parseListParams(params);
 
+  // Built-in and custom roles alike, for the filter, the create form and the
+  // change-role menu.
+  const roles = toRoleOptions((await getRoles()).roles);
+
   const [page, profile, superAdmins] = await Promise.all([
     listUsers({
       page: list.page,
@@ -37,7 +42,11 @@ export default async function AdminUsersPage(props: PageProps<"/dashboard/admin-
       search: list.search,
       // Only staff belong on this screen; the endpoint covers every role.
       role: "admin",
-      admin_role: readEnumParam(params, "admin_role", ADMIN_ROLES),
+      admin_role: readEnumParam(
+        params,
+        "admin_role",
+        roles.map((role) => role.value),
+      ),
       status: readEnumParam(params, "status", USER_STATUSES),
     }),
     getAdminProfile(),
@@ -65,11 +74,13 @@ export default async function AdminUsersPage(props: PageProps<"/dashboard/admin-
       <AdminUsersTable
         admins={page.items.map(toAdminUserRow)}
         pagination={page.pagination}
+        roles={roles}
         context={{
           currentAdminId: profile.id,
           activeSuperAdminCount: superAdmins.pagination.total,
           canManage: can(permissions, "users.manage"),
           canAssignRole: can(permissions, "users.assign_role"),
+          roles,
         }}
       />
     </div>

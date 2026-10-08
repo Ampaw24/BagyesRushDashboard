@@ -26,6 +26,7 @@ function revalidateAdminViews(id?: number) {
 }
 
 export async function createStaffAction(input: {
+  name?: string;
   email: string;
   phone: string;
   password?: string;
@@ -38,7 +39,10 @@ export async function createStaffAction(input: {
   });
 }
 
-export async function updateAdminUserAction(id: number, input: { email?: string; phone?: string }) {
+export async function updateAdminUserAction(
+  id: number,
+  input: { name?: string | null; email?: string; phone?: string },
+) {
   return apiAction("Account updated", async () => {
     await updateUser(id, input);
     revalidateAdminViews(id);

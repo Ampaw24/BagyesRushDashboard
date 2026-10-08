@@ -16,14 +16,17 @@ import { useAdminActions, type AdminActionContext } from "../_hooks/use-admin-ac
 import { NewStaffDialog } from "./new-staff-dialog";
 import type { AdminUserRow } from "@/lib/mappers/admin-user.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
-import { ADMIN_ROLES, USER_STATUSES, adminRoleLabels, userStatusLabels } from "@/lib/types/enums";
+import type { RoleOption } from "../_lib/administration";
+import { USER_STATUSES, userStatusLabels } from "@/lib/types/enums";
 
-const ROLE_FILTER: SelectFilter = {
-  key: "admin_role",
-  label: "Role",
-  allLabel: "All roles",
-  options: ADMIN_ROLES.map((role) => ({ value: role, label: adminRoleLabels[role] })),
-};
+function roleFilter(roles: RoleOption[]): SelectFilter {
+  return {
+    key: "admin_role",
+    label: "Role",
+    allLabel: "All roles",
+    options: roles,
+  };
+}
 
 const STATUS_FILTER: SelectFilter = {
   key: "status",
@@ -35,10 +38,12 @@ const STATUS_FILTER: SelectFilter = {
 export function AdminUsersTable({
   admins,
   pagination,
+  roles,
   context,
 }: {
   admins: AdminUserRow[];
   pagination: PaginationMeta;
+  roles: RoleOption[];
   context: AdminActionContext;
 }) {
   const [creating, setCreating] = useState(false);
@@ -46,7 +51,7 @@ export function AdminUsersTable({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <FilterBar searchPlaceholder="Search email or phone" filters={[ROLE_FILTER, STATUS_FILTER]} />
+        <FilterBar searchPlaceholder="Search email or phone" filters={[roleFilter(roles), STATUS_FILTER]} />
         {context.canManage && (
           <button
             type="button"
@@ -91,7 +96,7 @@ export function AdminUsersTable({
         </>
       )}
 
-      {creating && <NewStaffDialog onClose={() => setCreating(false)} />}
+      {creating && <NewStaffDialog roles={roles} onClose={() => setCreating(false)} />}
     </div>
   );
 }
@@ -106,11 +111,13 @@ function AdminRowView({ admin, context }: { admin: AdminUserRow; context: AdminA
           href={`/dashboard/administration/admins/${admin.id}`}
           className="text-brand transition duration-150 hover:opacity-80"
         >
-          {/* The users table has no name column — the email is the identifier. */}
-          {admin.email}
+          {admin.name ?? admin.email}
         </Link>
         {admin.id === context.currentAdminId && (
           <span className="ml-2 text-xs font-normal text-text-muted">(you)</span>
+        )}
+        {admin.name && (
+          <span className="block text-xs font-normal text-text-muted">{admin.email}</span>
         )}
       </TableCell>
       <TableCell className="text-text-secondary">{admin.phone}</TableCell>

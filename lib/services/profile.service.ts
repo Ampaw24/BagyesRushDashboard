@@ -21,8 +21,8 @@ export const getAdminProfile = cache(async (): Promise<AdminProfileDto> => {
 
 /**
  * The role → permission matrix and the grouped permission catalogue, both from
- * one endpoint. Read-only: roles are a PHP enum, not database rows, so there is
- * no endpoint to edit them.
+ * one endpoint. Every admin may read it; it lists built-in and custom roles, so
+ * it is also where every role picker gets its options.
  */
 export const getRoles = cache(async (): Promise<RolesResponseDto> => {
   return apiFetch<RolesResponseDto>("/admin/roles");
@@ -56,6 +56,28 @@ export async function updateRolePermissions(
     method: "PUT",
     body: { permissions },
   });
+}
+
+/** POST /admin/roles — create a role, optionally with its permissions. */
+export async function createRole(input: {
+  name: string;
+  description?: string;
+  permissions: Permission[];
+}): Promise<ManagedRoleDto> {
+  return apiFetch<ManagedRoleDto>("/admin/roles", { method: "POST", body: input });
+}
+
+/** PUT /admin/roles/{role} — rename a custom role. Its slug, and its holders, stay. */
+export async function updateRole(
+  role: AdminRole,
+  input: { name: string; description: string | null },
+): Promise<ManagedRoleDto> {
+  return apiFetch<ManagedRoleDto>(`/admin/roles/${role}`, { method: "PUT", body: input });
+}
+
+/** DELETE /admin/roles/{role} — refused while any staff account holds it. */
+export async function deleteRole(role: AdminRole): Promise<void> {
+  await apiFetch<null>(`/admin/roles/${role}`, { method: "DELETE" });
 }
 
 /** POST /admin/roles/{role}/reset — back to the enum baseline. */

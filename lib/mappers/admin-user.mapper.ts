@@ -6,7 +6,9 @@ export type AdminUserRow = {
   id: number;
   email: string;
   phone: string;
-  /** The users table has no name column — this is the email or the linked profile's name. */
+  /** Set on staff accounts by whoever created or edited them; null until then. */
+  name: string | null;
+  /** The staff name, the linked profile's name, or the role label. */
   displayName: string;
   role: UserRole;
   adminRole: AdminRole | null;
@@ -25,11 +27,12 @@ export function toAdminUserRow(dto: AdminUserDto): AdminUserRow {
     id: dto.id,
     email: dto.email,
     phone: dto.phone,
+    name: dto.name ?? null,
     displayName: dto.display_name,
     role: dto.role,
     adminRole: dto.admin_role,
     adminRoleLabel:
-      dto.admin_role_label ?? (dto.admin_role ? adminRoleLabels[dto.admin_role] : "—"),
+      dto.admin_role_label ?? (dto.admin_role ? (adminRoleLabels[dto.admin_role] ?? dto.admin_role) : "—"),
     status: dto.status,
     isActive: dto.is_active,
     phoneVerified: dto.phone_verified,

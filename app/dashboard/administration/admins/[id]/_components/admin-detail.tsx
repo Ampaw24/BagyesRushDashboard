@@ -32,9 +32,8 @@ export function AdminDetail({
       <PageHeader
         title={
           <span className="flex flex-wrap items-center gap-3">
-            <Avatar name={admin.email} className="h-10 w-10 text-sm" />
-            {/* No name column exists on the users table — the email identifies them. */}
-            {admin.email}
+            <Avatar name={admin.name ?? admin.email} className="h-10 w-10 text-sm" />
+            {admin.name ?? admin.email}
             <Badge meta={userStatusMeta[admin.status]} />
           </span>
         }
@@ -46,6 +45,7 @@ export function AdminDetail({
         <div className="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-5 shadow-sm">
           <h2 className="break-words text-sm font-semibold text-foreground">Account</h2>
           <dl className="flex flex-col gap-2">
+            <Row label="Name" value={admin.name ?? "—"} />
             <Row label="Email" value={admin.email} />
             <Row label="Phone" value={admin.phone} />
             <Row label="Phone verified" value={admin.phoneVerified ? "Yes" : "No"} />

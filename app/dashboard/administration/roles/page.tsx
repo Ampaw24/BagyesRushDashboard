@@ -48,7 +48,7 @@ export default async function RolesPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Roles"
-        description="Tick what each role may do. A role you have never edited follows the defaults in code, so it picks up new modules on its own — editing one freezes it until you sync or reset."
+        description="Create roles and tick what each may do. A built-in role you have never edited follows the defaults in code, so it picks up new modules on its own — editing one freezes it until you sync or reset. Roles you create hold exactly what you tick."
       />
 
       <RolesMatrix roles={managed.roles} permissions={managed.permissions} />
@@ -71,7 +71,9 @@ function ReadOnlyRoles({ roles }: { roles: RolesResponseDto }) {
             className="flex flex-col gap-2 rounded-xl border border-border-subtle bg-surface p-5 shadow-sm"
           >
             <h2 className="break-words text-sm font-semibold text-foreground">{role.label}</h2>
-            <p className="break-words text-sm text-text-secondary">{role.description}</p>
+            {role.description && (
+              <p className="break-words text-sm text-text-secondary">{role.description}</p>
+            )}
             <p className="text-xs text-text-muted">
               {role.permissions.length} permission{role.permissions.length === 1 ? "" : "s"}
             </p>
