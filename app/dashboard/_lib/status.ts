@@ -116,6 +116,43 @@ export const paymentStatusMeta: Record<PaymentStatus, BadgeMeta> = {
 };
 
 /**
+ * The payment badge for an order, accounting for wallet credit.
+ *
+ * `payment_status` only describes the gateway. An order paid partly or wholly
+ * from the customer's in-app wallet read as a bare "Pending" on the board, so
+ * an admin could not tell "the customer has paid with credit" from "the
+ * customer has paid nothing". `tender` says which money actually came in, so
+ * the badge reads that before falling back to the gateway status.
+ *
+ * Refunds and failures keep their own badge: those states matter more than
+ * where the money came from.
+ */
+export function orderPaymentMeta(order: {
+  paymentStatus: PaymentStatus;
+  tender: { source: string; usedWallet: boolean } | null;
+}): BadgeMeta {
+  const tender = order.tender;
+
+  if (!tender?.usedWallet || (order.paymentStatus !== "pending" && order.paymentStatus !== "paid")) {
+    return paymentStatusMeta[order.paymentStatus];
+  }
+
+  // Credit covered the whole total: there is no gateway charge to wait for, so
+  // the money is in whatever the gateway status says.
+  if (tender.source === "wallet") {
+    return { label: "Paid from wallet", ...GOOD };
+  }
+
+  const cash = tender.source === "wallet_and_cash";
+
+  if (order.paymentStatus === "paid") {
+    return { label: cash ? "Paid · wallet + cash" : "Paid · wallet + gateway", ...GOOD };
+  }
+
+  return { label: cash ? "Part-paid from wallet · cash due" : "Part-paid from wallet", ...INFO };
+}
+
+/**
  * Account state. The backend has exactly two values — the dashboard's former
  * active/disabled/banned and active/invited/suspended/removed sets had no
  * backend equivalent.

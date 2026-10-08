@@ -5,7 +5,7 @@ import { TableCell, TableHeadCell, TableShell } from "../_components/table-shell
 import { EmptyState } from "../_components/empty-state";
 import { Pagination } from "../_components/pagination";
 import { FilterBar, type SelectFilter } from "../_components/filter-bar";
-import { paymentStatusMeta } from "../_lib/status";
+import { orderPaymentMeta } from "../_lib/status";
 import { formatCurrency, formatDateTime } from "../_lib/format";
 import type { OrderRow } from "@/lib/mappers/order.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
@@ -125,7 +125,18 @@ export function OrdersTable({
                     <OrderStatusBadge status={order.status} />
                   </TableCell>
                   <TableCell>
-                    <Badge meta={paymentStatusMeta[order.paymentStatus]} />
+                    <span className="flex flex-col items-start gap-1">
+                      <Badge meta={orderPaymentMeta(order)} />
+                      {/* The split at a glance, so a part-paid order shows
+                          what is still owed rather than just "pending". */}
+                      {order.tender?.usedWallet && order.tender.source !== "wallet" && (
+                        <span className="text-xs text-text-muted">
+                          {formatCurrency(order.tender.fromWallet)} wallet ·{" "}
+                          {formatCurrency(order.tender.atGateway)}{" "}
+                          {order.tender.source === "wallet_and_cash" ? "cash" : "gateway"}
+                        </span>
+                      )}
+                    </span>
                   </TableCell>
                   <TableCell>{formatCurrency(order.total)}</TableCell>
                   <TableCell className="text-text-secondary">{formatDateTime(order.placedAt)}</TableCell>

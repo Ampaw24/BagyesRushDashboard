@@ -9,7 +9,7 @@ import { MoneyBreakdown } from "./_components/money-breakdown";
 import { Badge, OrderStatusBadge } from "../../_components/status-badge";
 import { TableCell, TableHeadCell, TableShell } from "../../_components/table-shell";
 import { NoPermissionState } from "../../_components/empty-state";
-import { parcelStopStatusMeta, paymentStatusMeta } from "../../_lib/status";
+import { orderPaymentMeta, parcelStopStatusMeta, paymentStatusMeta } from "../../_lib/status";
 import { formatCurrency, formatDateTime, formatDateTimeOrDash } from "../../_lib/format";
 import { OrderActions } from "./_components/order-actions";
 import { TrackingPanel } from "./_components/tracking-panel";
@@ -334,10 +334,14 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
         <section className="flex flex-col gap-4">
           <h2 className="flex flex-wrap items-center gap-3 break-words text-lg font-semibold tracking-tight text-foreground">
             Payment
-            <Badge meta={paymentStatusMeta[order.paymentStatus]} />
+            <Badge meta={orderPaymentMeta(order)} />
           </h2>
 
-          {order.attempts.length === 0 ? (
+          {order.tender && (
+            <p className="break-words text-sm text-text-secondary">{order.tender.label}</p>
+          )}
+
+          {order.attempts.length === 0 && !order.tender?.usedWallet ? (
             <p className="rounded-xl border border-border-subtle bg-surface p-5 text-sm text-text-muted shadow-sm">
               No payment attempts recorded.
             </p>
@@ -353,6 +357,23 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
                 </tr>
               </thead>
               <tbody>
+                {/* Wallet credit is taken when the order is placed and never
+                    goes through the gateway, so it has no attempt row of its
+                    own. Without this line an order paid entirely from the
+                    wallet showed an empty table. */}
+                {order.tender?.usedWallet && (
+                  <tr>
+                    <TableCell className="font-medium">Wallet credit</TableCell>
+                    <TableCell className="text-text-secondary">In-app wallet</TableCell>
+                    <TableCell>{formatCurrency(order.tender.fromWallet)}</TableCell>
+                    <TableCell>
+                      <Badge meta={paymentStatusMeta.paid} />
+                    </TableCell>
+                    <TableCell className="text-text-secondary">
+                      {formatDateTimeOrDash(order.placedAt)}
+                    </TableCell>
+                  </tr>
+                )}
                 {order.attempts.map((attempt) => (
                   <tr key={attempt.reference}>
                     <TableCell className="font-medium">{attempt.reference}</TableCell>
