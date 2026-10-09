@@ -1980,6 +1980,16 @@ export type ComplianceLogDto = {
   submitted_at: string | null;
   verified_at: string | null;
   created_at: string | null;
+  /**
+   * The last iCOLMS callback we refused because it did not describe this filing
+   * (a phone number different from the one we sent). Kept for inspection only;
+   * it never changes the status. Absent on an older backend.
+   */
+  rejected_webhook?: {
+    reason: string | null;
+    received_at: string;
+    payload: Record<string, unknown> | null;
+  } | null;
 };
 
 /** GET /admin/compliance/summary — four numbers for the stat tiles. */

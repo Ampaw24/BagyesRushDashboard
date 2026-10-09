@@ -1,9 +1,10 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import { TableCell, TableHeadCell, TableShell } from "../../_components/table-shell";
 import { RelativeTime } from "../../_components/relative-time";
+import { DetailDialog } from "../../_components/detail-dialog";
 import { useToast } from "../../_components/toast-provider";
 import { retryComplianceLogAction } from "./_actions";
 import type { ComplianceLogDto } from "@/lib/types/api";
@@ -97,6 +98,7 @@ export function ComplianceTable({
                   {log.attempts} attempts
                 </span>
               )}
+              {log.rejected_webhook && <RefusedCallback log={log} />}
             </TableCell>
 
             <TableCell className="text-sm text-text-secondary">
@@ -168,6 +170,79 @@ function PartyCell({
       >
         {status === null ? "awaiting check" : verified ? "verified" : status}
       </span>
+    </>
+  );
+}
+
+/**
+ * A callback iCOLMS sent that we did not believe.
+ *
+ * Shown so staff can tell the two causes apart, which call for opposite fixes:
+ * a forged or misdirected callback (refusing it was right), or iCOLMS returning
+ * a different number than the one we submitted - for example the number on the
+ * person's NIA record - in which case the check itself needs to change.
+ */
+function RefusedCallback({ log }: { log: ComplianceLogDto }) {
+  const [open, setOpen] = useState(false);
+  const refused = log.rejected_webhook;
+
+  if (!refused) return null;
+
+  return (
+    <>
+      <span className="mt-1 block max-w-xs text-xs text-amber-700 dark:text-amber-400">
+        Callback refused <RelativeTime date={refused.received_at} />
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="ml-1.5 font-medium underline underline-offset-2 transition duration-150 hover:opacity-80"
+        >
+          View
+        </button>
+      </span>
+
+      {open && (
+        <DetailDialog
+          label="Refused iCOLMS callback"
+          onClose={() => setOpen(false)}
+          className="max-w-2xl"
+          header={
+            <div className="flex flex-col gap-1">
+              <h2 className="break-words text-base font-semibold text-foreground">
+                Refused callback for {log.reference}
+              </h2>
+              <p className="break-words text-sm text-text-secondary">
+                {refused.reason ?? "It did not match what was filed."} It was not trusted, and the
+                filing&apos;s status is unchanged.
+              </p>
+            </div>
+          }
+        >
+          <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-text-muted">Sender we filed</dt>
+              <dd className="break-words font-medium text-foreground">
+                {log.sender.full_name || "—"} · {log.sender.phone}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-text-muted">Recipient we filed</dt>
+              <dd className="break-words font-medium text-foreground">
+                {log.recipient.full_name || "—"} · {log.recipient.phone}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium uppercase tracking-wide text-text-muted">
+              What iCOLMS sent
+            </span>
+            <pre className="max-h-96 overflow-auto rounded-lg border border-border-subtle bg-surface-muted p-3 text-xs text-foreground">
+              {JSON.stringify(refused.payload, null, 2)}
+            </pre>
+          </div>
+        </DetailDialog>
+      )}
     </>
   );
 }
