@@ -50,6 +50,7 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
   // still reads apart from accepted. Red belongs to cancellations.
   out_for_delivery: "bg-blue-700",
   delivered: "bg-status-good",
+  undelivered: "bg-status-warning/60",
   cancelled: "bg-status-critical",
   rejected: "bg-status-critical/70",
   refunded: "bg-zinc-500",

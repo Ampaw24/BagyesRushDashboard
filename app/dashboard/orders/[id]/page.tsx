@@ -87,7 +87,11 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
         }
       />
 
-      <FailedDeliveryBanner order={order} />
+      <FailedDeliveryBanner
+        order={order}
+        canResolve={can(permissions, "orders.update_status")}
+        canRefund={can(permissions, "payments.refund")}
+      />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <InfoCard title="Customer">

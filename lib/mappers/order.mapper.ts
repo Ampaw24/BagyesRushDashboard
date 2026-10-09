@@ -1,6 +1,7 @@
 import type { AdminOrderDto } from "../types/api";
 import type {
   DeliveryOfferStatus,
+  DeliveryResolution,
   OrderStatus,
   OrderType,
   ParcelSize,
@@ -188,6 +189,18 @@ export type OrderArrival = {
   failedAt: Date | null;
   failureReason: string | null;
   needsResolution: boolean;
+  resolutionOptions: {
+    value: DeliveryResolution;
+    label: string;
+    description: string;
+    refundsCustomer: boolean;
+  }[];
+  resolution: {
+    value: DeliveryResolution;
+    label: string;
+    note: string | null;
+    resolvedAt: Date | null;
+  } | null;
 };
 
 export type OrderRefundState = {
@@ -412,6 +425,20 @@ export function toOrderDetail(dto: AdminOrderDto): OrderDetail {
       failedAt: toDate(dto.arrival?.failed_at),
       failureReason: dto.arrival?.failure_reason ?? null,
       needsResolution: dto.arrival?.needs_resolution ?? false,
+      resolutionOptions: (dto.arrival?.resolution_options ?? []).map((option) => ({
+        value: option.value,
+        label: option.label,
+        description: option.description,
+        refundsCustomer: option.refunds_customer,
+      })),
+      resolution: dto.arrival?.resolution
+        ? {
+            value: dto.arrival.resolution.value,
+            label: dto.arrival.resolution.label,
+            note: dto.arrival.resolution.note,
+            resolvedAt: toDate(dto.arrival.resolution.resolved_at),
+          }
+        : null,
     },
     refund: {
       refunded: dto.refund?.refunded ?? 0,

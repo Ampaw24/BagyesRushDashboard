@@ -61,7 +61,7 @@ const NEUTRAL = {
 };
 
 /**
- * All ten OrderStatus values from the backend enum. The dashboard previously
+ * Every OrderStatus value from the backend enum. The dashboard previously
  * modelled only four; the sub-pages still surface those four, but the All
  * Orders filter and every badge now cover the real set.
  */
@@ -73,6 +73,8 @@ export const orderStatusMeta: Record<OrderStatus, BadgeMeta> = {
   ready: { label: orderStatusLabels.ready, ...INFO },
   out_for_delivery: { label: orderStatusLabels.out_for_delivery, ...INFO },
   delivered: { label: orderStatusLabels.delivered, ...GOOD },
+  // Closed, but not happily: warn so it reads apart from a delivery.
+  undelivered: { label: orderStatusLabels.undelivered, ...WARN },
   cancelled: { label: orderStatusLabels.cancelled, ...CRITICAL },
   rejected: { label: orderStatusLabels.rejected, ...CRITICAL },
   refunded: { label: orderStatusLabels.refunded, ...NEUTRAL },

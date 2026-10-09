@@ -3,8 +3,13 @@
 import { revalidatePath } from "next/cache";
 
 import { apiAction } from "@/lib/api/action";
-import { assignRider, refundOrder, updateOrderStatus } from "@/lib/services/orders.service";
-import type { OrderStatus } from "@/lib/types/enums";
+import {
+  assignRider,
+  refundOrder,
+  resolveFailedDelivery,
+  updateOrderStatus,
+} from "@/lib/services/orders.service";
+import type { DeliveryResolution, OrderStatus } from "@/lib/types/enums";
 
 /**
  * Order mutations.
@@ -19,6 +24,18 @@ export async function updateOrderStatusAction(id: number, status: OrderStatus, r
     await updateOrderStatus(id, status, reason);
     revalidatePath("/dashboard/orders");
     revalidatePath(`/dashboard/orders/${id}`);
+  });
+}
+
+export async function resolveFailedDeliveryAction(
+  id: number,
+  input: { outcome: DeliveryResolution; note?: string; pay_rider?: boolean },
+) {
+  return apiAction("Delivery resolved", async () => {
+    await resolveFailedDelivery(id, input);
+    revalidatePath("/dashboard/orders");
+    revalidatePath(`/dashboard/orders/${id}`);
+    revalidatePath("/dashboard/orders/failed-deliveries");
   });
 }
 

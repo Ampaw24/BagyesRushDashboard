@@ -15,6 +15,9 @@ export const ORDER_STATUSES = [
   "ready",
   "out_for_delivery",
   "delivered",
+  // Failed at the door and closed by an admin as the customer's no-show (or,
+  // for a parcel, returned to sender). Vendor and rider are paid.
+  "undelivered",
   "cancelled",
   "rejected",
   "refunded",
@@ -29,10 +32,14 @@ export const orderStatusLabels: Record<OrderStatus, string> = {
   ready: "Ready",
   out_for_delivery: "Out for delivery",
   delivered: "Delivered",
+  undelivered: "Not delivered",
   cancelled: "Cancelled",
   rejected: "Rejected",
   refunded: "Refunded",
 };
+
+/** app/Enums/DeliveryResolution.php */
+export type DeliveryResolution = "customer_no_show" | "returned_to_sender" | "retry" | "our_fault";
 
 export const VENDOR_STATUSES = ["pending_review", "approved", "rejected", "suspended"] as const;
 export type VendorStatus = (typeof VENDOR_STATUSES)[number];

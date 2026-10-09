@@ -1,7 +1,7 @@
 import { apiFetch, apiFetchPage } from "../api/client";
 import type { Paginated } from "../api/types";
 import type { AdminOrderDto, OrderStatsDto } from "../types/api";
-import type { OrderStatus, OrderType, PaymentStatus } from "../types/enums";
+import type { DeliveryResolution, OrderStatus, OrderType, PaymentStatus } from "../types/enums";
 
 export type OrderListQuery = {
   page?: number;
@@ -118,6 +118,20 @@ export async function assignRider(id: number, riderId: number): Promise<AdminOrd
  * payment to reverse. The backend silently falls back to it in that case rather
  * than failing, and says so in the audit line.
  */
+/**
+ * POST /admin/orders/{id}/resolve-delivery — decide a failed doorstep.
+ * Needs orders.update_status; "our_fault" also needs payments.refund.
+ */
+export async function resolveFailedDelivery(
+  id: number,
+  input: { outcome: DeliveryResolution; note?: string; pay_rider?: boolean },
+): Promise<AdminOrderDto> {
+  return apiFetch<AdminOrderDto>(`/admin/orders/${id}/resolve-delivery`, {
+    method: "POST",
+    body: input,
+  });
+}
+
 export async function refundOrder(
   id: number,
   input: { amount?: number; destination?: "source" | "wallet"; reason?: string } = {},

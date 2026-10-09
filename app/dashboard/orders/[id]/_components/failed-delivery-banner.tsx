@@ -1,4 +1,5 @@
 import { formatDateTime } from "../../../_lib/format";
+import { ResolveDeliveryButton } from "./resolve-delivery-dialog";
 import type { OrderDetail } from "@/lib/mappers/order.mapper";
 
 /**
@@ -10,11 +11,36 @@ import type { OrderDetail } from "@/lib/mappers/order.mapper";
  * the order saw a delivery in progress that was never going to progress.
  *
  * Deliberately loud and deliberately at the top, because it is not a fact about
- * the order — it is a job. Somebody has to decide: refund, reassign, or mark it
- * collected. Until they do, a customer has paid for food they do not have.
+ * the order — it is a job. Somebody has to decide, through "Resolve delivery":
+ * customer no-show (or return to sender for a parcel), try again, or our fault.
+ *
+ * Once decided, the banner becomes a quiet record of what was decided.
  */
-export function FailedDeliveryBanner({ order }: { order: OrderDetail }) {
-  if (!order.arrival.needsResolution) return null;
+export function FailedDeliveryBanner({
+  order,
+  canResolve,
+  canRefund,
+}: {
+  order: OrderDetail;
+  canResolve: boolean;
+  canRefund: boolean;
+}) {
+  if (!order.arrival.needsResolution) {
+    const resolution = order.arrival.resolution;
+    if (!resolution) return null;
+
+    return (
+      <section className="flex flex-col gap-1 rounded-xl border border-border-subtle bg-surface p-5 shadow-sm">
+        <h2 className="break-words text-sm font-semibold text-foreground">
+          Failed delivery resolved: {resolution.label}
+        </h2>
+        <p className="break-words text-sm text-text-secondary">
+          {resolution.resolvedAt ? `Decided ${formatDateTime(resolution.resolvedAt)}.` : null}
+          {resolution.note ? ` ${resolution.note}` : null}
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="flex flex-col gap-2 rounded-xl border border-status-critical/40 bg-status-critical/5 p-5">
@@ -59,12 +85,13 @@ export function FailedDeliveryBanner({ order }: { order: OrderDetail }) {
       </dl>
 
       <p className="mt-1 break-words text-sm text-text-secondary">
-        The order is still assigned to {order.rider?.name ?? "the rider"}, who is holding it. Pick
-        one: <span className="font-medium text-foreground">refund</span> it (which cancels the order
-        too, if you refund the lot), <span className="font-medium text-foreground">cancel</span> it
-        without refunding, or <span className="font-medium text-foreground">mark it delivered</span>{" "}
-        if the customer collected it after all.
+        The order is still assigned to {order.rider?.name ?? "the rider"}, who is holding it.
+        Decide what happens: the customer did not show
+        {order.isParcel ? " (the parcel goes back to the sender)" : ""}, try the delivery again, or
+        it was our fault and the customer is refunded.
       </p>
+
+      {canResolve && <ResolveDeliveryButton order={order} canRefund={canRefund} />}
     </section>
   );
 }

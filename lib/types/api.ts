@@ -18,6 +18,7 @@ import type {
   ConversationParticipantRole,
   ConversationStatus,
   DeliveryOfferStatus,
+  DeliveryResolution,
   IdentityDocumentType,
   MobileMoneyProvider,
   OrderStatus,
@@ -1213,6 +1214,22 @@ export type OrderArrivalDto = {
   failure_reason: string | null;
   /** Failed at the door and still live — this is the work queue. */
   needs_resolution: boolean;
+  /** What may be decided, only while needs_resolution is true. Absent on an older backend. */
+  resolution_options?: Array<{
+    value: DeliveryResolution;
+    label: string;
+    description: string;
+    /** "Our fault" refunds, so it needs payments.refund. */
+    refunds_customer: boolean;
+  }>;
+  /** What was decided, once somebody has. */
+  resolution?: {
+    value: DeliveryResolution;
+    label: string;
+    note: string | null;
+    resolved_at: string | null;
+    resolved_by: number | null;
+  } | null;
 };
 
 /** What has gone back on an order, and what still could. */
