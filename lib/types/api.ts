@@ -634,6 +634,12 @@ export type AdminOrderDto = {
     settings_name: string;
     /** False on orders placed before the rates were versioned. */
     settings_recorded: boolean;
+    /**
+     * Every part of a parcel's delivery fee, rebuilt from the quote it was
+     * charged from. Null for food, and for a parcel with no quote on record.
+     * Absent on an older backend.
+     */
+    parcel?: ParcelFeeBreakdownDto | null;
   };
   /**
    * Where the money went. Recorded when the order was priced, never re-derived.
@@ -1990,6 +1996,33 @@ export type ComplianceLogDto = {
     received_at: string;
     payload: Record<string, unknown> | null;
   } | null;
+};
+
+/** AdminOrderResource pricing.parcel - the lines add up to `total`. */
+export type ParcelFeeBreakdownDto = {
+  base_fee: number;
+  pickup_km: number;
+  pickup_per_km: number;
+  pickup_charge: number;
+  trip_km: number;
+  trip_per_km: number;
+  trip_charge: number;
+  extra_stops: number;
+  per_stop_fee: number;
+  extra_stops_charge: number;
+  subtotal: number;
+  size: string;
+  size_label: string;
+  size_multiplier: number;
+  after_size: number;
+  is_fragile: boolean;
+  fragile_surcharge: number;
+  total: number;
+  /** What the order was actually charged for delivery. */
+  charged: number;
+  /** False when the lines do not come to what was charged. */
+  reconciles: boolean;
+  settings_name: string;
 };
 
 /** GET /admin/compliance/summary — four numbers for the stat tiles. */

@@ -140,9 +140,9 @@ export function ComplianceTable({
 /**
  * One party, with whatever the NIA said about them.
  *
- * `null` is not a failure — it means the check has not come back yet, which is the
- * normal state for the first minutes after filing and must not be dressed up as a
- * problem.
+ * `null` and `pending` are not failures — the check has not come back yet, which
+ * is the normal state for the first minutes after filing and must not be dressed
+ * up as a problem.
  */
 function PartyCell({
   name,
@@ -154,6 +154,7 @@ function PartyCell({
   status: string | null;
 }) {
   const verified = status === "verified";
+  const awaiting = status === null || status.toLowerCase() === "pending";
 
   return (
     <>
@@ -161,14 +162,14 @@ function PartyCell({
       <span className="mt-0.5 block text-xs text-text-muted">{phone}</span>
       <span
         className={`mt-0.5 block text-xs ${
-          status === null
+          awaiting
             ? "text-text-muted"
             : verified
               ? "text-status-good"
               : "text-status-critical"
         }`}
       >
-        {status === null ? "awaiting check" : verified ? "verified" : status}
+        {awaiting ? "awaiting check" : verified ? "verified" : status}
       </span>
     </>
   );

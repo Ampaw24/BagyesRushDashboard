@@ -86,6 +86,31 @@ export type OrderPricing = {
   settingsName: string;
   /** False on orders placed before the rates were versioned. */
   settingsRecorded: boolean;
+  /** Every part of a parcel's fee; null for food or when no quote is on record. */
+  parcel: ParcelFeeBreakdown | null;
+};
+
+export type ParcelFeeBreakdown = {
+  baseFee: number;
+  pickupKm: number;
+  pickupPerKm: number;
+  pickupCharge: number;
+  tripKm: number;
+  tripPerKm: number;
+  tripCharge: number;
+  extraStops: number;
+  perStopFee: number;
+  extraStopsCharge: number;
+  subtotal: number;
+  sizeLabel: string;
+  sizeMultiplier: number;
+  afterSize: number;
+  isFragile: boolean;
+  fragileSurcharge: number;
+  total: number;
+  charged: number;
+  reconciles: boolean;
+  settingsName: string;
 };
 
 /** vendor + rider + platform = total. The platform's share is the remainder. */
@@ -357,6 +382,30 @@ export function toOrderRow(dto: AdminOrderDto): OrderRow {
           serviceFeeFlat: dto.pricing.service_fee_flat,
           settingsName: dto.pricing.settings_name,
           settingsRecorded: dto.pricing.settings_recorded,
+          parcel: dto.pricing.parcel
+            ? {
+                baseFee: dto.pricing.parcel.base_fee,
+                pickupKm: dto.pricing.parcel.pickup_km,
+                pickupPerKm: dto.pricing.parcel.pickup_per_km,
+                pickupCharge: dto.pricing.parcel.pickup_charge,
+                tripKm: dto.pricing.parcel.trip_km,
+                tripPerKm: dto.pricing.parcel.trip_per_km,
+                tripCharge: dto.pricing.parcel.trip_charge,
+                extraStops: dto.pricing.parcel.extra_stops,
+                perStopFee: dto.pricing.parcel.per_stop_fee,
+                extraStopsCharge: dto.pricing.parcel.extra_stops_charge,
+                subtotal: dto.pricing.parcel.subtotal,
+                sizeLabel: dto.pricing.parcel.size_label,
+                sizeMultiplier: dto.pricing.parcel.size_multiplier,
+                afterSize: dto.pricing.parcel.after_size,
+                isFragile: dto.pricing.parcel.is_fragile,
+                fragileSurcharge: dto.pricing.parcel.fragile_surcharge,
+                total: dto.pricing.parcel.total,
+                charged: dto.pricing.parcel.charged,
+                reconciles: dto.pricing.parcel.reconciles,
+                settingsName: dto.pricing.parcel.settings_name,
+              }
+            : null,
         }
       : null,
     placedAt: toDateOrEpoch(dto.created_at),

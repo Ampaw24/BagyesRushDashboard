@@ -1,5 +1,5 @@
 import { formatCurrency } from "../../../_lib/format";
-import type { OrderDetail } from "@/lib/mappers/order.mapper";
+import type { OrderDetail, ParcelFeeBreakdown } from "@/lib/mappers/order.mapper";
 
 /**
  * What the customer paid, how the delivery fee got there, and who got what.
@@ -30,7 +30,9 @@ export function MoneyBreakdown({ order }: { order: OrderDetail }) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card title="How the delivery fee was built">
-          {pricing ? (
+          {pricing?.parcel ? (
+            <ParcelFeeLines lines={pricing.parcel} charged={order.deliveryFee} />
+          ) : pricing ? (
             <>
               <Line
                 label="Road distance"
@@ -56,14 +58,13 @@ export function MoneyBreakdown({ order }: { order: OrderDetail }) {
                 value={formatCurrency(pricing.distanceCharge)}
               />
 
-              {/* A parcel adds a rider-to-pickup leg, a size multiplier and a
-                  fragile surcharge on top, which is why the parts below can
-                  fall short of the charge. Said plainly rather than leaving a
-                  reader to wonder where the difference came from. */}
+              {/* Only reached for a parcel with no quote on record to rebuild
+                  from, so the lines above cannot be the whole story. */}
               {order.isParcel && (
                 <p className="pt-1 text-xs text-text-muted">
                   A parcel also carries the rider&rsquo;s leg to the pickup, a size
-                  multiplier and any fragile surcharge.
+                  multiplier and any fragile surcharge; this order has no quote on record
+                  to show them from.
                 </p>
               )}
 
@@ -247,4 +248,57 @@ function Line({
 
 function Divider() {
   return <hr className="border-border-subtle" />;
+}
+
+/**
+ * Every part of a parcel's delivery fee, in the order it is worked out:
+ * base, the rider's leg to the pickup, the trip, any extra stops, then the size
+ * multiplier, then the fragile surcharge. Rebuilt by the API from the quote the
+ * order was charged from, under the rates in force at the time, so the lines
+ * add up to the fee rather than approximating it.
+ */
+function ParcelFeeLines({ lines, charged }: { lines: ParcelFeeBreakdown; charged: number }) {
+  const km = (value: number) => `${value.toFixed(2)} km`;
+
+  return (
+    <>
+      <Line label="Base fee" value={formatCurrency(lines.baseFee)} />
+      <Line
+        label={`Rider to pickup: ${km(lines.pickupKm)} × ${formatCurrency(lines.pickupPerKm)}`}
+        value={formatCurrency(lines.pickupCharge)}
+      />
+      <Line
+        label={`Trip: ${km(lines.tripKm)} × ${formatCurrency(lines.tripPerKm)}`}
+        value={formatCurrency(lines.tripCharge)}
+      />
+      {lines.extraStops > 0 && (
+        <Line
+          label={`${lines.extraStops} extra stop${lines.extraStops === 1 ? "" : "s"} × ${formatCurrency(lines.perStopFee)}`}
+          value={formatCurrency(lines.extraStopsCharge)}
+        />
+      )}
+
+      <Divider />
+      <Line label="Subtotal" value={formatCurrency(lines.subtotal)} muted />
+      <Line
+        label={`${lines.sizeLabel} parcel × ${lines.sizeMultiplier}`}
+        value={formatCurrency(lines.afterSize)}
+      />
+      {lines.isFragile && (
+        <Line label="Fragile surcharge" value={formatCurrency(lines.fragileSurcharge)} />
+      )}
+
+      <Divider />
+      <Line label="Delivery fee charged" value={formatCurrency(charged)} strong />
+
+      {!lines.reconciles && (
+        <p className="pt-1 text-xs text-status-critical">
+          These lines come to {formatCurrency(lines.total)}, not the {formatCurrency(charged)}{" "}
+          charged. The quote on record may be incomplete; the charge itself is what the customer
+          paid.
+        </p>
+      )}
+      <p className="pt-1 text-xs text-text-muted">Rates: {lines.settingsName}</p>
+    </>
+  );
 }
