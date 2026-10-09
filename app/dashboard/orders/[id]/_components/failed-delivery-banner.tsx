@@ -42,10 +42,16 @@ export function FailedDeliveryBanner({
     );
   }
 
+  // A receive parcel nobody handed over is still `accepted`: it failed at the
+  // pickup, so there is no doorstep to describe and nothing being carried.
+  const atPickup = order.status === "accepted";
+
   return (
     <section className="flex flex-col gap-2 rounded-xl border border-status-critical/40 bg-status-critical/5 p-5">
       <h2 className="break-words text-sm font-semibold text-foreground">
-        The rider gave up waiting and left
+        {atPickup
+          ? "Nobody handed the parcel over at the pickup"
+          : "The rider gave up waiting and left"}
       </h2>
 
       <p className="break-words text-sm text-text-secondary">
@@ -55,27 +61,35 @@ export function FailedDeliveryBanner({
 
       <dl className="mt-1 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
         <div>
-          <dt className="text-text-muted">Arrived at the door</dt>
+          <dt className="text-text-muted">{atPickup ? "Arrived at the pickup" : "Arrived at the door"}</dt>
           <dd className="font-medium text-foreground">
-            {order.arrival.arrivedAt ? formatDateTime(order.arrival.arrivedAt) : "—"}
+            {atPickup
+              ? order.dispatch.arrivedAtPickup
+                ? formatDateTime(order.dispatch.arrivedAtPickup)
+                : "—"
+              : order.arrival.arrivedAt
+                ? formatDateTime(order.arrival.arrivedAt)
+                : "—"}
           </dd>
         </div>
-        <div>
-          <dt className="text-text-muted">Distance from the address</dt>
-          <dd className="font-medium text-foreground">
-            {order.arrival.distanceMetres !== null
-              ? `${order.arrival.distanceMetres} m`
-              : "Not checked"}
-            {!order.arrival.verified && (
-              <span className="mt-0.5 block text-xs font-normal text-text-muted">
-                {/* Unverified means the destination had no coordinates to
-                    measure against, not that the rider was caught out. */}
-                No coordinates on the destination, so the arrival could not be
-                checked against it.
-              </span>
-            )}
-          </dd>
-        </div>
+        {!atPickup && (
+          <div>
+            <dt className="text-text-muted">Distance from the address</dt>
+            <dd className="font-medium text-foreground">
+              {order.arrival.distanceMetres !== null
+                ? `${order.arrival.distanceMetres} m`
+                : "Not checked"}
+              {!order.arrival.verified && (
+                <span className="mt-0.5 block text-xs font-normal text-text-muted">
+                  {/* Unverified means the destination had no coordinates to
+                      measure against, not that the rider was caught out. */}
+                  No coordinates on the destination, so the arrival could not be
+                  checked against it.
+                </span>
+              )}
+            </dd>
+          </div>
+        )}
         <div>
           <dt className="text-text-muted">Payment</dt>
           <dd className="font-medium text-foreground">
@@ -84,12 +98,21 @@ export function FailedDeliveryBanner({
         </div>
       </dl>
 
-      <p className="mt-1 break-words text-sm text-text-secondary">
-        The order is still assigned to {order.rider?.name ?? "the rider"}, who is holding it.
-        Decide what happens: the customer did not show
-        {order.isParcel ? " (the parcel goes back to the sender)" : ""}, try the delivery again, or
-        it was our fault and the customer is refunded.
-      </p>
+      {atPickup ? (
+        <p className="mt-1 break-words text-sm text-text-secondary">
+          The customer arranged this collection, and the rider waited the full time at the pickup.
+          Decide what happens: the customer did not show (the rider is paid, no refund), send the
+          rider back to try again, or it was our fault and the customer is refunded. If the parcel
+          is handed over late, the rider can still collect it and this clears on its own.
+        </p>
+      ) : (
+        <p className="mt-1 break-words text-sm text-text-secondary">
+          The order is still assigned to {order.rider?.name ?? "the rider"}, who is holding it.
+          Decide what happens: the customer did not show
+          {order.isParcel ? " (the parcel goes back to the sender)" : ""}, try the delivery again, or
+          it was our fault and the customer is refunded.
+        </p>
+      )}
 
       {canResolve && <ResolveDeliveryButton order={order} canRefund={canRefund} />}
     </section>
