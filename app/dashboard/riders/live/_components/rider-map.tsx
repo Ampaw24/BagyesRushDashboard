@@ -8,7 +8,14 @@ import type { RiderLiveDto } from "@/lib/types/api";
 
 import { RiderDetailPanel } from "./rider-detail-panel";
 import { RiderMapFilters, type MapFilter } from "./rider-map-filters";
-import { ACCRA, glide, riderIconOptions, riderTooltip } from "../../_components/rider-marker";
+import {
+  ACCRA,
+  freezeGlide,
+  moveRiderMarker,
+  rememberIcon,
+  riderIconOptions,
+  riderTooltip,
+} from "../../_components/rider-marker";
 import { RiderMapLegend } from "../../_components/rider-map-legend";
 
 /**
@@ -76,6 +83,10 @@ export function RiderMap({ seed }: { seed: RiderLiveDto[] }) {
       // Leaflet measures its container on creation; inside a panel that was
       // hidden a moment ago it measures zero and renders one grey tile.
       setTimeout(() => map.current?.invalidateSize(), 0);
+
+      // A glide lasts seconds; without this, markers would drift slowly into
+      // place after every zoom instead of snapping.
+      map.current.on("zoomstart", () => markers.current.forEach(freezeGlide));
     })();
 
     return () => {
@@ -99,22 +110,23 @@ export function RiderMap({ seed }: { seed: RiderLiveDto[] }) {
         const position: [number, number] = [rider.latitude!, rider.longitude!];
         const existing = markers.current.get(rider.rider_id);
 
+        const icon = riderIconOptions(rider);
+
         if (existing) {
-          // Moved rather than replaced. Recreating the marker would restart the
-          // CSS transition and make the bike blink instead of glide.
-          existing.setLatLng(position);
-          existing.setIcon(L.divIcon(riderIconOptions(rider)));
+          // Moved rather than replaced, gliding for as long as the gap since
+          // the last fix - see moveRiderMarker for why the icon swap has to
+          // come first and only when the marker actually looks different.
+          moveRiderMarker(existing, position, icon.html, () => existing.setIcon(L.divIcon(icon)));
           existing.setTooltipContent(riderTooltip(rider));
-          glide(existing);
           continue;
         }
 
-        const marker = L.marker(position, { icon: L.divIcon(riderIconOptions(rider)) })
+        const marker = L.marker(position, { icon: L.divIcon(icon) })
           .addTo(map.current)
           .bindTooltip(riderTooltip(rider), { direction: "top", offset: [0, -26] })
           .on("click", () => setSelectedId(rider.rider_id));
 
-        glide(marker);
+        rememberIcon(marker, icon.html);
 
         markers.current.set(rider.rider_id, marker);
       }

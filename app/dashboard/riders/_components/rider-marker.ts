@@ -20,21 +20,84 @@ import type { RiderLiveDto } from "@/lib/types/api";
  * Nothing here fetches anything.
  */
 
+/** The last time each marker was moved, and the icon it is currently showing. */
+const lastMovedAt = new WeakMap<Marker, number>();
+const shownIcon = new WeakMap<Marker, string>();
+
+/** Bounds on a glide: never a jump, never a crawl that outlasts the next fix. */
+const MIN_GLIDE_MS = 1000;
+const MAX_GLIDE_MS = 5000;
+
 /**
- * Make a marker animate to its next position instead of teleporting.
+ * Move a rider's marker so it travels smoothly from fix to fix.
  *
- * Leaflet positions markers with a CSS `transform`, so a transition on the
- * element is all it takes — `setLatLng` then reads as movement. Positions
- * arrive every few seconds at most, and without this the bikes jump between
- * fixes and the map looks broken rather than live.
+ * Positions arrive every two to five seconds (the server sends one when a
+ * rider has moved 20 m, and at least every 5 s). Two things used to stop that
+ * reading as movement:
  *
- * Re-applied after `setIcon`, which replaces the underlying element.
+ * - The icon was replaced AFTER the move on every update. `setIcon` swaps the
+ *   marker's element for a new one already sitting at the new position, so the
+ *   glide just started was thrown away and the bike teleported every time. The
+ *   icon is now only replaced when it actually looks different, and before the
+ *   move, so the new element glides from where the old one was.
+ * - The glide lasted 0.8 s against a 2-5 s gap, so a bike moved briefly and
+ *   then sat still - stop-start rather than smooth. It now lasts about as long
+ *   as the gap since the last fix, so by the time the next one lands the bike
+ *   has just arrived and carries straight on.
+ *
+ * Returns how long the glide lasts, for anything drawn alongside the marker
+ * that should arrive with it.
  */
-export function glide(marker: Marker): void {
+export function moveRiderMarker(
+  marker: Marker,
+  position: [number, number],
+  iconHtml: string,
+  setIcon: () => void,
+): number {
+  if (shownIcon.get(marker) !== iconHtml) {
+    setIcon();
+    shownIcon.set(marker, iconHtml);
+  }
+
+  const now = Date.now();
+  const previous = lastMovedAt.get(marker);
+  const duration = previous === undefined
+    ? MIN_GLIDE_MS
+    : Math.min(MAX_GLIDE_MS, Math.max(MIN_GLIDE_MS, now - previous));
+  lastMovedAt.set(marker, now);
+
   const element = marker.getElement();
 
   if (element) {
-    element.style.transition = "transform .8s linear";
+    element.style.transition = `transform ${duration}ms linear`;
+    // Make the browser apply the transition before the position changes; a
+    // freshly swapped element would otherwise jump straight to the new spot.
+    void element.offsetWidth;
+  }
+
+  marker.setLatLng(position);
+
+  return duration;
+}
+
+/** Remember the icon a marker was created with, so the first update does not swap it needlessly. */
+export function rememberIcon(marker: Marker, iconHtml: string): void {
+  shownIcon.set(marker, iconHtml);
+  lastMovedAt.set(marker, Date.now());
+}
+
+/**
+ * Stop a marker mid-glide, for when the map zooms.
+ *
+ * Leaflet repositions every marker after a zoom; with a glide of several
+ * seconds still set, they would drift slowly into place instead of snapping.
+ * The next position update sets a glide again.
+ */
+export function freezeGlide(marker: Marker): void {
+  const element = marker.getElement();
+
+  if (element) {
+    element.style.transition = "none";
   }
 }
 
@@ -243,7 +306,9 @@ export function riderIconOptions(rider: RiderLiveDto) {
   return vehicleMarkerOptions({
     vehicleType: rider.vehicle_type,
     colour: stateColour(rider),
-    heading: rider.heading ?? 0,
+    // To the nearest 15 degrees: finer than that is invisible on a 40-pixel
+    // marker, and every distinct heading means swapping the marker's element.
+    heading: (Math.round((rider.heading ?? 0) / 15) * 15) % 360,
     dimmed: rider.is_stale,
   });
 }

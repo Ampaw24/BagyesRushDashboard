@@ -8,7 +8,9 @@ import { EmptyState } from "../../../_components/empty-state";
 import {
   ACCRA,
   activeDeliveriesLabel,
-  glide,
+  freezeGlide,
+  moveRiderMarker,
+  rememberIcon,
   riderIconOptions,
   riderTooltip,
 } from "../../_components/rider-marker";
@@ -87,19 +89,27 @@ export function RiderLocationMap({ rider }: { rider: RiderDetail }) {
 
       const position: [number, number] = [live.latitude!, live.longitude!];
 
+      const icon = riderIconOptions(live);
+
       if (marker.current) {
-        // Moved rather than replaced: recreating it restarts the CSS transition
-        // and makes the bike blink instead of glide.
-        marker.current.setLatLng(position);
-        marker.current.setIcon(L.divIcon(riderIconOptions(live)));
-        marker.current.setTooltipContent(riderTooltip(live));
+        // Moved rather than replaced, gliding for as long as the gap since the
+        // last fix - see moveRiderMarker.
+        const existing = marker.current;
+        moveRiderMarker(existing, position, icon.html, () => existing.setIcon(L.divIcon(icon)));
+        existing.setTooltipContent(riderTooltip(live));
       } else {
-        marker.current = L.marker(position, { icon: L.divIcon(riderIconOptions(live)) })
+        marker.current = L.marker(position, { icon: L.divIcon(icon) })
           .addTo(map.current)
           .bindTooltip(riderTooltip(live), { direction: "top", offset: [0, -26] });
-      }
 
-      glide(marker.current);
+        rememberIcon(marker.current, icon.html);
+
+        // A glide lasts seconds; without this the marker would drift into
+        // place after a zoom instead of snapping.
+        map.current.on("zoomstart", () => {
+          if (marker.current) freezeGlide(marker.current);
+        });
+      }
 
       // Centred once. Recentring on every fix would yank the view away from
       // somebody who had panned deliberately to see where the rider is headed.

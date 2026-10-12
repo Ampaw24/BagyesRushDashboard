@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { formatDateTime } from "../../../_lib/format";
 import type { TrackingPoint } from "./tracking-map";
 import type { OrderDetail } from "@/lib/mappers/order.mapper";
+import { useOrderRiderPosition } from "@/lib/realtime/use-order-rider-position";
 
 // Leaflet touches `window` on import, so the map cannot be server-rendered.
 const TrackingMap = dynamic(() => import("./tracking-map").then((m) => m.TrackingMap), {
@@ -18,7 +19,11 @@ const TrackingMap = dynamic(() => import("./tracking-map").then((m) => m.Trackin
   ),
 });
 
-/** How often to re-read the rider's position while the panel is open. */
+/**
+ * How often to re-read the order while the panel is open. The rider's position
+ * itself arrives live over the socket; this is the fallback when the socket is
+ * down, and what keeps the rest of the order (status, timeline) current.
+ */
 const REFRESH_MS = 20_000;
 
 /**
@@ -28,16 +33,29 @@ const REFRESH_MS = 20_000;
  * a map of a delivered order is a map of where somebody used to be, and one on
  * an unassigned order has a single pin on it.
  *
- * Refreshes by asking the server component to re-render rather than polling an
- * API from the browser — the position comes down with the order it belongs to,
- * so there is one source of truth for both.
+ * The rider's position comes live from the `order.{id}` socket channel while
+ * the map is open, so the bike moves as the rider does rather than once every
+ * refresh. The page still re-renders from the server every 20 seconds as a
+ * fallback, and whichever of the two positions is newer is the one drawn - so a
+ * refresh can never pull the bike back to where it was a few seconds ago.
  */
 export function TrackingPanel({ order }: { order: OrderDetail }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
   const rider = order.rider;
+  const live = useOrderRiderPosition(order.id, open);
   const points: TrackingPoint[] = [];
+
+  // The socket's fix wins unless the server has a newer one.
+  const useLive =
+    live !== null &&
+    (rider?.locationUpdatedAt == null ||
+      live.recordedAt === null ||
+      live.recordedAt >= rider.locationUpdatedAt);
+  const riderLat = useLive ? live.latitude : rider?.latitude;
+  const riderLng = useLive ? live.longitude : rider?.longitude;
+  const lastReported = useLive ? (live.recordedAt ?? rider?.locationUpdatedAt) : rider?.locationUpdatedAt;
 
   if (order.pickup?.latitude != null && order.pickup?.longitude != null) {
     points.push({
@@ -48,15 +66,16 @@ export function TrackingPanel({ order }: { order: OrderDetail }) {
     });
   }
 
-  if (rider?.latitude != null && rider?.longitude != null) {
+  if (rider && riderLat != null && riderLng != null) {
     points.push({
-      lat: rider.latitude,
-      lng: rider.longitude,
+      lat: riderLat,
+      lng: riderLng,
       label: [rider.name ?? "Rider", rider.vehicleTypeLabel, rider.plateNumber]
         .filter(Boolean)
         .join(" · "),
       kind: "rider",
       vehicleType: rider.vehicleType,
+      heading: useLive ? live.heading : null,
     });
   }
 
@@ -92,8 +111,8 @@ export function TrackingPanel({ order }: { order: OrderDetail }) {
           <h2 className="text-sm font-semibold text-foreground">Tracking</h2>
           <p className="text-xs text-text-muted">
             {hasRider
-              ? rider?.locationUpdatedAt
-                ? `Rider last reported ${formatDateTime(rider.locationUpdatedAt)}`
+              ? lastReported
+                ? `Rider last reported ${formatDateTime(lastReported)}`
                 : "The rider has not reported a position yet."
               : "No rider position — showing the pickup and drop-off only."}
           </p>
