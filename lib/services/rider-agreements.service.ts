@@ -1,6 +1,6 @@
 import { apiFetch, apiFetchPage } from "../api/client";
 import type { Paginated } from "../api/types";
-import type { RiderAgreementDto } from "../types/api";
+import type { RiderAgreementDto, RiderAgreementSignatoryDto } from "../types/api";
 
 /**
  * The rider agreement, as published documents.
@@ -41,6 +41,18 @@ export async function updateRiderAgreement(id: number, form: FormData): Promise<
 
 export async function deleteRiderAgreement(id: number): Promise<null> {
   return apiFetch<null>(`/admin/rider-agreements/${id}`, { method: "DELETE" });
+}
+
+/**
+ * Who has signed a version - the riders behind its `riders_count`, newest
+ * acceptance first. Deleted riders are left out, exactly as the count leaves
+ * them out.
+ */
+export async function listRiderAgreementSignatories(
+  id: number,
+  query: { page?: number; per_page?: number; search?: string } = {},
+): Promise<Paginated<RiderAgreementSignatoryDto>> {
+  return apiFetchPage<RiderAgreementSignatoryDto>(`/admin/rider-agreements/${id}/riders`, { query });
 }
 
 /** Publish this version, retiring the one it replaces. */

@@ -1812,6 +1812,18 @@ export type VehicleModelDto = {
  * least one is always present. `summary` is a staff note and never reaches a
  * rider.
  */
+/** GET /admin/rider-agreements/{id}/riders — one rider behind a version's riders_count. */
+export type RiderAgreementSignatoryDto = {
+  id: number;
+  name: string;
+  phone: string | null;
+  photo_url: string | null;
+  status: RiderStatus;
+  status_label: string;
+  accepted_at: string | null;
+  terms_version: string | null;
+};
+
 export type RiderAgreementDto = {
   id: number;
   version: string;

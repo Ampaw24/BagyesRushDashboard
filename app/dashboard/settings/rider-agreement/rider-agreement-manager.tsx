@@ -24,6 +24,7 @@ import {
   deleteRiderAgreementAction,
   saveRiderAgreementAction,
 } from "./_actions";
+import { SignatoriesDialog } from "./signatories-dialog";
 import { fieldError, type FieldErrors } from "@/lib/api/errors";
 import type { RiderAgreementRow } from "@/lib/mappers/rider-agreement.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
@@ -44,6 +45,7 @@ type Dialog =
   | { kind: "form"; agreement: RiderAgreementRow | null }
   | { kind: "publish"; agreement: RiderAgreementRow }
   | { kind: "delete"; agreement: RiderAgreementRow }
+  | { kind: "signatories"; agreement: RiderAgreementRow }
   | null;
 
 function readableSize(bytes: number | null): string {
@@ -138,7 +140,22 @@ export function RiderAgreementManager({
                         <span className="text-text-muted">Text only</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-text-secondary">{agreement.ridersCount ?? "—"}</TableCell>
+                    <TableCell className="text-text-secondary">
+                      {/* The count opens the list of who signed. Zero has
+                          nobody to show, so it stays plain text. */}
+                      {signed ? (
+                        <button
+                          type="button"
+                          onClick={() => setDialog({ kind: "signatories", agreement })}
+                          aria-label={`Show the ${agreement.ridersCount} riders who signed ${agreement.version}`}
+                          className="min-h-11 font-medium text-brand underline-offset-2 transition duration-150 hover:underline"
+                        >
+                          {(agreement.ridersCount ?? 0).toLocaleString()}
+                        </button>
+                      ) : (
+                        (agreement.ridersCount ?? "—")
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge meta={agreement.isActive ? IN_FORCE : RETIRED} />
                     </TableCell>
@@ -181,6 +198,10 @@ export function RiderAgreementManager({
 
       {dialog?.kind === "form" && (
         <AgreementForm agreement={dialog.agreement} onClose={() => setDialog(null)} />
+      )}
+
+      {dialog?.kind === "signatories" && (
+        <SignatoriesDialog agreement={dialog.agreement} onClose={() => setDialog(null)} />
       )}
 
       {dialog?.kind === "publish" && (
