@@ -511,6 +511,9 @@ export type AdminOrderDto = {
   allowed_transitions: Array<{ value: OrderStatus; label: string }>;
   /** Present only on a parcel. */
   parcel?: {
+    /** send: the customer hands it over. receive: a third party does, for the customer. */
+    direction?: "send" | "receive";
+    direction_label?: string;
     size: ParcelSize;
     size_label: string;
     is_fragile: boolean;

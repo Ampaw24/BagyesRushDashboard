@@ -18,7 +18,7 @@ import { FailedDeliveryBanner } from "./_components/failed-delivery-banner";
 import { getOrder } from "@/lib/services/orders.service";
 import { getConversationForOrder } from "@/lib/services/conversations.service";
 import { listRiders } from "@/lib/services/riders.service";
-import { toOrderDetail } from "@/lib/mappers/order.mapper";
+import { toOrderDetail, type OrderDetail, type ParcelDetail } from "@/lib/mappers/order.mapper";
 import { toRiderRow } from "@/lib/mappers/rider.mapper";
 import { can, getPermissions } from "@/lib/auth/guard";
 import { isNotFound } from "@/lib/api/errors";
@@ -94,35 +94,46 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <InfoCard title="Customer">
+        <InfoCard title={order.parcel ? "Customer (booked and paid)" : "Customer"}>
           <InfoRow label="Name" value={order.customerName} />
           <InfoRow label="Email" value={order.customerEmail ?? "—"} />
           <InfoRow label="Phone" value={order.customerPhone ?? "—"} />
         </InfoCard>
 
-        <InfoCard title="Vendor">
-          <InfoRow
-            label="Business"
-            value={
-              order.vendorId ? (
-                <Link
-                  href={`/dashboard/vendors/${order.vendorId}`}
-                  className="text-brand transition duration-150 hover:opacity-80"
-                >
-                  {order.vendorName ?? `Vendor #${order.vendorId}`}
-                </Link>
-              ) : (
-                "—"
-              )
-            }
-          />
-          <InfoRow label="Phone" value={order.vendorPhone ?? "—"} />
-        </InfoCard>
+        {/* A parcel has no vendor. What support needs instead is who hands it
+            over and who takes it - and which way round depends on whether the
+            customer is sending or receiving. */}
+        {order.parcel ? (
+          <ParcelPartyCards order={order} parcel={order.parcel} />
+        ) : (
+          <InfoCard title="Vendor">
+            <InfoRow
+              label="Business"
+              value={
+                order.vendorId ? (
+                  <Link
+                    href={`/dashboard/vendors/${order.vendorId}`}
+                    className="text-brand transition duration-150 hover:opacity-80"
+                  >
+                    {order.vendorName ?? `Vendor #${order.vendorId}`}
+                  </Link>
+                ) : (
+                  "—"
+                )
+              }
+            />
+            <InfoRow label="Phone" value={order.vendorPhone ?? "—"} />
+          </InfoCard>
+        )}
 
-        <InfoCard title="Delivery">
-          <InfoRow label="Recipient" value={order.recipientName} />
-          <InfoRow label="Phone" value={order.recipientPhone} />
-          <InfoRow label="Address" value={order.address} />
+        <InfoCard title={order.parcel ? "Rider" : "Delivery"}>
+          {!order.parcel && (
+            <>
+              <InfoRow label="Recipient" value={order.recipientName} />
+              <InfoRow label="Phone" value={order.recipientPhone} />
+              <InfoRow label="Address" value={order.address} />
+            </>
+          )}
           <InfoRow
             label="Rider"
             value={order.rider ? (order.rider.name ?? order.rider.phone) : "Unassigned"}
@@ -151,6 +162,14 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
             is being collected from, is the equivalent information. */}
         {order.parcel && (
           <InfoCard title="Parcel">
+            <InfoRow
+              label="Direction"
+              value={
+                order.parcel.direction === "receive"
+                  ? `${order.parcel.directionLabel} · collected from someone else for the customer`
+                  : `${order.parcel.directionLabel} · the customer is sending it`
+              }
+            />
             <InfoRow label="Contents" value={order.parcel.itemDescription} />
             <InfoRow
               label="Size"
@@ -175,18 +194,6 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
                 label="Weight"
                 value={`${order.parcel.totalWeightKg} kg (customer's figure)`}
               />
-            )}
-            <InfoRow label="Pick up from" value={order.parcel.pickupAddress} />
-            <InfoRow
-              label="Pickup contact"
-              value={
-                order.parcel.pickupContactName
-                  ? `${order.parcel.pickupContactName}${order.parcel.pickupContactPhone ? ` · ${order.parcel.pickupContactPhone}` : ""}`
-                  : (order.parcel.pickupContactPhone ?? "—")
-              }
-            />
-            {order.parcel.pickupInstructions && (
-              <InfoRow label="Pickup notes" value={order.parcel.pickupInstructions} />
             )}
           </InfoCard>
         )}
@@ -447,5 +454,73 @@ function NoteBox({ label, body, critical }: { label: string; body: string; criti
       <p className="font-medium text-foreground">{label}</p>
       <p className="break-words text-text-secondary">{body}</p>
     </div>
+  );
+}
+
+/**
+ * Who hands a parcel over and who takes it.
+ *
+ * The two swap with the direction. On a send, the customer is at the pickup
+ * and each stop's recipient receives. On a receive, a third party - the pickup
+ * contact, who has no app - hands it over and the customer receives at the
+ * drop. Showing only "the recipient" left half of every receive parcel's
+ * people off the page, and the half support most often needs to phone.
+ */
+function ParcelPartyCards({ order, parcel }: { order: OrderDetail; parcel: ParcelDetail }) {
+  const receiving = parcel.direction === "receive";
+
+  const contact = (name: string | null, phone: string | null) =>
+    name ? `${name}${phone ? ` · ${phone}` : ""}` : (phone ?? "—");
+
+  return (
+    <>
+      <InfoCard title="Sender">
+        {receiving ? (
+          <>
+            <InfoRow label="Name" value={parcel.pickupContactName ?? "—"} />
+            <InfoRow label="Phone" value={parcel.pickupContactPhone ?? "—"} />
+            <InfoRow label="Role" value="Hands it over (has no app)" />
+          </>
+        ) : (
+          <>
+            <InfoRow label="Name" value={order.customerName} />
+            <InfoRow label="Phone" value={order.customerPhone ?? "—"} />
+            <InfoRow label="Role" value="The customer" />
+          </>
+        )}
+        <InfoRow label="Pick up from" value={parcel.pickupAddress} />
+        {parcel.pickupInstructions && <InfoRow label="Pickup notes" value={parcel.pickupInstructions} />}
+      </InfoCard>
+
+      <InfoCard title={!receiving && order.stops.length > 1 ? "Receivers" : "Receiver"}>
+        {receiving ? (
+          <>
+            <InfoRow label="Name" value={order.customerName} />
+            <InfoRow label="Phone" value={order.customerPhone ?? "—"} />
+            <InfoRow label="Role" value="The customer" />
+            <InfoRow label="Deliver to" value={order.address} />
+          </>
+        ) : order.stops.length > 1 ? (
+          // One person per drop on a multi-stop run; the stops table below has
+          // the full detail and status of each.
+          order.stops.map((stop) => (
+            <InfoRow
+              key={stop.id}
+              label={`Stop ${stop.sequence}`}
+              value={`${contact(stop.recipientName, stop.recipientPhone)} · ${stop.address}`}
+            />
+          ))
+        ) : (
+          <>
+            <InfoRow label="Name" value={order.stops[0]?.recipientName ?? order.recipientName} />
+            <InfoRow label="Phone" value={order.stops[0]?.recipientPhone ?? order.recipientPhone} />
+            <InfoRow label="Deliver to" value={order.stops[0]?.address ?? order.address} />
+          </>
+        )}
+        {parcel.deliveryInstructions && (
+          <InfoRow label="Instructions" value={parcel.deliveryInstructions} />
+        )}
+      </InfoCard>
+    </>
   );
 }

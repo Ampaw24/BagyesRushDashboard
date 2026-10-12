@@ -272,6 +272,13 @@ export type ParcelStopRow = {
 };
 
 export type ParcelDetail = {
+  /**
+   * Which way the errand runs. On a send the customer is the sender and each
+   * stop's recipient receives; on a receive a third party (the pickup contact)
+   * hands it over and the customer receives.
+   */
+  direction: "send" | "receive";
+  directionLabel: string;
   size: ParcelSize;
   sizeLabel: string;
   isFragile: boolean;
@@ -558,6 +565,9 @@ export function toOrderDetail(dto: AdminOrderDto): OrderDetail {
     })),
     parcel: dto.parcel
       ? {
+          // An older backend predates receive parcels; everything then was a send.
+          direction: dto.parcel.direction ?? "send",
+          directionLabel: dto.parcel.direction_label ?? "Send",
           size: dto.parcel.size,
           sizeLabel: dto.parcel.size_label,
           isFragile: dto.parcel.is_fragile,
