@@ -45,6 +45,10 @@ export function FailedDeliveryBanner({
   // A receive parcel nobody handed over is still `accepted`: it failed at the
   // pickup, so there is no doorstep to describe and nothing being carried.
   const atPickup = order.status === "accepted";
+  // A parcel records arrival per stop, so its evidence is listed by stop below
+  // rather than in the order-level door fields, which stay empty on a parcel.
+  const failedStops = order.arrival.stops.filter((stop) => stop.status === "failed");
+  const perStop = order.isParcel && !atPickup && failedStops.length > 0;
 
   return (
     <section className="flex flex-col gap-2 rounded-xl border border-status-critical/40 bg-status-critical/5 p-5">
@@ -59,20 +63,52 @@ export function FailedDeliveryBanner({
         {order.arrival.failedAt && ` Recorded ${formatDateTime(order.arrival.failedAt)}.`}
       </p>
 
+      {perStop && (
+        <ul className="mt-1 flex flex-col gap-2">
+          {failedStops.map((stop) => (
+            <li
+              key={stop.id}
+              className="flex flex-col gap-1 rounded-lg border border-border-subtle bg-surface p-3 text-sm"
+            >
+              <span className="break-words font-medium text-foreground">
+                Stop {stop.sequence}
+                {stop.recipientName ? ` · ${stop.recipientName}` : ""}
+                <span className="font-normal text-text-muted"> · {stop.address}</span>
+              </span>
+              {stop.failureReason && (
+                <span className="break-words text-text-secondary">{stop.failureReason}</span>
+              )}
+              <span className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-muted">
+                <span>
+                  Arrived {stop.arrivedAt ? formatDateTime(stop.arrivedAt) : "—"}
+                </span>
+                <span>
+                  {stop.distanceMetres !== null
+                    ? `${stop.distanceMetres} m from the address${stop.verified ? "" : " (not verified)"}`
+                    : "No coordinates on this stop, so the arrival could not be checked"}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
       <dl className="mt-1 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
-        <div>
-          <dt className="text-text-muted">{atPickup ? "Arrived at the pickup" : "Arrived at the door"}</dt>
-          <dd className="font-medium text-foreground">
-            {atPickup
-              ? order.dispatch.arrivedAtPickup
-                ? formatDateTime(order.dispatch.arrivedAtPickup)
-                : "—"
-              : order.arrival.arrivedAt
-                ? formatDateTime(order.arrival.arrivedAt)
-                : "—"}
-          </dd>
-        </div>
-        {!atPickup && (
+        {!perStop && (
+          <div>
+            <dt className="text-text-muted">{atPickup ? "Arrived at the pickup" : "Arrived at the door"}</dt>
+            <dd className="font-medium text-foreground">
+              {atPickup
+                ? order.dispatch.arrivedAtPickup
+                  ? formatDateTime(order.dispatch.arrivedAtPickup)
+                  : "—"
+                : order.arrival.arrivedAt
+                  ? formatDateTime(order.arrival.arrivedAt)
+                  : "—"}
+            </dd>
+          </div>
+        )}
+        {!atPickup && !perStop && (
           <div>
             <dt className="text-text-muted">Distance from the address</dt>
             <dd className="font-medium text-foreground">

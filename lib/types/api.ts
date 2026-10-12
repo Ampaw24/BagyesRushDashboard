@@ -1220,6 +1220,22 @@ export type OrderArrivalDto = {
   failure_reason: string | null;
   /** Failed at the door and still live — this is the work queue. */
   needs_resolution: boolean;
+  /**
+   * A parcel's arrival evidence, per stop - the order-level fields above stay
+   * empty on a parcel. Null for food; absent on an older backend.
+   */
+  stops?: Array<{
+    id: number;
+    sequence: number;
+    address: string;
+    recipient_name: string | null;
+    status: string;
+    status_label: string;
+    arrived_at: string | null;
+    distance_metres: number | null;
+    verified: boolean;
+    failure_reason: string | null;
+  }> | null;
   /** What may be decided, only while needs_resolution is true. Absent on an older backend. */
   resolution_options?: Array<{
     value: DeliveryResolution;

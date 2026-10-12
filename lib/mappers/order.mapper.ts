@@ -214,6 +214,19 @@ export type OrderArrival = {
   failedAt: Date | null;
   failureReason: string | null;
   needsResolution: boolean;
+  /** A parcel's arrival evidence per stop; empty for food. */
+  stops: {
+    id: number;
+    sequence: number;
+    address: string;
+    recipientName: string | null;
+    status: string;
+    statusLabel: string;
+    arrivedAt: Date | null;
+    distanceMetres: number | null;
+    verified: boolean;
+    failureReason: string | null;
+  }[];
   resolutionOptions: {
     value: DeliveryResolution;
     label: string;
@@ -474,6 +487,18 @@ export function toOrderDetail(dto: AdminOrderDto): OrderDetail {
       failedAt: toDate(dto.arrival?.failed_at),
       failureReason: dto.arrival?.failure_reason ?? null,
       needsResolution: dto.arrival?.needs_resolution ?? false,
+      stops: (dto.arrival?.stops ?? []).map((stop) => ({
+        id: stop.id,
+        sequence: stop.sequence,
+        address: stop.address,
+        recipientName: stop.recipient_name,
+        status: stop.status,
+        statusLabel: stop.status_label,
+        arrivedAt: toDate(stop.arrived_at),
+        distanceMetres: stop.distance_metres,
+        verified: stop.verified,
+        failureReason: stop.failure_reason,
+      })),
       resolutionOptions: (dto.arrival?.resolution_options ?? []).map((option) => ({
         value: option.value,
         label: option.label,
