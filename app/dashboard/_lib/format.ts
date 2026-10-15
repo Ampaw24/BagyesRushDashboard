@@ -90,20 +90,38 @@ export function formatSignedPercent(value: number): string {
 
 /**
  * "4m ago", "2h ago", "3d ago" — for a feed where the exact minute rarely
- * matters but the recency always does.
+ * matters but the recency always does. A future moment reads "in 11h", the
+ * same way round: a session's expiry or a scheduled send.
  *
- * Falls back to a date once something is more than a week old, because
- * "23d ago" is harder to place than the date itself.
+ * Future times used to be clamped to zero, so every one of them read "just
+ * now" — the sessions screen showed each staff session as expiring this very
+ * second when most had hours left.
+ *
+ * Falls back to a date once something is more than a week away in either
+ * direction, because "23d ago" is harder to place than the date itself.
  */
 export function formatRelative(date: Date): string {
-  const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+  const difference = Math.floor((Date.now() - date.getTime()) / 1000);
+  const future = difference < 0;
+  const seconds = Math.abs(difference);
 
+  // Either way round. Something the server wrote a moment ago can look a few
+  // seconds into the future on a browser whose clock runs slow, and "in under
+  // a minute" on a brand-new notification would be stranger than this.
   if (seconds < 60) return "just now";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86_400) return `${Math.floor(seconds / 3600)}h ago`;
-  if (seconds < 604_800) return `${Math.floor(seconds / 86_400)}d ago`;
 
-  return formatDate(date);
+  const span =
+    seconds < 3600
+      ? `${Math.floor(seconds / 60)}m`
+      : seconds < 86_400
+        ? `${Math.floor(seconds / 3600)}h`
+        : seconds < 604_800
+          ? `${Math.floor(seconds / 86_400)}d`
+          : null;
+
+  if (span === null) return formatDate(date);
+
+  return future ? `in ${span}` : `${span} ago`;
 }
 
 /**
