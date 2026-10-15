@@ -8,6 +8,7 @@ import {
   createVendor,
   deleteVendor,
   getVendor,
+  getVendorPayout,
   reinstateVendor,
   rejectVendor,
   restoreVendor,
@@ -21,7 +22,16 @@ import {
   type VendorImageType,
   type UpdateVendorInput,
 } from "@/lib/services/vendors.service";
-import { toVendorDetail } from "@/lib/mappers/vendor.mapper";
+import { toVendorDetail, toVendorPayout } from "@/lib/mappers/vendor.mapper";
+
+/**
+ * Full bank and mobile-money details. Every read is written to the audit log,
+ * so this runs only when somebody opens the Payout tab - fetching it with the
+ * page logged a "viewed payout" for everyone who merely opened the profile.
+ */
+export async function loadVendorPayoutAction(id: number) {
+  return apiAction("Payout details retrieved", async () => toVendorPayout(await getVendorPayout(id)));
+}
 
 /**
  * Vendor moderation and lifecycle.

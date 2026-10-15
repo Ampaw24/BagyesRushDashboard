@@ -7,13 +7,14 @@ import {
   createRider,
   deleteRider,
   getRider,
+  getRiderPayout,
   updateRider,
   moderateRider,
   restoreRider,
   setRiderAvailability,
   type CreateRiderInput,
 } from "@/lib/services/riders.service";
-import { toRiderDetail } from "@/lib/mappers/rider.mapper";
+import { toRiderDetail, toRiderPayout } from "@/lib/mappers/rider.mapper";
 
 /**
  * Rider moderation and lifecycle.
@@ -125,6 +126,15 @@ export async function updateRiderAction(id: number, input: Partial<CreateRiderIn
  * document links unless the caller also holds `riders.documents`, and the
  * backend refuses them independently.
  */
+/**
+ * Where a rider's money goes. Every read is written to the audit log, so this
+ * runs only when somebody opens the Payout tab - fetching it with the page
+ * logged a "viewed payout" for everyone who merely opened the profile.
+ */
+export async function loadRiderPayoutAction(id: number) {
+  return apiAction("Payout details retrieved", async () => toRiderPayout(await getRiderPayout(id)));
+}
+
 export async function loadRiderDetailAction(id: number) {
   return apiAction("Rider retrieved", async () => toRiderDetail(await getRider(id)));
 }

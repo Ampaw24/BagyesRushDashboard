@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { createPortal } from "react-dom";
+
+import { useDialogLayer } from "../_hooks/use-dialog-layer";
 
 /**
  * The shell every "look at this person without leaving the list" dialog uses.
@@ -32,24 +34,14 @@ export function DetailDialog({
   children: React.ReactNode;
   className?: string;
 }) {
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
+  useDialogLayer(onClose);
 
-    document.addEventListener("keydown", onKey);
-
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
-    };
-  }, [onClose]);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  // Portalled to the body. Quick views are opened from table cells, from
+  // right-aligned definition values, from inside other dialogs — rendered in
+  // place, each inherited that spot's alignment and font weight, and sat in
+  // whatever stacking context it happened to be in.
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 text-left font-normal">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       <div
@@ -75,7 +67,8 @@ export function DetailDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

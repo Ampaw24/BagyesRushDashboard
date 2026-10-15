@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { OrderQuickViewLink } from "../../orders/_components/order-quick-view-link";
 
 import { PageHeader } from "../../_components/page-header";
 import { ExportAction } from "../../_components/export-action";
@@ -110,9 +110,11 @@ export default async function CommissionsPage(
               {orders.map(({ row, dto }) => (
                 <tr key={row.id} className="transition duration-150 hover:bg-surface-muted">
                   <TableCell className="font-medium">
-                    <Link href={`/dashboard/orders/${row.id}`} className="hover:text-brand">
-                      {row.orderNumber}
-                    </Link>
+                    <OrderQuickViewLink
+                      orderId={row.id}
+                      orderNumber={row.orderNumber}
+                      className="transition duration-150 hover:text-brand"
+                    />
                     {/* Only parcels are labelled: food is the default and
                         tagging every row would be noise. */}
                     {row.isParcel && (

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 import { ActionMenu } from "../_components/action-menu";
@@ -10,10 +9,11 @@ import { EmptyState } from "../_components/empty-state";
 import { Pagination } from "../_components/pagination";
 import { FilterBar, type SelectFilter } from "../_components/filter-bar";
 import { userStatusMeta } from "../_lib/status";
-import { PlusIcon } from "../_lib/icons";
+import { EyeIcon, PlusIcon } from "../_lib/icons";
 import { formatDate, formatDateTimeOrDash } from "../_lib/format";
 import { useAdminActions, type AdminActionContext } from "../_hooks/use-admin-actions";
 import { NewStaffDialog } from "./new-staff-dialog";
+import { ViewAdminDialog } from "./view-admin-dialog";
 import type { AdminUserRow } from "@/lib/mappers/admin-user.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
 import type { RoleOption } from "../_lib/administration";
@@ -103,16 +103,18 @@ export function AdminUsersTable({
 
 function AdminRowView({ admin, context }: { admin: AdminUserRow; context: AdminActionContext }) {
   const { actions, dialog } = useAdminActions(admin, context);
+  const [viewing, setViewing] = useState(false);
 
   return (
     <tr>
       <TableCell className="font-medium">
-        <Link
-          href={`/dashboard/administration/admins/${admin.id}`}
-          className="text-brand transition duration-150 hover:opacity-80"
+        <button
+          type="button"
+          onClick={() => setViewing(true)}
+          className="text-left text-brand transition duration-150 hover:opacity-80"
         >
           {admin.name ?? admin.email}
-        </Link>
+        </button>
         {admin.id === context.currentAdminId && (
           <span className="ml-2 text-xs font-normal text-text-muted">(you)</span>
         )}
@@ -128,8 +130,16 @@ function AdminRowView({ admin, context }: { admin: AdminUserRow; context: AdminA
       <TableCell className="text-text-secondary">{formatDateTimeOrDash(admin.lastLoginAt)}</TableCell>
       <TableCell className="text-text-secondary">{formatDate(admin.createdAt)}</TableCell>
       <TableCell>
-        {actions.length > 0 ? <ActionMenu items={actions} /> : <span className="text-text-muted">—</span>}
+        <ActionMenu
+          items={[
+            { label: "Quick view", icon: EyeIcon, onClick: () => setViewing(true) },
+            ...actions,
+          ]}
+        />
         {dialog}
+        {viewing && (
+          <ViewAdminDialog admin={admin} context={context} onClose={() => setViewing(false)} />
+        )}
       </TableCell>
     </tr>
   );

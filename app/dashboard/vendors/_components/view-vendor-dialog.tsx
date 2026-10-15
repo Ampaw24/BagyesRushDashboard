@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ActionMenu } from "../../_components/action-menu";
+import {
+  useVendorStatusActions,
+  type VendorActionPermissions,
+} from "../../_hooks/use-vendor-status-actions";
+import { useSendMessage } from "../../_hooks/use-send-message";
 import { Avatar } from "../../_components/avatar";
 import { Badge } from "../../_components/status-badge";
 import { ImageLightbox } from "../../_components/image-lightbox";
@@ -45,13 +51,27 @@ type TabKey = (typeof TABS)[number]["key"];
 export function ViewVendorDialog({
   vendor,
   canViewDocuments,
+  permissions,
+  canMessage,
   onClose,
 }: {
   vendor: VendorRow;
   /** `vendors.documents` — reading who they are, separate from managing them. */
   canViewDocuments: boolean;
+  permissions: VendorActionPermissions;
+  /** `communications.send` — sending SMS spends credits, so it is its own right. */
+  canMessage: boolean;
   onClose: () => void;
 }) {
+  // The row's own actions, so an application can be read and decided in one
+  // place — approving from the list meant closing the dialog to reach the menu.
+  const { actions, dialog } = useVendorStatusActions(vendor, permissions);
+  const { actions: messageActions, dialog: messageDialog } = useSendMessage(
+    { userId: vendor.userId, name: vendor.businessName, phone: vendor.phone },
+    canMessage,
+  );
+  const menu = [...messageActions, ...actions];
+
   const [detail, setDetail] = useState<VendorDetail | null>(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<TabKey>("business");
@@ -69,7 +89,9 @@ export function ViewVendorDialog({
     return () => {
       active = false;
     };
-  }, [vendor.id]);
+    // Re-read when an action taken here lands: the list revalidates, the fresh
+    // row arrives, and a rejection reason or status in the body follows it.
+  }, [vendor.id, vendor.status, vendor.derivedState, vendor.isFeatured]);
 
   return (
     <DetailDialog
@@ -110,10 +132,11 @@ export function ViewVendorDialog({
             build={() => vendorRecord(detail!)}
             disabled={!detail}
           />
+          {menu.length > 0 && <ActionMenu items={menu} />}
           <Link
-          href={`/dashboard/vendors/${vendor.id}`}
-          className="flex h-11 items-center rounded-lg bg-brand px-5 text-sm font-semibold text-brand-foreground transition duration-150 hover:bg-brand-dark"
-        >
+            href={`/dashboard/vendors/${vendor.id}`}
+            className="flex h-11 items-center rounded-lg bg-brand px-5 text-sm font-semibold text-brand-foreground transition duration-150 hover:bg-brand-dark"
+          >
             Open full profile
           </Link>
         </>
@@ -162,6 +185,10 @@ export function ViewVendorDialog({
           onClose={() => setPreview(null)}
         />
       )}
+
+      {/* Inside the dialog so the confirmations stack above it. */}
+      {dialog}
+      {messageDialog}
     </DetailDialog>
   );
 }

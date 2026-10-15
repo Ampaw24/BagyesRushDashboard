@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { Badge, RiderPresenceBadge } from "../../../_components/status-badge";
 import { Tabs } from "../../../_components/tabs";
@@ -13,6 +13,8 @@ import { formatCommissionGrace, formatDate, formatDateTimeOrDash } from "../../.
 import { EditIcon, StarIcon } from "../../../_lib/icons";
 import { useRiderStatusActions } from "../../../_hooks/use-rider-status-actions";
 import { useSendMessage } from "../../../_hooks/use-send-message";
+import { useOnDemand } from "../../../_hooks/use-on-demand";
+import { loadRiderPayoutAction } from "../../_actions";
 import { EditRiderDialog } from "./edit-rider-dialog";
 import { RiderLocationMap } from "./rider-location-map";
 import { Avatar } from "../../../_components/avatar";
@@ -31,9 +33,11 @@ export type RiderDetailProps = {
   rider: RiderDetailModel;
   /** The type -> make -> model tree, so the edit dialog's picker cascades. */
   catalogue: VehicleCatalogue;
-  /** Present only when the admin holds `riders.payout`; every read is audit-logged. */
-  payout: RiderPayout | null;
-  /** From GET /admin/activity filtered to this rider; empty without `audit.view`. */
+  /**
+   * What has been done to this rider, from GET /admin/activity with
+   * `changes_only` — payout reads stay in the main audit log, out of here.
+   * Empty without `audit.view`.
+   */
   activity: ActivityRow[];
   /** Present only when the admin holds `riders.wallet`. */
   wallet: WalletSummary | null;
@@ -46,6 +50,8 @@ export type RiderDetailProps = {
     canAdjustWallet: boolean;
     /** `communications.send` — sending SMS spends credits, so it is its own right. */
     canMessage: boolean;
+    /** `riders.payout` — every read is audit-logged. */
+    canViewPayout: boolean;
   };
 };
 
@@ -64,7 +70,6 @@ const TABS = [
 export function RiderDetail({
   rider,
   catalogue,
-  payout,
   activity,
   wallet,
   transactions,
@@ -77,6 +82,17 @@ export function RiderDetail({
     permissions.canMessage,
   );
   const [editing, setEditing] = useState(false);
+
+  // Loaded when the Payout tab is first opened, not with the page: each read
+  // is audit-logged, and opening a profile is not looking at bank details.
+  const payout = useOnDemand(
+    useCallback(() => loadRiderPayoutAction(rider.id), [rider.id]),
+  );
+
+  function changeTab(key: string) {
+    setTab(key);
+    if (key === "payout" && permissions.canViewPayout) payout.request();
+  }
 
   const headerActions = [
     // riders.update: correcting a plate or a city, not deciding whether they
@@ -150,7 +166,7 @@ export function RiderDetail({
         </p>
       )}
 
-      <Tabs tabs={TABS} active={tab} onChange={setTab} />
+      <Tabs tabs={TABS} active={tab} onChange={changeTab} />
 
       {tab === "overview" && <OverviewTab rider={rider} />}
       {tab === "map" && <RiderLocationMap rider={rider} />}
@@ -168,7 +184,14 @@ export function RiderDetail({
           canAdjust={permissions.canAdjustWallet}
         />
       )}
-      {tab === "payout" && <PayoutTab rider={rider} payout={payout} />}
+      {tab === "payout" && (
+        <PayoutTab
+          rider={rider}
+          canViewPayout={permissions.canViewPayout}
+          payout={payout.data}
+          error={payout.error}
+        />
+      )}
       {tab === "activity" && <ActivityTab activity={activity} />}
 
       {dialog}
@@ -543,7 +566,29 @@ function DocumentsTab({ rider, canView }: { rider: RiderDetailModel; canView: bo
   );
 }
 
-function PayoutTab({ rider, payout }: { rider: RiderDetailModel; payout: RiderPayout | null }) {
+function PayoutTab({
+  rider,
+  canViewPayout,
+  payout,
+  error,
+}: {
+  rider: RiderDetailModel;
+  canViewPayout: boolean;
+  payout: RiderPayout | null;
+  error: string;
+}) {
+  if (canViewPayout && error) {
+    return (
+      <p className="break-words rounded-lg bg-status-critical/10 px-3.5 py-2.5 text-sm text-status-critical">
+        {error}
+      </p>
+    );
+  }
+
+  if (canViewPayout && !payout) {
+    return <p className="py-10 text-center text-sm text-text-muted">Loading payout details…</p>;
+  }
+
   if (!payout) {
     return (
       <EmptyState
@@ -584,8 +629,8 @@ function PayoutTab({ rider, payout }: { rider: RiderDetailModel; payout: RiderPa
       </Card>
 
       <p className="text-sm text-text-muted lg:col-span-2">
-        Full account numbers are encrypted at rest and are never returned by the API. Every read of
-        this tab is recorded in the audit log.
+        Full account numbers are encrypted at rest and are never returned by the API. Opening this
+        tab is recorded in the audit log.
       </p>
     </div>
   );

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 import { TableCell, TableHeadCell, TableShell } from "../../_components/table-shell";
@@ -12,7 +11,9 @@ import { Pagination } from "../../_components/pagination";
 import { FilterBar, type SelectFilter } from "../../_components/filter-bar";
 import { communicationStatusMeta } from "../../_lib/status";
 import { formatDateTime, formatDateTimeOrDash } from "../../_lib/format";
+import { EyeIcon } from "../../_lib/icons";
 import { cancelCommunicationAction, sendCommunicationAction } from "../_actions";
+import { ViewCommunicationDialog } from "./view-communication-dialog";
 import type { CommunicationRow } from "@/lib/mappers/communication.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
 import {
@@ -58,6 +59,7 @@ export function CommunicationsTable({
   emptyDescription?: string;
 }) {
   const [pending, setPending] = useState<PendingAction | null>(null);
+  const [viewing, setViewing] = useState<CommunicationRow | null>(null);
 
   return (
     <div className="flex flex-col gap-4">
@@ -85,7 +87,9 @@ export function CommunicationsTable({
           </thead>
           <tbody>
             {communications.map((communication) => {
-              const actions: ActionMenuItem[] = [];
+              const actions: ActionMenuItem[] = [
+                { label: "Quick view", icon: EyeIcon, onClick: () => setViewing(communication) },
+              ];
 
               if (
                 canSend &&
@@ -108,15 +112,18 @@ export function CommunicationsTable({
               return (
                 <tr key={communication.id} className="transition duration-150 hover:bg-surface-muted">
                   <TableCell>
-                    <Link
-                      href={`/dashboard/communications/history/${communication.id}`}
-                      className="flex flex-col gap-0.5"
+                    <button
+                      type="button"
+                      onClick={() => setViewing(communication)}
+                      className="flex flex-col gap-0.5 text-left"
                     >
-                      <span className="font-medium text-foreground">{communication.title}</span>
+                      <span className="font-medium text-foreground transition duration-150 hover:text-brand">
+                        {communication.title}
+                      </span>
                       <span className="line-clamp-1 text-xs text-text-muted">
                         {communication.body}
                       </span>
-                    </Link>
+                    </button>
                   </TableCell>
                   <TableCell>
                     <span className="text-text-secondary">{communication.audienceLabel}</span>
@@ -157,7 +164,7 @@ export function CommunicationsTable({
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    {actions.length > 0 && <ActionMenu items={actions} />}
+                    <ActionMenu items={actions} />
                   </TableCell>
                 </tr>
               );
@@ -167,6 +174,10 @@ export function CommunicationsTable({
       )}
 
       <Pagination pagination={pagination} />
+
+      {viewing && (
+        <ViewCommunicationDialog communication={viewing} onClose={() => setViewing(null)} />
+      )}
 
       {pending && (
         <ConfirmDialog

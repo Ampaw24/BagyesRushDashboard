@@ -11,6 +11,8 @@ export type ActivityListQuery = {
   /** Class basename, e.g. "Vendor", "Order", "User". */
   subject_type?: string;
   subject_id?: number;
+  /** Leave out reads such as payout views — a record's history is what changed. */
+  changes_only?: boolean;
   from?: string;
   to?: string;
 };

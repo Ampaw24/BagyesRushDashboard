@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { OrderQuickViewLink } from "../orders/_components/order-quick-view-link";
 import { useState } from "react";
 
 import { ActionMenu } from "../_components/action-menu";
@@ -155,12 +156,10 @@ export function ReviewsTable({
                   </TableCell>
                   <TableCell className="text-text-secondary">
                     {review.orderId ? (
-                      <Link
-                        href={`/dashboard/orders/${review.orderId}`}
-                        className="text-brand transition duration-150 hover:opacity-80"
-                      >
-                        {review.orderNumber}
-                      </Link>
+                      <OrderQuickViewLink
+                        orderId={review.orderId}
+                        orderNumber={review.orderNumber ?? undefined}
+                      />
                     ) : (
                       "—"
                     )}

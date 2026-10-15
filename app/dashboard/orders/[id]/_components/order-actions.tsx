@@ -25,10 +25,17 @@ export function OrderActions({
   order,
   canUpdateStatus,
   canRefund,
+  onChanged,
 }: {
   order: OrderDetail;
   canUpdateStatus: boolean;
   canRefund: boolean;
+  /**
+   * Called after a status change or refund lands. The full page is refreshed by
+   * the action's revalidation; a quick-view dialog holds its own copy of the
+   * order and needs telling to re-read it.
+   */
+  onChanged?: () => void;
 }) {
   const [pending, setPending] = useState<Pending | null>(null);
   const { notifySuccess } = useToast();
@@ -84,14 +91,17 @@ export function OrderActions({
           onConfirm={async (reason) => {
             const result = await updateOrderStatusAction(order.id, pending.status, reason);
             notifySuccess(result);
-            if (result.ok) setPending(null);
+            if (result.ok) {
+              setPending(null);
+              onChanged?.();
+            }
             return result;
           }}
         />
       )}
 
       {pending?.kind === "refund" && (
-        <RefundDialog order={order} onClose={() => setPending(null)} />
+        <RefundDialog order={order} onClose={() => setPending(null)} onRefunded={onChanged} />
       )}
     </>
   );

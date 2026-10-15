@@ -23,11 +23,13 @@ export function DispatchPanel({
   order,
   availableRiders,
   canAssign,
+  onAssigned,
 }: {
   order: OrderDetail;
   /** Approved riders who are online now. Empty without `riders.view`. */
   availableRiders: RiderRow[];
   canAssign: boolean;
+  onAssigned?: () => void;
 }) {
   return (
     <section className="flex flex-col gap-4">
@@ -48,6 +50,7 @@ export function DispatchPanel({
           <AssignCard
             order={order}
             riders={availableRiders}
+            onAssigned={onAssigned}
             // Reassigning mid-journey would leave the food with the first
             // rider and the job with the second.
             locked={order.dispatch.pickedUpAt !== null}
@@ -142,10 +145,12 @@ function AssignCard({
   order,
   riders,
   locked,
+  onAssigned,
 }: {
   order: OrderDetail;
   riders: RiderRow[];
   locked: boolean;
+  onAssigned?: () => void;
 }) {
   const [riderId, setRiderId] = useState<string>("");
   const [pending, setPending] = useState(false);
@@ -158,6 +163,11 @@ function AssignCard({
     const result = await assignRiderAction(order.id, Number(riderId));
     setPending(false);
     notifySuccess(result);
+
+    if (result.ok) {
+      setRiderId("");
+      onAssigned?.();
+    }
   }
 
   return (

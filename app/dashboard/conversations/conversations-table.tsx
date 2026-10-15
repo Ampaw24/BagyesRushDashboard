@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { ConversationQuickViewLink } from "./_components/conversation-quick-view-link";
 
 import { TableCell, TableHeadCell, TableShell } from "../_components/table-shell";
 import { Badge } from "../_components/status-badge";
@@ -75,12 +75,14 @@ export function ConversationsTable({
               {conversations.map((conversation) => (
                 <tr key={conversation.id}>
                   <TableCell className="font-medium">
-                    <Link
-                      href={`/dashboard/conversations/${conversation.id}`}
-                      className="break-words hover:text-brand"
+                    {/* Opens in place: handovers are worked down this list,
+                        and a page per thread lost the filters every time. */}
+                    <ConversationQuickViewLink
+                      conversationId={conversation.id}
+                      className="break-words text-brand transition duration-150 hover:opacity-80"
                     >
                       {conversation.order?.orderNumber ?? `Thread #${conversation.id}`}
-                    </Link>
+                    </ConversationQuickViewLink>
                     {conversation.order?.vendorName && (
                       <span className="mt-0.5 block text-xs font-normal text-text-muted">
                         {conversation.order.vendorName}

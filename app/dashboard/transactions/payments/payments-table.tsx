@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { OrderQuickViewLink } from "../../orders/_components/order-quick-view-link";
 import { useState } from "react";
 
 import { ActionMenu } from "../../_components/action-menu";
@@ -96,12 +96,10 @@ export function PaymentsTable({
                   <TableCell className="font-medium">{payment.reference}</TableCell>
                   <TableCell>
                     {payment.orderId ? (
-                      <Link
-                        href={`/dashboard/orders/${payment.orderId}`}
-                        className="text-brand transition duration-150 hover:opacity-80"
-                      >
-                        {payment.orderNumber}
-                      </Link>
+                      <OrderQuickViewLink
+                        orderId={payment.orderId}
+                        orderNumber={payment.orderNumber ?? undefined}
+                      />
                     ) : (
                       <span className="text-text-muted">—</span>
                     )}

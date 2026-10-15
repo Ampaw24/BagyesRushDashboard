@@ -4,12 +4,12 @@ import { notFound, unstable_rethrow } from "next/navigation";
 import { PageHeader } from "../../_components/page-header";
 import { NoPermissionState } from "../../_components/empty-state";
 import { VendorDetail } from "./_components/vendor-detail";
-import { getVendor, getVendorPayout, listVendorMenuItems } from "@/lib/services/vendors.service";
+import { getVendor, listVendorMenuItems } from "@/lib/services/vendors.service";
 import { listActivity } from "@/lib/services/activity.service";
 import { listActiveBusinessTypes } from "@/lib/services/business-types.service";
 import { getWallet, listWalletTransactions } from "@/lib/services/wallets.service";
 import { toWalletSummary, toWalletTransactionRow } from "@/lib/mappers/wallet.mapper";
-import { toMenuItemRow, toVendorDetail, toVendorPayout } from "@/lib/mappers/vendor.mapper";
+import { toMenuItemRow, toVendorDetail } from "@/lib/mappers/vendor.mapper";
 import { toActivityRow } from "@/lib/mappers/activity.mapper";
 import { can, getPermissions } from "@/lib/auth/guard";
 import { isNotFound } from "@/lib/api/errors";
@@ -42,15 +42,19 @@ export default async function VendorDetailPage(props: PageProps<"/dashboard/vend
   // and seeing what is owed are different jobs.
   const canSeeWallet = can(permissions, "vendors.wallet");
 
-  const [menuItems, payout, activity, wallet, transactions, businessTypes] = await Promise.all([
+  // Payout is not fetched here: every read is audit-logged, so it loads when
+  // somebody opens the Payout tab rather than whenever the profile is opened.
+  const [menuItems, activity, wallet, transactions, businessTypes] = await Promise.all([
     can(permissions, "menu.view")
       ? listVendorMenuItems(vendorId, { per_page: 100 }).then((page) => page.items.map(toMenuItemRow))
       : Promise.resolve([]),
-    can(permissions, "vendors.payout")
-      ? getVendorPayout(vendorId).then(toVendorPayout)
-      : Promise.resolve(null),
     can(permissions, "audit.view")
-      ? listActivity({ subject_type: "Vendor", subject_id: vendorId, per_page: 25 }).then((page) =>
+      ? listActivity({
+          subject_type: "Vendor",
+          subject_id: vendorId,
+          changes_only: true,
+          per_page: 25,
+        }).then((page) =>
           page.items.map(toActivityRow),
         )
       : Promise.resolve([]),
@@ -77,7 +81,6 @@ export default async function VendorDetailPage(props: PageProps<"/dashboard/vend
       vendor={vendor}
       menuItems={menuItems}
       businessTypes={businessTypes}
-      payout={payout}
       activity={activity}
       wallet={wallet}
       transactions={transactions}
@@ -89,6 +92,7 @@ export default async function VendorDetailPage(props: PageProps<"/dashboard/vend
         canAdjustWallet: canSeeWallet,
         canMessage: can(permissions, "communications.send"),
         canEdit: can(permissions, "vendors.update"),
+        canViewPayout: can(permissions, "vendors.payout"),
       }}
     />
   );

@@ -8,6 +8,7 @@ import { Badge } from "../../_components/status-badge";
 import { reportStatusMeta } from "../../_lib/status";
 import { formatDateTime, formatDateTimeOrDash } from "../../_lib/format";
 import { ReportTriage } from "../_components/report-triage";
+import { OrderQuickViewLink } from "../../orders/_components/order-quick-view-link";
 import { getReport } from "@/lib/services/reports.service";
 import { toReportRow } from "@/lib/mappers/report.mapper";
 import { can, getPermissions } from "@/lib/auth/guard";
@@ -142,12 +143,11 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-text-muted">Order</dt>
                   <dd className="text-right">
-                    <Link
-                      href={`/dashboard/orders/${report.orderId}`}
+                    <OrderQuickViewLink
+                      orderId={report.orderId}
+                      orderNumber={report.orderNumber ?? undefined}
                       className="text-brand transition duration-150 hover:underline"
-                    >
-                      {report.orderNumber ?? `#${report.orderId}`}
-                    </Link>
+                    />
                   </dd>
                 </div>
               )}

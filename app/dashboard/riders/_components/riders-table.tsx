@@ -244,6 +244,8 @@ function RiderRowView({
           <ViewRiderDialog
             rider={rider}
             canViewDocuments={canViewDocuments}
+            permissions={permissions}
+            canMessage={canMessage}
             onClose={() => setViewing(false)}
           />
         )}

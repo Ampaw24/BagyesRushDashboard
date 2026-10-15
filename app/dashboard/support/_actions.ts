@@ -3,7 +3,33 @@
 import { revalidatePath } from "next/cache";
 
 import { apiAction } from "@/lib/api/action";
-import { updateReportStatus, type UpdateReportStatusInput } from "@/lib/services/reports.service";
+import {
+  getReport,
+  updateReportStatus,
+  type UpdateReportStatusInput,
+} from "@/lib/services/reports.service";
+import { toReportRow, type ReportRow } from "@/lib/mappers/report.mapper";
+import { can, getPermissions } from "@/lib/auth/guard";
+
+export type ReportQuickView = {
+  report: ReportRow;
+  canManage: boolean;
+};
+
+/**
+ * One complaint for the quick-view dialog.
+ *
+ * Re-read rather than taken from the list row: the attachment URLs are
+ * short-lived signed links, and the ones on a list loaded a while ago may
+ * already have expired.
+ */
+export async function loadReportQuickViewAction(id: number) {
+  return apiAction<ReportQuickView>("Report retrieved", async () => {
+    const [permissions, report] = await Promise.all([getPermissions(), getReport(id)]);
+
+    return { report: toReportRow(report), canManage: can(permissions, "reports.manage") };
+  });
+}
 
 /**
  * Complaint triage.

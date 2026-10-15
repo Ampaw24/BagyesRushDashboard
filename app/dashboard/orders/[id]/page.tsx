@@ -6,19 +6,33 @@ import { PageHeader } from "../../_components/page-header";
 import { RecordExportButton } from "../../_components/record-export-button";
 import { orderRecord } from "@/lib/export/records";
 import { MoneyBreakdown } from "./_components/money-breakdown";
-import { Badge, OrderStatusBadge } from "../../_components/status-badge";
-import { TableCell, TableHeadCell, TableShell } from "../../_components/table-shell";
+import { OrderStatusBadge } from "../../_components/status-badge";
 import { NoPermissionState } from "../../_components/empty-state";
-import { orderPaymentMeta, parcelStopStatusMeta, paymentStatusMeta } from "../../_lib/status";
-import { formatCurrency, formatDateTime, formatDateTimeOrDash } from "../../_lib/format";
+import { formatDateTime } from "../../_lib/format";
 import { OrderActions } from "./_components/order-actions";
 import { TrackingPanel } from "./_components/tracking-panel";
 import { DispatchPanel } from "./_components/dispatch-panel";
 import { FailedDeliveryBanner } from "./_components/failed-delivery-banner";
+import {
+  CustomerCard,
+  DeliveryCard,
+  InfoCard,
+  InfoRow,
+  OrderItemsTable,
+  OrderNotes,
+  OrderPayments,
+  OrderTimeline,
+  ParcelCard,
+  ParcelItinerary,
+  ParcelPartyCards,
+} from "./_components/order-sections";
+import { ConversationQuickViewLink } from "../../conversations/_components/conversation-quick-view-link";
+import { OrderHistory } from "../_components/order-history";
+import { loadOrderHistory } from "../_lib/order-history";
 import { getOrder } from "@/lib/services/orders.service";
 import { getConversationForOrder } from "@/lib/services/conversations.service";
 import { listRiders } from "@/lib/services/riders.service";
-import { toOrderDetail, type OrderDetail, type ParcelDetail } from "@/lib/mappers/order.mapper";
+import { toOrderDetail } from "@/lib/mappers/order.mapper";
 import { toRiderRow } from "@/lib/mappers/rider.mapper";
 import { can, getPermissions } from "@/lib/auth/guard";
 import { isNotFound } from "@/lib/api/errors";
@@ -62,6 +76,13 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
     ? await getConversationForOrder(order.id).catch(() => null)
     : null;
 
+  // Who did what to this order. Needs `audit.view`; without it the section is
+  // left out rather than shown empty, which would read as "nobody touched it".
+  // An audit-log failure loses the section, never the order page.
+  const history = can(permissions, "audit.view")
+    ? await loadOrderHistory(order.id, conversation?.id ?? null).catch(() => null)
+    : null;
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
@@ -94,11 +115,7 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <InfoCard title={order.parcel ? "Customer (booked and paid)" : "Customer"}>
-          <InfoRow label="Name" value={order.customerName} />
-          <InfoRow label="Email" value={order.customerEmail ?? "—"} />
-          <InfoRow label="Phone" value={order.customerPhone ?? "—"} />
-        </InfoCard>
+        <CustomerCard order={order} />
 
         {/* A parcel has no vendor. What support needs instead is who hands it
             over and who takes it - and which way round depends on whether the
@@ -126,283 +143,66 @@ export default async function OrderDetailPage(props: PageProps<"/dashboard/order
           </InfoCard>
         )}
 
-        <InfoCard title={order.parcel ? "Rider" : "Delivery"}>
-          {!order.parcel && (
-            <>
-              <InfoRow label="Recipient" value={order.recipientName} />
-              <InfoRow label="Phone" value={order.recipientPhone} />
-              <InfoRow label="Address" value={order.address} />
-            </>
-          )}
-          <InfoRow
-            label="Rider"
-            value={order.rider ? (order.rider.name ?? order.rider.phone) : "Unassigned"}
-          />
-          {conversation && (
-            <InfoRow
-              label="Chat"
-              value={
-                <Link
-                  href={`/dashboard/conversations/${conversation.id}`}
-                  className="text-brand transition duration-150 hover:opacity-80"
-                >
-                  Read the conversation
-                  {typeof conversation.message_count === "number" &&
-                    ` (${conversation.message_count})`}
-                </Link>
-              }
-            />
-          )}
-          {order.parcel?.deliveryInstructions && (
-            <InfoRow label="Instructions" value={order.parcel.deliveryInstructions} />
-          )}
-        </InfoCard>
+        <DeliveryCard
+          order={order}
+          extra={
+            conversation && (
+              <InfoRow
+                label="Chat"
+                value={
+                  <ConversationQuickViewLink
+                    conversationId={conversation.id}
+                    className="text-brand transition duration-150 hover:opacity-80"
+                  >
+                    Read the conversation
+                    {typeof conversation.message_count === "number" &&
+                      ` (${conversation.message_count})`}
+                  </ConversationQuickViewLink>
+                }
+              />
+            )
+          }
+        />
 
-        {/* A parcel has no kitchen and no line items — what it is, and where it
-            is being collected from, is the equivalent information. */}
-        {order.parcel && (
-          <InfoCard title="Parcel">
-            <InfoRow
-              label="Direction"
-              value={
-                order.parcel.direction === "receive"
-                  ? `${order.parcel.directionLabel} · collected from someone else for the customer`
-                  : `${order.parcel.directionLabel} · the customer is sending it`
-              }
-            />
-            <InfoRow label="Contents" value={order.parcel.itemDescription} />
-            <InfoRow
-              label="Size"
-              value={
-                order.parcel.isFragile
-                  ? `${order.parcel.sizeLabel} · fragile`
-                  : order.parcel.sizeLabel
-              }
-            />
-            <InfoRow label="Quantity" value={String(order.parcel.quantity)} />
-            {order.parcel.declaredValue !== null && (
-              <InfoRow
-                label="Declared value"
-                value={formatCurrency(order.parcel.declaredValue)}
-              />
-            )}
-            {order.parcel.stopCount > 1 && (
-              <InfoRow label="Stops" value={`${order.parcel.stopCount} drops on this run`} />
-            )}
-            {order.parcel.totalWeightKg !== null && (
-              <InfoRow
-                label="Weight"
-                value={`${order.parcel.totalWeightKg} kg (customer's figure)`}
-              />
-            )}
-          </InfoCard>
-        )}
+        {order.parcel && <ParcelCard parcel={order.parcel} />}
       </div>
 
       <DispatchPanel order={order} availableRiders={availableRiders} canAssign={canAssignRider} />
 
-      {order.stops.length > 1 && (
-        <section className="flex flex-col gap-4">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="break-words text-lg font-semibold tracking-tight text-foreground">
-              Itinerary
-            </h2>
-            <span className="text-sm text-text-muted">
-              {order.stops.filter((stop) => !stop.isOpen).length} of {order.stops.length} answered
-            </span>
-          </div>
-
-          <ol className="flex flex-col gap-3">
-            {order.stops.map((stop) => (
-              <li
-                key={stop.id}
-                className="flex flex-col gap-2 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <span className="flex items-baseline gap-2">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-semibold text-text-secondary">
-                      {stop.sequence}
-                    </span>
-                    <span className="flex flex-col gap-0.5">
-                      <span className="font-medium text-foreground">{stop.address}</span>
-                      <span className="text-xs text-text-muted">
-                        {stop.recipientName ?? "No named recipient"}
-                        {stop.recipientPhone ? ` · ${stop.recipientPhone}` : ""}
-                      </span>
-                    </span>
-                  </span>
-                  <Badge meta={parcelStopStatusMeta[stop.status]} />
-                </div>
-
-                <p className="text-sm text-text-secondary">{stop.summary}</p>
-
-                {stop.instructions && (
-                  <p className="text-xs text-text-muted">&ldquo;{stop.instructions}&rdquo;</p>
-                )}
-
-                {/* The one package that did not arrive is the one somebody
-                    will ring about, so the reason is not buried. */}
-                {stop.failureReason && (
-                  <p className="rounded-lg bg-status-critical/10 p-2 text-xs text-status-critical">
-                    {stop.failureReason}
-                  </p>
-                )}
-
-                {stop.deliveredAt && (
-                  <p className="text-xs text-text-muted">
-                    Delivered {formatDateTime(stop.deliveredAt)}
-                    {stop.deliveredToName ? ` to ${stop.deliveredToName}` : ""}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
+      <ParcelItinerary order={order} />
 
       {/* Only while it is actually moving: a map of a delivered order shows
           where somebody used to be. */}
-      {(order.status === "out_for_delivery" || order.status === "ready" || order.status === "accepted") && (
-        <TrackingPanel order={order} />
+      {(order.status === "out_for_delivery" ||
+        order.status === "ready" ||
+        order.status === "accepted") && <TrackingPanel order={order} />}
+
+      <OrderNotes order={order} />
+
+      {!order.isParcel && (
+        <section className="flex flex-col gap-4">
+          <h2 className="break-words text-lg font-semibold tracking-tight text-foreground">
+            Items
+          </h2>
+          <OrderItemsTable order={order} />
+        </section>
       )}
-
-      {(order.rejectionReason || order.cancellationReason || order.notes) && (
-        <div className="flex flex-col gap-3">
-          {order.notes && <NoteBox label="Customer notes" body={order.notes} />}
-          {order.rejectionReason && <NoteBox label="Rejection reason" body={order.rejectionReason} critical />}
-          {order.cancellationReason && (
-            <NoteBox label="Cancellation reason" body={order.cancellationReason} critical />
-          )}
-        </div>
-      )}
-
-      <section className="flex flex-col gap-4">
-        <h2 className="break-words text-lg font-semibold tracking-tight text-foreground">
-          {order.isParcel ? "Charges" : "Items"}
-        </h2>
-
-        {/* A parcel has nothing to itemise — the whole bill is delivery plus
-            the service fee, and the breakdown below still reconciles. */}
-        {!order.isParcel && (
-        <TableShell>
-          <thead>
-            <tr>
-              <TableHeadCell>Item</TableHeadCell>
-              <TableHeadCell>Category</TableHeadCell>
-              <TableHeadCell>Unit price</TableHeadCell>
-              <TableHeadCell>Qty</TableHeadCell>
-              <TableHeadCell>Line total</TableHeadCell>
-            </tr>
-          </thead>
-          <tbody>
-            {order.items.map((item) => (
-              <tr key={item.id}>
-                <TableCell className="font-medium">
-                  {item.name}
-                  {item.options.length > 0 && (
-                    <span className="mt-1 block text-xs font-normal text-text-muted">
-                      {item.options.map((option) => `${option.groupName}: ${option.name}`).join(", ")}
-                    </span>
-                  )}
-                  {item.notes && (
-                    <span className="mt-1 block text-xs font-normal text-text-muted">“{item.notes}”</span>
-                  )}
-                </TableCell>
-                <TableCell className="text-text-secondary">{item.categoryName ?? "—"}</TableCell>
-                <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
-                <TableCell>{item.quantity}</TableCell>
-                <TableCell>{formatCurrency(item.lineTotal)}</TableCell>
-              </tr>
-            ))}
-          </tbody>
-        </TableShell>
-        )}
-
-      </section>
 
       <MoneyBreakdown order={order} />
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        <section className="flex flex-col gap-4">
-          <h2 className="break-words text-lg font-semibold tracking-tight text-foreground">Timeline</h2>
-          <ol className="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-5 shadow-sm">
-            {order.timeline.map((step) => (
-              <li key={step.status} className="flex items-center justify-between gap-3 text-sm">
-                <span className="flex items-center gap-2.5">
-                  <span
-                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${
-                      step.at ? "bg-status-good" : "bg-zinc-300 dark:bg-zinc-600"
-                    }`}
-                  />
-                  <span className={step.at ? "text-foreground" : "text-text-muted"}>{step.label}</span>
-                </span>
-                <span className="text-text-muted">{formatDateTimeOrDash(step.at)}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <section className="flex flex-col gap-4">
-          <h2 className="flex flex-wrap items-center gap-3 break-words text-lg font-semibold tracking-tight text-foreground">
-            Payment
-            <Badge meta={orderPaymentMeta(order)} />
-          </h2>
-
-          {order.tender && (
-            <p className="break-words text-sm text-text-secondary">{order.tender.label}</p>
-          )}
-
-          {order.attempts.length === 0 && !order.tender?.usedWallet ? (
-            <p className="rounded-xl border border-border-subtle bg-surface p-5 text-sm text-text-muted shadow-sm">
-              No payment attempts recorded.
-            </p>
-          ) : (
-            <TableShell>
-              <thead>
-                <tr>
-                  <TableHeadCell>Reference</TableHeadCell>
-                  <TableHeadCell>Provider</TableHeadCell>
-                  <TableHeadCell>Amount</TableHeadCell>
-                  <TableHeadCell>Status</TableHeadCell>
-                  <TableHeadCell>Paid</TableHeadCell>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Wallet credit is taken when the order is placed and never
-                    goes through the gateway, so it has no attempt row of its
-                    own. Without this line an order paid entirely from the
-                    wallet showed an empty table. */}
-                {order.tender?.usedWallet && (
-                  <tr>
-                    <TableCell className="font-medium">Wallet credit</TableCell>
-                    <TableCell className="text-text-secondary">In-app wallet</TableCell>
-                    <TableCell>{formatCurrency(order.tender.fromWallet)}</TableCell>
-                    <TableCell>
-                      <Badge meta={paymentStatusMeta.paid} />
-                    </TableCell>
-                    <TableCell className="text-text-secondary">
-                      {formatDateTimeOrDash(order.placedAt)}
-                    </TableCell>
-                  </tr>
-                )}
-                {order.attempts.map((attempt) => (
-                  <tr key={attempt.reference}>
-                    <TableCell className="font-medium">{attempt.reference}</TableCell>
-                    <TableCell className="text-text-secondary">{attempt.provider}</TableCell>
-                    <TableCell>{formatCurrency(attempt.amount)}</TableCell>
-                    <TableCell>
-                      <Badge meta={paymentStatusMeta[attempt.status]} />
-                    </TableCell>
-                    <TableCell className="text-text-secondary">
-                      {formatDateTimeOrDash(attempt.paidAt)}
-                    </TableCell>
-                  </tr>
-                ))}
-              </tbody>
-            </TableShell>
-          )}
-        </section>
+        <OrderTimeline order={order} />
+        <OrderPayments order={order} />
       </div>
+
+      {history && (
+        <section className="flex flex-col gap-4">
+          <h2 className="break-words text-lg font-semibold tracking-tight text-foreground">
+            History
+          </h2>
+          <OrderHistory entries={history} />
+        </section>
+      )}
     </div>
   );
 }
@@ -421,106 +221,4 @@ async function loadOrder(id: number) {
     if (isNotFound(error, "order")) notFound();
     throw error;
   }
-}
-
-function InfoCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-5 shadow-sm">
-      <h3 className="break-words text-sm font-semibold text-foreground">{title}</h3>
-      <dl className="flex flex-col gap-2">{children}</dl>
-    </div>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-start justify-between gap-2 text-sm">
-      <dt className="text-text-muted">{label}</dt>
-      <dd className="break-words text-right font-medium text-foreground">{value}</dd>
-    </div>
-  );
-}
-
-
-function NoteBox({ label, body, critical }: { label: string; body: string; critical?: boolean }) {
-  return (
-    <div
-      className={`flex flex-col gap-1 rounded-xl border p-4 text-sm ${
-        critical
-          ? "border-status-critical/30 bg-status-critical/5"
-          : "border-border-subtle bg-surface"
-      }`}
-    >
-      <p className="font-medium text-foreground">{label}</p>
-      <p className="break-words text-text-secondary">{body}</p>
-    </div>
-  );
-}
-
-/**
- * Who hands a parcel over and who takes it.
- *
- * The two swap with the direction. On a send, the customer is at the pickup
- * and each stop's recipient receives. On a receive, a third party - the pickup
- * contact, who has no app - hands it over and the customer receives at the
- * drop. Showing only "the recipient" left half of every receive parcel's
- * people off the page, and the half support most often needs to phone.
- */
-function ParcelPartyCards({ order, parcel }: { order: OrderDetail; parcel: ParcelDetail }) {
-  const receiving = parcel.direction === "receive";
-
-  const contact = (name: string | null, phone: string | null) =>
-    name ? `${name}${phone ? ` · ${phone}` : ""}` : (phone ?? "—");
-
-  return (
-    <>
-      <InfoCard title="Sender">
-        {receiving ? (
-          <>
-            <InfoRow label="Name" value={parcel.pickupContactName ?? "—"} />
-            <InfoRow label="Phone" value={parcel.pickupContactPhone ?? "—"} />
-            <InfoRow label="Role" value="Hands it over (has no app)" />
-          </>
-        ) : (
-          <>
-            <InfoRow label="Name" value={order.customerName} />
-            <InfoRow label="Phone" value={order.customerPhone ?? "—"} />
-            <InfoRow label="Role" value="The customer" />
-          </>
-        )}
-        <InfoRow label="Pick up from" value={parcel.pickupAddress} />
-        {parcel.pickupInstructions && <InfoRow label="Pickup notes" value={parcel.pickupInstructions} />}
-      </InfoCard>
-
-      <InfoCard title={!receiving && order.stops.length > 1 ? "Receivers" : "Receiver"}>
-        {receiving ? (
-          <>
-            <InfoRow label="Name" value={order.customerName} />
-            <InfoRow label="Phone" value={order.customerPhone ?? "—"} />
-            <InfoRow label="Role" value="The customer" />
-            <InfoRow label="Deliver to" value={order.address} />
-          </>
-        ) : order.stops.length > 1 ? (
-          // One person per drop on a multi-stop run; the stops table below has
-          // the full detail and status of each.
-          order.stops.map((stop) => (
-            <InfoRow
-              key={stop.id}
-              label={`Stop ${stop.sequence}`}
-              value={`${contact(stop.recipientName, stop.recipientPhone)} · ${stop.address}`}
-            />
-          ))
-        ) : (
-          <>
-            <InfoRow label="Name" value={order.stops[0]?.recipientName ?? order.recipientName} />
-            <InfoRow label="Phone" value={order.stops[0]?.recipientPhone ?? order.recipientPhone} />
-            <InfoRow label="Deliver to" value={order.stops[0]?.address ?? order.address} />
-          </>
-        )}
-        {parcel.deliveryInstructions && (
-          <InfoRow label="Instructions" value={parcel.deliveryInstructions} />
-        )}
-      </InfoCard>
-    </>
-  );
 }

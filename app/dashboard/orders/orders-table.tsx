@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { OrderQuickViewLink } from "./_components/order-quick-view-link";
 
 import { Badge, OrderStatusBadge } from "../_components/status-badge";
 import { TableCell, TableHeadCell, TableShell } from "../_components/table-shell";
@@ -96,12 +96,9 @@ export function OrdersTable({
                 <tr key={order.id}>
                   <TableCell className="font-medium">
                     <span className="flex flex-col gap-0.5">
-                      <Link
-                        href={`/dashboard/orders/${order.id}`}
-                        className="text-brand transition duration-150 hover:opacity-80"
-                      >
-                        {order.orderNumber}
-                      </Link>
+                      {/* Opens in place: support works these lists as queues,
+                          and a page per order lost the filters every time. */}
+                      <OrderQuickViewLink orderId={order.id} orderNumber={order.orderNumber} />
                       {/* Only parcels are labelled: food is the default and
                           tagging every row would be noise. */}
                       {order.isParcel && (

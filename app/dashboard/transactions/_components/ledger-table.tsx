@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { OrderQuickViewLink } from "../../orders/_components/order-quick-view-link";
 
 import { TableCell, TableHeadCell, TableShell } from "../../_components/table-shell";
 import { EmptyState } from "../../_components/empty-state";
@@ -143,9 +144,11 @@ export function LedgerTable({
 
                 <TableCell className="text-text-secondary">
                   {row.orderId && row.orderNumber ? (
-                    <Link href={`/dashboard/orders/${row.orderId}`} className="hover:text-brand">
-                      {row.orderNumber}
-                    </Link>
+                    <OrderQuickViewLink
+                      orderId={row.orderId}
+                      orderNumber={row.orderNumber}
+                      className="transition duration-150 hover:text-brand"
+                    />
                   ) : (
                     "—"
                   )}

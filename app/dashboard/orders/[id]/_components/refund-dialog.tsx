@@ -20,7 +20,15 @@ import type { OrderDetail } from "@/lib/mappers/order.mapper";
  * doing "total minus delivery fee" in their head and typing it in, which is
  * where refund mistakes actually come from.
  */
-export function RefundDialog({ order, onClose }: { order: OrderDetail; onClose: () => void }) {
+export function RefundDialog({
+  order,
+  onClose,
+  onRefunded,
+}: {
+  order: OrderDetail;
+  onClose: () => void;
+  onRefunded?: () => void;
+}) {
   const { notifySuccess } = useToast();
   const remaining = order.refund.refundableRemaining;
 
@@ -49,8 +57,12 @@ export function RefundDialog({ order, onClose }: { order: OrderDetail; onClose: 
     setPending(false);
     notifySuccess(result);
 
-    if (result.ok) onClose();
-    else setError(result.message);
+    if (result.ok) {
+      onRefunded?.();
+      onClose();
+    } else {
+      setError(result.message);
+    }
   }
 
   return (

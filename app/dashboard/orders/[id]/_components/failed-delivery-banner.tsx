@@ -20,10 +20,12 @@ export function FailedDeliveryBanner({
   order,
   canResolve,
   canRefund,
+  onResolved,
 }: {
   order: OrderDetail;
   canResolve: boolean;
   canRefund: boolean;
+  onResolved?: () => void;
 }) {
   if (!order.arrival.needsResolution) {
     const resolution = order.arrival.resolution;
@@ -150,7 +152,9 @@ export function FailedDeliveryBanner({
         </p>
       )}
 
-      {canResolve && <ResolveDeliveryButton order={order} canRefund={canRefund} />}
+      {canResolve && (
+        <ResolveDeliveryButton order={order} canRefund={canRefund} onResolved={onResolved} />
+      )}
     </section>
   );
 }

@@ -14,9 +14,12 @@ const MIN_NOTE = 10;
 export function ReportTriage({
   reportId,
   status,
+  onChanged,
 }: {
   reportId: number;
   status: ReportStatus;
+  /** After a change lands — the quick-view dialog re-reads the report here. */
+  onChanged?: () => void;
 }) {
   const { notify } = useToast();
   const [note, setNote] = useState("");
@@ -40,7 +43,10 @@ export function ReportTriage({
     setPending(null);
     notify(result);
 
-    if (result.ok) setNote("");
+    if (result.ok) {
+      setNote("");
+      onChanged?.();
+    }
   };
 
   return (

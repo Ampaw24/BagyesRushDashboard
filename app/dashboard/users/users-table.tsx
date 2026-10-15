@@ -54,7 +54,11 @@ export function UsersTable({
       ? null
       : (customers.find((customer) => customer.id === openCustomerId) ?? null);
 
-  const showing = viewing ?? deepLinked;
+  // Re-read from the current page rather than the clicked snapshot, so an
+  // action taken inside the dialog shows up in it once the list revalidates.
+  const showing =
+    (viewing && (customers.find((customer) => customer.id === viewing.id) ?? viewing)) ??
+    deepLinked;
 
   return (
     <div className="flex flex-col gap-4">
@@ -100,6 +104,7 @@ export function UsersTable({
       {showing && (
         <ViewCustomerDialog
           customer={showing}
+          canMessage={canMessage}
           onClose={() => {
             setViewing(null);
             setDeepLinkClosed(true);

@@ -5,12 +5,13 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "../../../_components/page-header";
 import { NoPermissionState } from "../../../_components/empty-state";
 import { Badge } from "../../../_components/status-badge";
-import { StatTile } from "../../../_components/stat-tile";
-import { TableCell, TableHeadCell, TableShell } from "../../../_components/table-shell";
 import { Pagination } from "../../../_components/pagination";
 import { communicationStatusMeta } from "../../../_lib/status";
-import { formatDateTime, formatDateTimeOrDash } from "../../../_lib/format";
-import { BellIcon, CheckCircleIcon, DangerIcon, UsersIcon } from "../../../_lib/icons";
+import {
+  CommunicationMessage,
+  CommunicationRecipientsTable,
+  CommunicationStats,
+} from "../../_components/communication-detail";
 import {
   getCommunication,
   listCommunicationRecipients,
@@ -25,14 +26,6 @@ import { ApiRequestError } from "@/lib/api/errors";
 
 export const metadata: Metadata = {
   title: "Communication — BagyesRUSH",
-};
-
-const RECIPIENT_STATUS_CLASS: Record<string, string> = {
-  sent: "text-status-good",
-  failed: "text-status-critical",
-  // Nothing went wrong — there was simply nowhere to send it.
-  skipped: "text-text-muted",
-  pending: "text-status-info",
 };
 
 /**
@@ -80,8 +73,6 @@ export default async function CommunicationDetailPage({
     per_page: list.per_page,
   });
 
-  const rows = recipients.items.map(toCommunicationRecipientRow);
-
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -90,72 +81,9 @@ export default async function CommunicationDetailPage({
         action={<Badge meta={communicationStatusMeta[communication.status]} />}
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile
-          label="Recipients"
-          value={communication.recipients.toLocaleString()}
-          icon={<UsersIcon />}
-        />
-        <StatTile
-          label="Delivered"
-          value={communication.sent.toLocaleString()}
-          icon={<CheckCircleIcon />}
-        />
-        <StatTile
-          label="Failed"
-          value={communication.failed.toLocaleString()}
-          icon={<DangerIcon />}
-        />
-        <StatTile
-          label="Delivery rate"
-          value={communication.deliveryRate === null ? "—" : `${communication.deliveryRate}%`}
-          icon={<BellIcon />}
-        />
-      </div>
+      <CommunicationStats communication={communication} />
 
-      <section className="flex flex-col gap-4 rounded-xl border border-border-subtle bg-surface p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-foreground">Message</h2>
-
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium uppercase tracking-wide text-text-muted">
-            Push
-          </span>
-          <p className="font-medium text-foreground">{communication.title}</p>
-          <p className="whitespace-pre-wrap text-sm text-text-secondary">{communication.body}</p>
-        </div>
-
-        {communication.smsBody && (
-          <div className="flex flex-col gap-1 border-t border-border-subtle pt-4">
-            <span className="text-xs font-medium uppercase tracking-wide text-text-muted">SMS</span>
-            <p className="whitespace-pre-wrap text-sm text-text-secondary">
-              {communication.smsBody}
-            </p>
-          </div>
-        )}
-
-        <dl className="grid grid-cols-1 gap-3 border-t border-border-subtle pt-4 text-sm sm:grid-cols-3">
-          <div className="flex flex-col gap-0.5">
-            <dt className="text-xs uppercase tracking-wide text-text-muted">Composed by</dt>
-            <dd className="text-foreground">{communication.authorEmail ?? "—"}</dd>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <dt className="text-xs uppercase tracking-wide text-text-muted">
-              {communication.status === "scheduled" ? "Scheduled for" : "Created"}
-            </dt>
-            <dd className="text-foreground">
-              {communication.status === "scheduled"
-                ? formatDateTimeOrDash(communication.scheduledAt)
-                : formatDateTime(communication.createdAt)}
-            </dd>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <dt className="text-xs uppercase tracking-wide text-text-muted">Completed</dt>
-            <dd className="text-foreground">
-              {formatDateTimeOrDash(communication.completedAt)}
-            </dd>
-          </div>
-        </dl>
-      </section>
+      <CommunicationMessage communication={communication} />
 
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
@@ -168,54 +96,7 @@ export default async function CommunicationDetailPage({
           </Link>
         </div>
 
-        {rows.length === 0 ? (
-          <p className="rounded-xl border border-border-subtle bg-surface p-5 text-sm text-text-muted shadow-sm">
-            No recipients yet. Rows appear once this has been sent.
-          </p>
-        ) : (
-          <TableShell>
-            <thead>
-              <tr>
-                <TableHeadCell>Recipient</TableHeadCell>
-                <TableHeadCell>Role</TableHeadCell>
-                <TableHeadCell>Channel</TableHeadCell>
-                <TableHeadCell>Outcome</TableHeadCell>
-                <TableHeadCell>Sent</TableHeadCell>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id} className="transition duration-150 hover:bg-surface-muted">
-                  <TableCell>
-                    <span className="flex flex-col gap-0.5">
-                      <span className="font-medium text-foreground">{row.name}</span>
-                      <span className="text-xs text-text-muted">
-                        {row.channel === "sms" ? (row.phone ?? row.email) : row.email}
-                      </span>
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="capitalize text-text-secondary">{row.role}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="uppercase text-text-secondary">{row.channel}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className={`capitalize ${RECIPIENT_STATUS_CLASS[row.status] ?? ""}`}>
-                      {row.status}
-                    </span>
-                    {row.error && (
-                      <span className="block text-xs text-text-muted">{row.error}</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-text-secondary">{formatDateTimeOrDash(row.sentAt)}</span>
-                  </TableCell>
-                </tr>
-              ))}
-            </tbody>
-          </TableShell>
-        )}
+        <CommunicationRecipientsTable rows={recipients.items.map(toCommunicationRecipientRow)} />
 
         <Pagination pagination={recipients.pagination} />
       </section>

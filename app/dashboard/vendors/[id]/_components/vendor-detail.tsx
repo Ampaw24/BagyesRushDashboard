@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { Badge } from "../../../_components/status-badge";
 import { Tabs } from "../../../_components/tabs";
@@ -25,7 +25,8 @@ import { EditVendorDialog } from "./edit-vendor-dialog";
 import { EditIcon } from "../../../_lib/icons";
 import { RecordExportButton } from "../../../_components/record-export-button";
 import { vendorRecord } from "@/lib/export/records";
-import { toggleMenuItemAvailabilityAction } from "../../_actions";
+import { loadVendorPayoutAction, toggleMenuItemAvailabilityAction } from "../../_actions";
+import { useOnDemand } from "../../../_hooks/use-on-demand";
 import type { MenuItemRow, VendorDetail as VendorDetailModel, VendorPayout } from "@/lib/mappers/vendor.mapper";
 import type { ActivityRow } from "@/lib/mappers/activity.mapper";
 import type { WalletSummary, WalletTransactionRow } from "@/lib/mappers/wallet.mapper";
@@ -41,9 +42,11 @@ export type VendorDetailProps = {
    * than the whole dialog being withheld.
    */
   businessTypes: { id: number; name: string }[];
-  /** Present only when the admin holds `vendors.payout`; every read is audit-logged. */
-  payout: VendorPayout | null;
-  /** From GET /admin/activity filtered to this vendor; empty without `audit.view`. */
+  /**
+   * What has been done to this vendor, from GET /admin/activity with
+   * `changes_only` — payout reads stay in the main audit log, out of here.
+   * Empty without `audit.view`.
+   */
   activity: ActivityRow[];
   /** Present only when the admin holds `vendors.wallet`. */
   wallet: WalletSummary | null;
@@ -58,6 +61,8 @@ export type VendorDetailProps = {
     canMessage: boolean;
     /** `vendors.update` — correcting details, not deciding whether they trade. */
     canEdit: boolean;
+    /** `vendors.payout` — full bank details; every read is audit-logged. */
+    canViewPayout: boolean;
   };
 };
 
@@ -77,7 +82,6 @@ export function VendorDetail({
   vendor,
   menuItems,
   businessTypes,
-  payout,
   activity,
   wallet,
   transactions,
@@ -91,6 +95,17 @@ export function VendorDetail({
     permissions.canMessage,
   );
   const [editing, setEditing] = useState(false);
+
+  // Loaded when the Payout tab is first opened, not with the page: each read
+  // is audit-logged, and opening a profile is not looking at bank details.
+  const payout = useOnDemand(
+    useCallback(() => loadVendorPayoutAction(vendor.id), [vendor.id]),
+  );
+
+  function changeTab(key: string) {
+    setTab(key);
+    if (key === "payout" && permissions.canViewPayout && vendor.payoutConfigured) payout.request();
+  }
 
   const headerActions = [
     ...(permissions.canEdit
@@ -131,7 +146,7 @@ export function VendorDetail({
         </p>
       )}
 
-      <Tabs tabs={TABS} active={tab} onChange={setTab} />
+      <Tabs tabs={TABS} active={tab} onChange={changeTab} />
 
       {tab === "overview" && (
         <OverviewTab
@@ -154,7 +169,14 @@ export function VendorDetail({
           canAdjust={permissions.canAdjustWallet}
         />
       )}
-      {tab === "payout" && <PayoutTab vendor={vendor} payout={payout} />}
+      {tab === "payout" && (
+        <PayoutTab
+          vendor={vendor}
+          canViewPayout={permissions.canViewPayout}
+          payout={payout.data}
+          error={payout.error}
+        />
+      )}
       {tab === "activity" && <ActivityTab activity={activity} />}
 
       {preview && (
@@ -368,7 +390,17 @@ function MenuTab({
   );
 }
 
-function PayoutTab({ vendor, payout }: { vendor: VendorDetailModel; payout: VendorPayout | null }) {
+function PayoutTab({
+  vendor,
+  canViewPayout,
+  payout,
+  error,
+}: {
+  vendor: VendorDetailModel;
+  canViewPayout: boolean;
+  payout: VendorPayout | null;
+  error: string;
+}) {
   if (!vendor.payoutConfigured) {
     return (
       <EmptyState
@@ -376,6 +408,18 @@ function PayoutTab({ vendor, payout }: { vendor: VendorDetailModel; payout: Vend
         description="This vendor has not set up where their money should go."
       />
     );
+  }
+
+  if (canViewPayout && error) {
+    return (
+      <p className="break-words rounded-lg bg-status-critical/10 px-3.5 py-2.5 text-sm text-status-critical">
+        {error}
+      </p>
+    );
+  }
+
+  if (canViewPayout && !payout) {
+    return <p className="py-10 text-center text-sm text-text-muted">Loading payout details…</p>;
   }
 
   // Without `vendors.payout` only the masked summary from the vendor resource

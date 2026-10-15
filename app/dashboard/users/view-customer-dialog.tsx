@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { ActionMenu } from "../_components/action-menu";
+import { useCustomerActions } from "../_hooks/use-customer-actions";
+import { useSendMessage } from "../_hooks/use-send-message";
 import { Avatar } from "../_components/avatar";
 import { Badge } from "../_components/status-badge";
 import { DetailDialog, DialogTabs } from "../_components/detail-dialog";
@@ -40,7 +43,25 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
  * not hold, so fetching it on open would fire a 403 for the role that uses this
  * dialog most.
  */
-export function ViewCustomerDialog({ customer, onClose }: { customer: CustomerRow; onClose: () => void }) {
+export function ViewCustomerDialog({
+  customer,
+  canMessage,
+  onClose,
+}: {
+  customer: CustomerRow;
+  /** `communications.send` — sending SMS spends credits, so it is its own right. */
+  canMessage: boolean;
+  onClose: () => void;
+}) {
+  // The same actions the row's menu offers, so a customer can be messaged,
+  // suspended or reinstated from here without closing the dialog first.
+  const { actions, dialog } = useCustomerActions(customer);
+  const { actions: messageActions, dialog: messageDialog } = useSendMessage(
+    { userId: customer.userId, name: customer.fullName, phone: customer.phone },
+    canMessage,
+  );
+  const menu = [...messageActions, ...actions];
+
   const [detail, setDetail] = useState<CustomerDetail | null>(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"details" | "wallet">("details");
@@ -59,7 +80,9 @@ export function ViewCustomerDialog({ customer, onClose }: { customer: CustomerRo
     return () => {
       active = false;
     };
-  }, [customer.id]);
+    // The status too: suspending from this dialog revalidates the list, the
+    // fresh row arrives here, and the detail is re-read to match it.
+  }, [customer.id, customer.status]);
 
   useEffect(() => {
     if (tab !== "wallet" || wallet) return;
@@ -148,12 +171,15 @@ export function ViewCustomerDialog({ customer, onClose }: { customer: CustomerRo
       onClose={onClose}
       className="max-w-2xl"
       footer={
-        <RecordExportButton
-          build={buildExport}
-          // Until the detail request lands the record would export the row and
-          // nothing else, which is not what anybody means by "export".
-          disabled={!detail && !error}
-        />
+        <>
+          <RecordExportButton
+            build={buildExport}
+            // Until the detail request lands the record would export the row and
+            // nothing else, which is not what anybody means by "export".
+            disabled={!detail && !error}
+          />
+          {menu.length > 0 && <ActionMenu items={menu} />}
+        </>
       }
       header={
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -263,6 +289,10 @@ export function ViewCustomerDialog({ customer, onClose }: { customer: CustomerRo
             {error}
           </p>
         )}
+
+        {/* Inside the dialog so the confirmations stack above it. */}
+        {dialog}
+        {messageDialog}
     </DetailDialog>
   );
 }

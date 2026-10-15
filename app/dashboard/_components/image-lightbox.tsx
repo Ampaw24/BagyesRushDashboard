@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+import { useDialogLayer } from "../_hooks/use-dialog-layer";
 
 /**
  * A user-uploaded image at a size somebody can actually judge.
@@ -27,22 +29,9 @@ export function ImageLightbox({
   const [failed, setFailed] = useState(false);
 
   // Escape closes it, and the page behind does not scroll while it is open —
-  // otherwise dismissing a full-screen image leaves you somewhere else.
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-
-    document.addEventListener("keydown", onKey);
-
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
-    };
-  }, [onClose]);
+  // otherwise dismissing a full-screen image leaves you somewhere else. A layer
+  // like the dialogs, so Escape over a dialog closes the image and not both.
+  useDialogLayer(onClose);
 
   return (
     <div

@@ -20,9 +20,11 @@ import type { DeliveryResolution } from "@/lib/types/enums";
 export function ResolveDeliveryButton({
   order,
   canRefund,
+  onResolved,
 }: {
   order: OrderDetail;
   canRefund: boolean;
+  onResolved?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -37,7 +39,14 @@ export function ResolveDeliveryButton({
       >
         Resolve delivery
       </button>
-      {open && <ResolveDeliveryDialog order={order} canRefund={canRefund} onClose={() => setOpen(false)} />}
+      {open && (
+        <ResolveDeliveryDialog
+          order={order}
+          canRefund={canRefund}
+          onClose={() => setOpen(false)}
+          onResolved={onResolved}
+        />
+      )}
     </>
   );
 }
@@ -46,10 +55,12 @@ function ResolveDeliveryDialog({
   order,
   canRefund,
   onClose,
+  onResolved,
 }: {
   order: OrderDetail;
   canRefund: boolean;
   onClose: () => void;
+  onResolved?: () => void;
 }) {
   const { notify } = useToast();
   const [pending, startTransition] = useTransition();
@@ -75,6 +86,7 @@ function ResolveDeliveryDialog({
       notify(result);
 
       if (result.ok) {
+        onResolved?.();
         onClose();
         return;
       }

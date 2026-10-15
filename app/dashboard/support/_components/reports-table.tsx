@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 import { TableCell, TableHeadCell, TableShell } from "../../_components/table-shell";
@@ -12,7 +11,9 @@ import { Pagination } from "../../_components/pagination";
 import { FilterBar, type SelectFilter } from "../../_components/filter-bar";
 import { reportStatusMeta } from "../../_lib/status";
 import { formatDateTime } from "../../_lib/format";
+import { EyeIcon } from "../../_lib/icons";
 import { updateReportStatusAction } from "../_actions";
+import { ViewReportDialog } from "./view-report-dialog";
 import type { ReportRow } from "@/lib/mappers/report.mapper";
 import type { PaginationMeta } from "@/lib/api/types";
 import {
@@ -58,6 +59,7 @@ export function ReportsTable({
   canManage: boolean;
 }) {
   const [pending, setPending] = useState<PendingAction | null>(null);
+  const [viewing, setViewing] = useState<ReportRow | null>(null);
 
   return (
     <div className="flex flex-col gap-4">
@@ -85,7 +87,9 @@ export function ReportsTable({
           </thead>
           <tbody>
             {reports.map((report) => {
-              const actions: ActionMenuItem[] = [];
+              const actions: ActionMenuItem[] = [
+                { label: "Quick view", icon: EyeIcon, onClick: () => setViewing(report) },
+              ];
 
               if (canManage && report.isOpen) {
                 if (report.status === "pending") {
@@ -111,12 +115,18 @@ export function ReportsTable({
               return (
                 <tr key={report.id} className="transition duration-150 hover:bg-surface-muted">
                   <TableCell>
-                    <Link href={`/dashboard/support/${report.id}`} className="flex flex-col gap-0.5">
-                      <span className="font-medium text-foreground">{report.reasonLabel}</span>
+                    <button
+                      type="button"
+                      onClick={() => setViewing(report)}
+                      className="flex flex-col gap-0.5 text-left"
+                    >
+                      <span className="font-medium text-foreground transition duration-150 hover:text-brand">
+                        {report.reasonLabel}
+                      </span>
                       <span className="line-clamp-1 text-xs text-text-muted">
                         {report.description}
                       </span>
-                    </Link>
+                    </button>
                   </TableCell>
                   <TableCell>
                     <span className="flex flex-col gap-0.5">
@@ -139,7 +149,7 @@ export function ReportsTable({
                     <span className="text-text-secondary">{formatDateTime(report.createdAt)}</span>
                   </TableCell>
                   <TableCell className="text-right">
-                    {actions.length > 0 && <ActionMenu items={actions} />}
+                    <ActionMenu items={actions} />
                   </TableCell>
                 </tr>
               );
@@ -149,6 +159,8 @@ export function ReportsTable({
       )}
 
       <Pagination pagination={pagination} />
+
+      {viewing && <ViewReportDialog report={viewing} onClose={() => setViewing(null)} />}
 
       {pending && (
         <ConfirmDialog

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { OrderQuickViewLink } from "./orders/_components/order-quick-view-link";
 import { PageHeader } from "./_components/page-header";
 import { StatTile } from "./_components/stat-tile";
 import { Meter } from "./_components/meter";
@@ -288,12 +289,7 @@ export default async function OverviewPage() {
               {recentOrders.map((order) => (
                 <tr key={order.id}>
                   <TableCell className="font-medium">
-                    <Link
-                      href={`/dashboard/orders/${order.id}`}
-                      className="text-brand transition duration-150 hover:opacity-80"
-                    >
-                      {order.orderNumber}
-                    </Link>
+                    <OrderQuickViewLink orderId={order.id} orderNumber={order.orderNumber} />
                   </TableCell>
                   <TableCell>{order.customerName}</TableCell>
                   <TableCell className="text-text-secondary">{order.vendorName ?? "—"}</TableCell>

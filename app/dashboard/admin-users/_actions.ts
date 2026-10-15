@@ -11,7 +11,28 @@ import {
   suspendUser,
   updateUser,
 } from "@/lib/services/admin-users.service";
+import { listActivity } from "@/lib/services/activity.service";
+import { toActivityRow, type ActivityRow } from "@/lib/mappers/activity.mapper";
+import { can, getPermissions } from "@/lib/auth/guard";
 import type { AdminRole } from "@/lib/types/enums";
+
+/**
+ * The latest entries in one admin's audit trail, for the quick view.
+ *
+ * Null rather than an error without `audit.view` — only super admins and
+ * finance hold it, and the dialog simply leaves the section out.
+ */
+export async function loadAdminActivityAction(id: number) {
+  return apiAction<{ items: ActivityRow[]; total: number } | null>(
+    "Activity retrieved",
+    async () => {
+      if (!can(await getPermissions(), "audit.view")) return null;
+
+      const page = await listActivity({ admin_id: id, per_page: 10 });
+      return { items: page.items.map(toActivityRow), total: page.pagination.total };
+    },
+  );
+}
 
 /**
  * Staff account management.

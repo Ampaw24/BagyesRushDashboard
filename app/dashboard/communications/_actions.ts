@@ -8,6 +8,8 @@ import {
   composeCommunication,
   createCommunicationTemplate,
   deleteCommunicationTemplate,
+  getCommunication,
+  listCommunicationRecipients,
   previewAudience,
   searchAudience,
   sendCommunication,
@@ -17,8 +19,48 @@ import {
   type ComposeCommunicationInput,
   type TemplateInput,
 } from "@/lib/services/communications.service";
-import { toAudiencePreview, type AudiencePreview } from "@/lib/mappers/communication.mapper";
+import {
+  toAudiencePreview,
+  toCommunicationRecipientRow,
+  toCommunicationRow,
+  type AudiencePreview,
+  type CommunicationRecipientRow,
+  type CommunicationRow,
+} from "@/lib/mappers/communication.mapper";
+import { can, getPermissions } from "@/lib/auth/guard";
+import type { PaginationMeta } from "@/lib/api/types";
 import type { AudienceCandidateDto } from "@/lib/types/api";
+
+export type CommunicationQuickView = {
+  communication: CommunicationRow;
+  recipients: CommunicationRecipientRow[];
+  pagination: PaginationMeta;
+  /** `communications.send` — sending spends credits, so it is its own right. */
+  canSend: boolean;
+};
+
+/**
+ * One broadcast and a page of its recipients, for the quick-view dialog.
+ *
+ * The dialog pages through recipients in place, so this takes a page rather
+ * than reading it off the URL the way the full page does.
+ */
+export async function loadCommunicationQuickViewAction(id: number, page = 1) {
+  return apiAction<CommunicationQuickView>("Communication retrieved", async () => {
+    const [permissions, communication, recipients] = await Promise.all([
+      getPermissions(),
+      getCommunication(id),
+      listCommunicationRecipients(id, { page, per_page: 15 }),
+    ]);
+
+    return {
+      communication: toCommunicationRow(communication),
+      recipients: recipients.items.map(toCommunicationRecipientRow),
+      pagination: recipients.pagination,
+      canSend: can(permissions, "communications.send"),
+    };
+  });
+}
 
 /**
  * Broadcasts.

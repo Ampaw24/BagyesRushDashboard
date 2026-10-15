@@ -3,13 +3,45 @@
 import { revalidatePath } from "next/cache";
 
 import { apiAction } from "@/lib/api/action";
-import { toMessageRow } from "@/lib/mappers/conversation.mapper";
+import {
+  toConversationRow,
+  toMessageRow,
+  type ConversationRow,
+  type MessageRow,
+} from "@/lib/mappers/conversation.mapper";
 import {
   closeConversation,
+  getConversation,
   listConversationMessages,
   reopenConversation,
   replyToConversation,
 } from "@/lib/services/conversations.service";
+import { can, getPermissions } from "@/lib/auth/guard";
+
+export type ConversationQuickView = {
+  conversation: ConversationRow;
+  messages: MessageRow[];
+  /** `chat.join` — replying takes a visible seat, so reading does not imply it. */
+  canReply: boolean;
+};
+
+/** Everything the quick-view dialog needs, in one round trip. */
+export async function loadConversationQuickViewAction(id: number) {
+  return apiAction<ConversationQuickView>("Conversation retrieved", async () => {
+    const [permissions, conversation, messages] = await Promise.all([
+      getPermissions(),
+      getConversation(id),
+      listConversationMessages(id, { per_page: 100 }),
+    ]);
+
+    return {
+      conversation: toConversationRow(conversation),
+      // Newest-first off the wire; a transcript reads oldest-first.
+      messages: messages.items.map(toMessageRow).reverse(),
+      canReply: can(permissions, "chat.join"),
+    };
+  });
+}
 
 /**
  * Reply as support.

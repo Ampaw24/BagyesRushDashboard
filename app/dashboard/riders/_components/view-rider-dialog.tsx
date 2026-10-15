@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ActionMenu } from "../../_components/action-menu";
+import {
+  useRiderStatusActions,
+  type RiderActionPermissions,
+} from "../../_hooks/use-rider-status-actions";
+import { useSendMessage } from "../../_hooks/use-send-message";
 import { Avatar } from "../../_components/avatar";
 import { Badge, RiderPresenceBadge } from "../../_components/status-badge";
 import { ImageLightbox } from "../../_components/image-lightbox";
@@ -50,13 +56,27 @@ type TabKey = (typeof TABS)[number]["key"];
 export function ViewRiderDialog({
   rider,
   canViewDocuments,
+  permissions,
+  canMessage,
   onClose,
 }: {
   rider: RiderRow;
   /** `riders.documents` — separate from `riders.view`; support does not hold it. */
   canViewDocuments: boolean;
+  permissions: RiderActionPermissions;
+  /** `communications.send` — sending SMS spends credits, so it is its own right. */
+  canMessage: boolean;
   onClose: () => void;
 }) {
+  // The row's own actions, so an application can be read and decided in one
+  // place — approving from the list meant closing the dialog to reach the menu.
+  const { actions, dialog } = useRiderStatusActions(rider, permissions);
+  const { actions: messageActions, dialog: messageDialog } = useSendMessage(
+    { userId: rider.userId, name: rider.name, phone: rider.phone },
+    canMessage,
+  );
+  const menu = [...messageActions, ...actions];
+
   const [detail, setDetail] = useState<RiderDetail | null>(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<TabKey>("profile");
@@ -74,7 +94,9 @@ export function ViewRiderDialog({
     return () => {
       active = false;
     };
-  }, [rider.id]);
+    // Re-read when an action taken here lands: the list revalidates, the fresh
+    // row arrives, and a rejection reason or status in the body follows it.
+  }, [rider.id, rider.status, rider.derivedState]);
 
   return (
     <DetailDialog
@@ -114,6 +136,7 @@ export function ViewRiderDialog({
             build={() => riderRecord(detail!)}
             disabled={!detail}
           />
+          {menu.length > 0 && <ActionMenu items={menu} />}
           <Link
           href={`/dashboard/riders/${rider.id}`}
           className="flex h-11 items-center rounded-lg bg-brand px-5 text-sm font-semibold text-brand-foreground transition duration-150 hover:bg-brand-dark"
@@ -176,6 +199,10 @@ export function ViewRiderDialog({
           onClose={() => setPreview(null)}
         />
       )}
+
+      {/* Inside the dialog so the confirmations stack above it. */}
+      {dialog}
+      {messageDialog}
     </DetailDialog>
   );
 }

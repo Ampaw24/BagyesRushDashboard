@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { OrderQuickViewLink } from "../../orders/_components/order-quick-view-link";
 
 import { PageHeader } from "../../_components/page-header";
 import { ExportAction } from "../../_components/export-action";
@@ -103,9 +103,11 @@ export default async function RefundsPage(props: PageProps<"/dashboard/transacti
                 {rows.map((row) => (
                   <tr key={row.id} className="transition duration-150 hover:bg-surface-muted">
                     <TableCell className="font-medium">
-                      <Link href={`/dashboard/orders/${row.id}`} className="hover:text-brand">
-                        {row.orderNumber}
-                      </Link>
+                      <OrderQuickViewLink
+                        orderId={row.id}
+                        orderNumber={row.orderNumber}
+                        className="transition duration-150 hover:text-brand"
+                      />
                       {row.isParcel && (
                         <span className="ml-2 text-xs font-normal text-text-muted">
                           {row.typeLabel}

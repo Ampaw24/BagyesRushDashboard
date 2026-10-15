@@ -219,6 +219,8 @@ function VendorRowView({
           <ViewVendorDialog
             vendor={vendor}
             canViewDocuments={canViewDocuments}
+            permissions={permissions}
+            canMessage={canMessage}
             onClose={() => setViewing(false)}
           />
         )}
